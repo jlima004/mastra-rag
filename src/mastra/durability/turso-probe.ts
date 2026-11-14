@@ -63,12 +63,14 @@ function receipt(thread: ProbeThread): ProbeReceipt | null {
 }
 
 export class DurabilityProbeCreationError extends Error {
-  constructor(
-    readonly probeId: string,
-    readonly cleanupConfirmed: boolean,
-  ) {
+  readonly probeId: string;
+  readonly cleanupConfirmed: boolean;
+
+  constructor(probeId: string, cleanupConfirmed: boolean) {
     super('Durability probe creation could not be verified.');
     this.name = 'DurabilityProbeCreationError';
+    this.probeId = probeId;
+    this.cleanupConfirmed = cleanupConfirmed;
   }
 }
 
