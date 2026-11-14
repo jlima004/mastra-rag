@@ -49,7 +49,7 @@ jobs:
             exit 1
           fi
 
-          authorized_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+          authorized_status=$(curl --silent --output /tmp/mastra-supabase-readiness.json --write-out '%{http_code}' \
             --header "Authorization: Bearer ${RAG_SERVER_API_TOKEN}" \
             http://127.0.0.1:4111/internal/readiness/supabase)
 
@@ -59,7 +59,9 @@ jobs:
             exit 1
           fi
 
-          echo 'PASS: unauthenticated requests denied; authenticated read-only readiness is executed.'
+          node -e "const assert = require('node:assert/strict'); const fs = require('node:fs'); assert.deepEqual(JSON.parse(fs.readFileSync('/tmp/mastra-supabase-readiness.json', 'utf8')), {status: 'unavailable', category: 'CONFIGURATION'});"
+
+          echo 'PASS: dev anonymous 401 and authenticated CONFIGURATION 503.'
 
       - name: Smoke-test bundled server authentication in production mode
         env:
@@ -87,7 +89,7 @@ jobs:
             exit 1
           fi
 
-          authorized_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+          authorized_status=$(curl --silent --output /tmp/mastra-supabase-readiness.json --write-out '%{http_code}' \
             --header "Authorization: Bearer ${RAG_SERVER_API_TOKEN}" \
             http://127.0.0.1:4122/internal/readiness/supabase)
 
@@ -97,4 +99,6 @@ jobs:
             exit 1
           fi
 
-          echo 'PASS: production-mode server maintains authentication without an Enterprise license.'
+          node -e "const assert = require('node:assert/strict'); const fs = require('node:fs'); assert.deepEqual(JSON.parse(fs.readFileSync('/tmp/mastra-supabase-readiness.json', 'utf8')), {status: 'unavailable', category: 'CONFIGURATION'});"
+
+          echo 'PASS: production bundle anonymous 401 and authenticated CONFIGURATION 503.'

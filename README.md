@@ -77,3 +77,17 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
 **TLS gate:** Local `NODE_EXTRA_CA_CERTS` does not automatically propagate to Mastra Cloud. Validate the Supabase CA trust chain on the deployed runtime before considering 200 an accepted result. Do not disable hostname or certificate verification. Never disclose the DSN, token, or private configuration in build logs or PR threads.
 
 **Release gates:** CI installation, tests, typecheck and build; independent Codex review; human merge authorization; configure Cloud environment secrets; verify Turso durability, anonymous 401 / authorized 200, authenticated Supabase readiness 200, and successful `/health`. Any missing gate blocks merge or deployment as applicable. No migration, new agent, vector index, or live DB mutation is included.
+
+## Diagnosing Supabase Cloud readiness
+
+The `GET /internal/readiness/supabase` route is **authenticated** and read-only. It checks the same PostgreSQL metadata as `db:check`, with a sanitized response:
+
+- HTTP `401` without a valid operator bearer token (SimpleAuth middleware).
+- HTTP `200` and `{"status":"ok"}` if the probe and disconnect succeed.
+- HTTP `503` and `{"status":"unavailable","category":"CONFIGURATION"}` (or another fixed category) when the database check fails.
+
+Categories are restricted to `CONFIGURATION`, `AUTHENTICATION`, `TLS_CERTIFICATE`, `NETWORK`, `FOUNDATION`, `DATABASE_PERMISSION_OR_NAME`, and `UNCLASSIFIED`. This uses the existing `describeDatabaseCheckFailure()` classifier. Categories are **diagnostic leads, not proof** of root cause. No exception messages, connection strings, hostnames, credentials, SQL text, or stack traces are returned. Public `/health` is unchanged.
+
+After human approval for a separate merge and deploy, the operator can repeat the existing authenticated readiness request. If the result is `503`, inspect only `status` and `category` before deciding whether to change certificate trust. Never disable PostgreSQL TLS or server certificate verification.
+
+This PR changes no secrets, environment variables, database objects, cloud configuration, indexing, or ingestion behavior.

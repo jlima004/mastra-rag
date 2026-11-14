@@ -1,34 +1,70 @@
 import { registerApiRoute } from '@mastra/core/server';
+import { describeDatabaseCheckFailure } from '../storage/supabase-diagnostics.ts';
 import { createSupabaseVectorStore } from '../storage/supabase-vector.ts';
 import { verifySupabaseFoundation } from '../storage/supabase-probe.ts';
 
+export type SupabaseReadiness =
+  | Readonly<{ status: 'ok' }>
+  | Readonly<{ status: 'unavailable'; category: string }>;
+
+type ReadinessStore = {
+  pool: Parameters<typeof verifySupabaseFoundation>[0];
+  disconnect(): Promise<void>;
+};
+
+export type ReadinessDependencies = Readonly<{
+  createStore(): ReadinessStore;
+  verify(pool: ReadinessStore['pool']): Promise<void>;
+}>;
+
+const defaultDependencies: ReadinessDependencies = {
+  createStore: createSupabaseVectorStore,
+  verify: verifySupabaseFoundation,
+};
+
 /**
- * On-demand read-only PostgreSQL probe. The result never includes credentials,
- * driver errors or SQL details. The platform /health remains unchanged.
+ * Read-only probe, with fixed sanitized categories. Never return or log
+ * driver errors, SQL, credentials, hostnames, or stack traces.
+ * Preserve the original query failure if disconnection also fails.
  */
-export async function checkSupabaseReadiness(): Promise<boolean> {
-  let store: ReturnType<typeof createSupabaseVectorStore> | undefined;
-  let healthy = false;
+export async function diagnoseSupabaseReadiness(
+  dependencies: ReadinessDependencies = defaultDependencies,
+): Promise<SupabaseReadiness> {
+  let store: ReadinessStore | undefined;
+  let result: SupabaseReadiness = { status: 'ok' };
+
   try {
-    store = createSupabaseVectorStore();
-    await verifySupabaseFoundation(store.pool);
-    healthy = true;
-  } catch {
-    // Never log database driver exceptions.
+    store = dependencies.createStore();
+    await dependencies.verify(store.pool);
+  } catch (error: unknown) {
+    result = { status: 'unavailable', category: describeDatabaseCheckFailure(error).category };
   } finally {
     if (store) {
-      try { await store.disconnect(); }
-      catch { healthy = false; }
+      try {
+        await store.disconnect();
+      } catch (error: unknown) {
+        if (result.status === 'ok') {
+          result = { status: 'unavailable', category: describeDatabaseCheckFailure(error).category };
+        }
+      }
     }
   }
-  return healthy;
+  return result;
 }
 
+/** Preserve the existing internal boolean helper. */
+export async function checkSupabaseReadiness(): Promise<boolean> {
+  return (await diagnoseSupabaseReadiness()).status === 'ok';
+}
+
+/** The Mastra platform /health remains separate from this authenticated route. */
 export const supabaseReadinessRoute = registerApiRoute('/internal/readiness/supabase', {
   method: 'GET',
   requiresAuth: true,
   handler: async c => {
-    const ok = await checkSupabaseReadiness();
-    return ok ? c.json({ status: 'ok' }, 200) : c.json({ status: 'unavailable' }, 503);
+    const result = await diagnoseSupabaseReadiness();
+    return result.status === 'ok'
+      ? c.json({ status: 'ok' }, 200)
+      : c.json(result, 503);
   },
 });
