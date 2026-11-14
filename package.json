@@ -1,11 +1,13 @@
 {
   "name": "mastra-rag",
   "version": "1.0.0",
-  "description": "Minimal Mastra TypeScript foundation for a future Supabase-backed RAG application.",
+  "description": "Mastra TypeScript foundation for a Supabase-backed RAG application.",
   "private": true,
   "scripts": {
     "dev": "mastra dev",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/mastra/storage/supabase-config.test.ts src/mastra/storage/supabase-probe.test.ts src/mastra/storage/supabase-diagnostics.test.ts",
+    "db:check": "node --env-file=.env --experimental-strip-types scripts/check-supabase.ts",
     "build": "mastra build",
     "start": "mastra start"
   },
@@ -15,7 +17,8 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@mastra/core": "1.83.0"
+    "@mastra/core": "1.83.0",
+    "@mastra/pg": "1.35.0"
   },
   "devDependencies": {
     "@types/node": "latest",
