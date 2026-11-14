@@ -1,6 +1,7 @@
 import { registerApiRoute } from '@mastra/core/server';
 import {
   createDurabilityProbe,
+  DurabilityProbeCreationError,
   deleteDurabilityProbe,
   isProbeEnabled,
   isProbeId,
@@ -31,7 +32,14 @@ export const tursoDurabilityCreateRoute = registerApiRoute('/internal/durability
     try {
       const receipt = await createDurabilityProbe(await memoryFromContext(c));
       return c.json({ status: 'created', ...receipt }, 201);
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof DurabilityProbeCreationError) {
+        return c.json({
+          status: 'unavailable',
+          cleanup: error.cleanupConfirmed ? 'verified_absent' : 'unconfirmed',
+          ...(!error.cleanupConfirmed ? { probeId: error.probeId } : {}),
+        }, 503);
+      }
       return c.json({ status: 'unavailable' }, 503);
     }
   },
