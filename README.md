@@ -55,3 +55,25 @@ If you copied a database password with reserved URL characters, percent-encode t
 ## Next milestones
 
 PR #3: document ingestion, chunking and vector index creation; PR #4: retrieval, RAG agent and evaluation. Keep application secrets out of the repository.
+
+
+## Production Readiness (intermediate PR before ingestion)
+
+**Runtime storage:** Mastra now uses `@mastra/libsql`, with the already attached managed Turso database on Mastra Cloud. Platform variables `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are injected automatically. The cloud process fails startup if either is missing; local development defaults to `file:./mastra.db`. Supabase pgvector is **independent** of this storage.
+
+**API authentication:** All Mastra server routes use `SimpleAuth` with a private token `RAG_SERVER_API_TOKEN` (at least 32 characters). Generate one privately with `openssl rand -hex 32` and set it in Mastra Cloud production secrets **before deployment**. Without it, a Mastra Platform process fails to start; a local process with no token has zero valid credentials. Do not disable Mastra Platform's separate Studio sign-in: leave `MASTRA_PLATFORM_STUDIO_AUTH` unset.
+
+**Cloud Supabase verification:** `GET /internal/readiness/supabase` is an authenticated, read-only endpoint. It verifies pgvector, the private `rag` schema and public-role isolation, returning only `200 {"status":"ok"}` or `503 {"status":"unavailable"}`. The platform's separate `/health` remains unchanged. After configuring the server token and `POSTGRES_CONNECTION_STRING` privately on the Cloud environment and deploying with approval:
+
+```bash
+curl -i https://mastra-rag-d7b8.server.mastra.cloud/internal/readiness/supabase
+# Expect 401 without Authorization.
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer ${RAG_SERVER_API_TOKEN}" \
+  https://mastra-rag-d7b8.server.mastra.cloud/internal/readiness/supabase
+# Expect 200. A 503 blocks release.
+```
+
+**TLS gate:** Local `NODE_EXTRA_CA_CERTS` does not automatically propagate to Mastra Cloud. Validate the Supabase CA trust chain on the deployed runtime before considering 200 an accepted result. Do not disable hostname or certificate verification. Never disclose the DSN, token, or private configuration in build logs or PR threads.
+
+**Release gates:** CI installation, tests, typecheck and build; independent Codex review; human merge authorization; configure Cloud environment secrets; verify Turso durability, anonymous 401 / authorized 200, authenticated Supabase readiness 200, and successful `/health`. Any missing gate blocks merge or deployment as applicable. No migration, new agent, vector index, or live DB mutation is included.
