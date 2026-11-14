@@ -108,3 +108,25 @@ test('rejects encoded parameter aliases and unexpected TLS options', () => {
     );
   }
 });
+
+test('canonicalizes encoded TLS key and unescaped password whitespace before driver handoff', () => {
+  const encodedKey = direct.replace('?sslmode=require', '?ssl%6dode=require');
+  assert.equal(
+    requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: encodedKey }),
+    direct,
+  );
+
+  const source = direct.replace('s3cret', 's cret').replace('sslmode', 'ssl%6dode');
+  const canonical = direct.replace('s3cret', 's%20cret');
+  assert.equal(
+    requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: source }),
+    canonical,
+  );
+});
+
+test('leaves canonical valid session pooler URLs unchanged', () => {
+  assert.equal(
+    requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: session }),
+    session,
+  );
+});

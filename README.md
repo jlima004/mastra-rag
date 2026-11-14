@@ -47,6 +47,11 @@ npm run db:check
 
 This reports success only if pgvector exists in `extensions`, the schema `rag` exists, and neither `anon` nor `authenticated` has direct `USAGE` privileges on it.
 
+If the check fails, it reports a **sanitized diagnostic category** such as `AUTHENTICATION`, `NETWORK`, `TLS_CERTIFICATE`, or `FOUNDATION`. Raw database exceptions and connection strings are deliberately not logged. The warning that `sslmode=require` may change semantics in future `pg` releases is separate from the failure: current `pg-connection-string` maps it to `verify-full`. You can use `sslmode=verify-full` explicitly after configuring the appropriate certificate trust chain. Never disable TLS verification as a workaround.
+
+If you copied a database password with reserved URL characters, percent-encode those characters before inserting it in the connection string. Verify the **exact Session Pooler hostname and username** in Supabase Connect rather than assuming they match another project. For connectivity investigations, check that the local network can reach port 5432.
+
+
 ## Next milestones
 
 PR #3: document ingestion, chunking and vector index creation; PR #4: retrieval, RAG agent and evaluation. Keep application secrets out of the repository.

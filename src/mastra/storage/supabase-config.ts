@@ -64,5 +64,11 @@ export function requirePostgresConnectionString(
     throw new Error('Invalid PostgreSQL connection parameters: a single TLS sslmode is required.');
   }
 
-  return connectionString;
+  // Pass a canonical URL to pg-connection-string. Validating decoded URLSearchParams
+  // but forwarding the raw query can cause driver parse differences when the
+  // original DSN contains whitespace and percent-encoded parameter names.
+  const sslmode = parameters[0][1];
+  url.search = '';
+  url.searchParams.set('sslmode', sslmode);
+  return url.toString();
 }
