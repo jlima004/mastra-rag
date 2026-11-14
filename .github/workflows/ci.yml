@@ -102,3 +102,31 @@ jobs:
           node -e "const assert = require('node:assert/strict'); const fs = require('node:fs'); assert.deepEqual(JSON.parse(fs.readFileSync('/tmp/mastra-supabase-readiness.json', 'utf8')), {status: 'unavailable', category: 'CONFIGURATION'});"
 
           echo 'PASS: production bundle anonymous 401 and authenticated CONFIGURATION 503.'
+
+      - name: Smoke-test disabled Turso durability probe in production bundle
+        env:
+          NODE_ENV: production
+          PORT: '4123'
+          RAG_SERVER_API_TOKEN: ci-only-nonsecret-auth-token-0123456789abcdef
+        run: |
+          set -euo pipefail
+          node .mastra/output/index.mjs > /tmp/turso-durability-ci.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          status=000
+          for attempt in $(seq 1 45); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+              http://127.0.0.1:4123/internal/durability/turso/create || true)
+            if [ "$status" = '401' ]; then break; fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then break; fi
+            sleep 2
+          done
+          test "$status" = 401 || { echo 'FAIL: anonymous durability route must return 401'; exit 1; }
+
+          disabled_status=$(curl --silent --request POST --output /tmp/turso-disabled.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${RAG_SERVER_API_TOKEN}" \
+            http://127.0.0.1:4123/internal/durability/turso/create)
+          test "$disabled_status" = 404 || { echo "FAIL: durability route returned $disabled_status"; exit 1; }
+          node -e "const a=require('node:assert/strict'); const fs=require('node:fs'); a.deepEqual(JSON.parse(fs.readFileSync('/tmp/turso-disabled.json','utf8')), {status:'disabled'});"
+          echo 'PASS: Turso durability probe is authenticated and disabled by default.'
