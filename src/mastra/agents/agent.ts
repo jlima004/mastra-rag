@@ -5,6 +5,7 @@ import { askUserTool, webFetchTool, webSearchTool } from '@mastra/core/tools';
 import { LocalFilesystem, LocalSandbox, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace';
 import { Memory } from '@mastra/memory';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
+import { tools } from '@mastra/connect'
 
 const workspacePath = 'workspace';
 
@@ -72,6 +73,7 @@ For local file changes, end with a plain-text URL using ${pathToFileURL(`${works
     stop_schedule: stopScheduleTool,
     web_fetch: webFetchTool,
     web_search: webSearchTool,
+    ...(await tools()),
   },
   signals: [new TaskSignalProvider()],
 });

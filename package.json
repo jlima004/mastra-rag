@@ -17,6 +17,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@mastra/connect": "^1.4.0",
     "@mastra/core": "1.83.0",
     "@mastra/duckdb": "1.19.0",
     "@mastra/libsql": "1.30.0",
