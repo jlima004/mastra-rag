@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   DURABILITY_PROBE_RESOURCE,
+  DurabilityProbeCreationError,
   createDurabilityProbe,
   deleteDurabilityProbe,
   isProbeEnabled,
@@ -72,8 +73,53 @@ test('does not disclose marker or underlying storage metadata', async () => {
   assert.deepEqual(await readDurabilityProbe(memory, created.probeId), created);
 });
 
-test('reports write verification failure rather than claiming durability', async () => {
+test('failed read-after-write attempts cleanup and confirms absence', async () => {
   const memory = fakeStore();
-  memory.getThreadById = async () => null;
-  await assert.rejects(() => createDurabilityProbe(memory), /write verification failed/);
+  const getThreadById = memory.getThreadById;
+  let firstRead = true;
+  memory.getThreadById = async args => {
+    if (firstRead) {
+      firstRead = false;
+      throw new Error('secret database read failed');
+    }
+    return getThreadById(args);
+  };
+  await assert.rejects(
+    () => createDurabilityProbe(memory),
+    (error: unknown) => {
+      assert.ok(error instanceof DurabilityProbeCreationError);
+      assert.equal(error.cleanupConfirmed, true);
+      assert.equal(isProbeId(error.probeId), true);
+      assert.doesNotMatch(error.message, /secret database/);
+      return true;
+    },
+  );
+});
+
+test('unconfirmed cleanup reports a recovery ID without leaking driver errors', async () => {
+  const memory = fakeStore();
+  memory.getThreadById = async () => { throw new Error('secret read failed'); };
+  memory.deleteThread = async () => { throw new Error('secret delete failed'); };
+  await assert.rejects(
+    () => createDurabilityProbe(memory),
+    (error: unknown) => {
+      assert.ok(error instanceof DurabilityProbeCreationError);
+      assert.equal(error.cleanupConfirmed, false);
+      assert.equal(isProbeId(error.probeId), true);
+      assert.doesNotMatch(error.message, /secret read|secret delete/);
+      return true;
+    },
+  );
+});
+
+test('cleanup accepts incomplete marker metadata only inside the reserved resource', async () => {
+  const memory = fakeStore();
+  const created = await createDurabilityProbe(memory);
+  const original = memory.getThreadById;
+  memory.getThreadById = async args => {
+    const thread = await original(args);
+    if (thread && args.threadId === created.probeId) return { ...thread, metadata: {} };
+    return thread;
+  };
+  assert.equal(await deleteDurabilityProbe(memory, created.probeId), true);
 });
