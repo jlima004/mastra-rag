@@ -52,3 +52,59 @@ test('rejects plain connections, transaction pooler, and wrong database', () => 
     assert.throws(() => requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: candidate }));
   }
 });
+
+test('rejects duplicate sslmode parameters, even when the first requires TLS', () => {
+  for (const candidate of [
+    `${direct}&sslmode=disable`,
+    `${direct}&sslmode=prefer`,
+    `${direct}&sslmode=verify-full`,
+    `${session}&sslmode=disable`,
+    direct.replace('sslmode=require', 'sslmode=disable&sslmode=require'),
+  ]) {
+    assert.throws(
+      () => requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: candidate }),
+      /PostgreSQL connection parameters/,
+    );
+  }
+});
+
+test('rejects driver-level overrides of validated host, port and credentials', () => {
+  for (const [parameter, value] of [
+    ['host', 'example.org'],
+    ['port', '6543'],
+    ['user', 'other-user'],
+    ['password', 'overridden-password'],
+    ['database', 'other-database'],
+    ['ssl', '0'],
+    ['uselibpqcompat', 'true'],
+    ['sslmode', 'disable'],
+    ['application_name', 'unauthorized'],
+    ['sslrootcert', '/tmp/ca.pem'],
+  ]) {
+    for (const url of [direct, session]) {
+      const candidate = `${url}&${parameter}=${encodeURIComponent(value)}`;
+      assert.throws(
+        () => requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: candidate }),
+        /PostgreSQL connection parameters/,
+        `unexpectedly accepted connection parameter: ${parameter}`,
+      );
+    }
+  }
+});
+
+test('rejects encoded parameter aliases and unexpected TLS options', () => {
+  for (const candidate of [
+    `${direct}&h%6fst=example.org`,
+    `${direct}&SSLmode=disable`,
+    `${direct}&sslmode%00=disable`,
+    direct.replace('sslmode=require', 'sslmode=require%26host%3Dexample.org'),
+    direct.replace('sslmode=require', 'sslmode=require;host=example.org'),
+    direct.replace('sslmode=require', 'sslmode=allow'),
+    direct.replace('sslmode=require', 'application_name=my-app'),
+  ]) {
+    assert.throws(
+      () => requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: candidate }),
+      /PostgreSQL connection parameters/,
+    );
+  }
+});

@@ -51,8 +51,17 @@ export function requirePostgresConnectionString(
     throw new Error('Use the PostgreSQL database on port 5432 (direct or session pooler).');
   }
 
-  if (!['require', 'verify-full'].includes(url.searchParams.get('sslmode') ?? '')) {
-    throw new Error('Require PostgreSQL TLS with sslmode=require or sslmode=verify-full.');
+  // PgVector forwards this DSN to pg-connection-string. The driver applies the
+  // last duplicate parameter and allows query parameters to override host,
+  // port, user and TLS settings. Fail closed rather than trusting the first
+  // URLSearchParams value or silently forwarding unchecked options.
+  const parameters = [...url.searchParams.entries()];
+  if (
+    parameters.length !== 1 ||
+    parameters[0]?.[0] !== 'sslmode' ||
+    !['require', 'verify-full'].includes(parameters[0][1])
+  ) {
+    throw new Error('Invalid PostgreSQL connection parameters: a single TLS sslmode is required.');
   }
 
   return connectionString;
