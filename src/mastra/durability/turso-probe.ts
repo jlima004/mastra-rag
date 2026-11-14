@@ -62,6 +62,16 @@ function receipt(thread: ProbeThread): ProbeReceipt | null {
   };
 }
 
+export class DurabilityProbeCreationError extends Error {
+  constructor(
+    readonly probeId: string,
+    readonly cleanupConfirmed: boolean,
+  ) {
+    super('Durability probe creation could not be verified.');
+    this.name = 'DurabilityProbeCreationError';
+  }
+}
+
 /** Write only a generated test thread into the standard Mastra memory domain. */
 export async function createDurabilityProbe(memory: ProbeMemoryStore): Promise<ProbeReceipt> {
   const now = new Date();
@@ -76,15 +86,29 @@ export async function createDurabilityProbe(memory: ProbeMemoryStore): Promise<P
     createdAt: now,
     updatedAt: now,
   };
-  await memory.saveThread({ thread });
-  // Read-after-write confirms that the backing store accepted the record.
-  const actual = await memory.getThreadById({ threadId: thread.id, resourceId: DURABILITY_PROBE_RESOURCE });
-  const written = actual && receipt(actual);
-  const expected = receipt(thread);
-  if (!written || written.fingerprint !== expected?.fingerprint) {
-    throw new Error('Durability probe write verification failed.');
+  try {
+    await memory.saveThread({ thread });
+    // Read-after-write confirms that the backing store accepted the record.
+    const actual = await memory.getThreadById({ threadId: thread.id, resourceId: DURABILITY_PROBE_RESOURCE });
+    const written = actual && receipt(actual);
+    const expected = receipt(thread);
+    if (!written || written.fingerprint !== expected?.fingerprint) {
+      throw new Error('Probe verification did not match.');
+    }
+    return written;
+  } catch {
+    // saveThread can have succeeded even if the confirmation read failed.
+    // Best-effort deletion only targets this newly generated random UUID.
+    let cleanupConfirmed = false;
+    try {
+      await memory.deleteThread({ threadId: thread.id });
+      cleanupConfirmed =
+        (await memory.getThreadById({ threadId: thread.id, resourceId: DURABILITY_PROBE_RESOURCE })) === null;
+    } catch {
+      // Leave an operator-accessible recovery ID; do not disclose driver errors.
+    }
+    throw new DurabilityProbeCreationError(thread.id, cleanupConfirmed);
   }
-  return written;
 }
 
 /** Read independently on a new process using only the server-side database. */
@@ -99,7 +123,21 @@ export async function readDurabilityProbe(
 
 /** Delete only a structurally verified test thread in our reserved namespace. */
 export async function deleteDurabilityProbe(memory: ProbeMemoryStore, probeId: string): Promise<boolean> {
-  if (!(await readDurabilityProbe(memory, probeId))) return false;
+  if (!isProbeId(probeId)) return false;
+  const existing = await memory.getThreadById({
+    threadId: probeId,
+    resourceId: DURABILITY_PROBE_RESOURCE,
+  });
+  // Cleanup must work for a partially-written probe, even if its metadata
+  // is corrupt or incomplete. Never delete threads outside our owned resource.
+  if (!existing || existing.id !== probeId || existing.resourceId !== DURABILITY_PROBE_RESOURCE) {
+    return false;
+  }
   await memory.deleteThread({ threadId: probeId });
-  return (await readDurabilityProbe(memory, probeId)) === null;
+  const remaining = await memory.getThreadById({
+    threadId: probeId,
+    resourceId: DURABILITY_PROBE_RESOURCE,
+  });
+  if (remaining !== null) throw new Error('Durability probe cleanup could not be verified.');
+  return true;
 }
