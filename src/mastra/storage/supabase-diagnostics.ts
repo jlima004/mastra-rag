@@ -32,7 +32,7 @@ export function describeDatabaseCheckFailure(error: unknown): DatabaseCheckDiagn
   const hasCode = (...values: string[]): boolean => codes.some(code => values.includes(code));
 
   if (
-    /POSTGRES_CONNECTION_STRING|Invalid PostgreSQL connection parameters|Use the PostgreSQL database|Require PostgreSQL TLS/.test(combinedMessage)
+    /POSTGRES_CONNECTION_STRING|SUPABASE_CA_CERT_BASE64|Invalid PostgreSQL connection parameters|Use the PostgreSQL database|Require PostgreSQL TLS/.test(combinedMessage)
   ) {
     return {
       category: 'CONFIGURATION',
