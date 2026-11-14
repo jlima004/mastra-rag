@@ -11,6 +11,9 @@ async function memoryFromContext(c: Parameters<NonNullable<Parameters<typeof reg
   const storage = c.get('mastra').getStorage();
   const memory = await storage?.getStore('memory');
   if (!memory) throw new Error('Memory storage unavailable');
+  // Initialize only the native memory domain on first probe use; this may
+  // create Mastra-owned memory tables, but never touches Supabase or other domains.
+  await memory.init();
   return memory;
 }
 
