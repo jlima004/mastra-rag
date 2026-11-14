@@ -1,58 +1,32 @@
 # mastra-rag
 
-Welcome to your new [Mastra](https://mastra.ai) project! We're excited to see what you build.
+Minimal [Mastra](https://mastra.ai) TypeScript project prepared for a document-based RAG application backed by Supabase PostgreSQL and pgvector.
 
-This starter provides you with a general-purpose Mastra agent that can research current information, manage multi-step tasks, work with local files, run approved shell commands, and create recurring schedules.
+## Current scope
 
-## Features
+This repository intentionally contains **no registered agents, tools, workflows, or processors**. The original general-purpose starter agent and its filesystem, shell, web, scheduler, memory, and local database integrations have been removed.
 
-- A local `workspace/` for files and command execution (created under `src/mastra/public/workspace/` when running `mastra dev`)
-- Approval gates for file changes, deletions, and shell commands
-- Conversation memory, generated thread titles, and task tracking
-- Built-in web search and direct web page fetching
-- Recurring schedules that persist across restarts
-- Local libSQL storage and DuckDB observability, with optional Turso storage
-- A bundled Mastra skill that helps coding agents use current Mastra APIs
+The Supabase connection, document ingestion, vector indexes, semantic retrieval, and RAG agent **are not implemented yet**. They will be added in separate pull requests.
 
-## Get started
+## Run locally
 
-Set your `OPENAI_API_KEY` in `.env` or in your environment, then run:
+Requirements: Node.js >= 22.13 and npm.
 
-```shell
+```bash
+npm ci
+npm run typecheck
+npm run build
 npm run dev
 ```
 
-Open [http://localhost:4111](http://localhost:4111) in your browser to access [Mastra Studio](https://mastra.ai/docs/studio/overview).
+Open [Mastra Studio](http://localhost:4111) after starting the dev server. No agents will appear until a RAG agent is implemented.
 
-Select **Agent** in Mastra Studio and try one of these prompts:
+## Deployment
 
-- `Get the weather forecast for Austin this weekend.`
-- `Create a landing page for a Japanese sakura festival.`
-- `Check the SPCX stock price now, then check it every minute.`
+The existing [Mastra Platform](https://projects.mastra.ai) project linkage remains in `.mastra-project.json`. Removing the starter agent means its former agent endpoints will no longer exist **after a deployment of these changes**. A GitHub pull request alone does not verify or deploy the cloud runtime.
 
-The agent asks for approval before it changes files or runs commands. When it creates a schedule, it returns an ID that you can use to pause the schedule.
+## Next milestone: Supabase RAG foundation
 
-## Workspace safety
+Add `@mastra/pg`, configure a server-only PostgreSQL connection, introduce a controlled document ingestion pipeline, and validate pgvector indexing and semantic retrieval. Keep database credentials out of Git and client bundles.
 
-The local filesystem tools stay inside the `workspace/` directory, which resolves relative to the server's working directory (`src/mastra/public/workspace/` during `mastra dev`). Shell commands start in that directory, but `LocalSandbox` does not provide operating-system isolation by default. Review command approvals carefully, and do not expose this template through an unauthenticated public server.
-
-## Storage
-
-The default `file:./mastra.db` database stores agent memory, tasks, and schedules locally. To use Turso, set `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in `.env`.
-
-Recurring schedules continue to use model tokens until you pause them. Ask the agent to pause a schedule with the ID returned by `start_schedule`.
-
-## Making it yours
-
-- Edit `src/mastra/agents/agent.ts` to change the model, instructions, memory, workspace, or approval policy.
-- Edit `src/mastra/tools/` to customize scheduling.
-- Edit `src/mastra/index.ts` to change storage and observability.
-- Add files or reusable skills under `src/mastra/public/workspace/` for the agent to use during `mastra dev`.
-
-## Learn more
-
-To learn more about Mastra, visit our [documentation](https://mastra.ai/docs/). If you're new to AI agents, check out our [course](https://mastra.ai/learn) and [YouTube videos](https://youtube.com/@mastra-ai). You can also join our [Discord](https://discord.gg/mastra-ai) community to get help and share your projects.
-
-## Deploy to the Mastra platform
-
-The [Mastra platform](https://projects.mastra.ai) provides two products for deploying and managing AI applications built with the Mastra framework. Learn more in the [Mastra platform documentation](https://mastra.ai/docs/mastra-platform/overview).
+Consult [Mastra documentation](https://mastra.ai/docs) and [Supabase AI & Vector documentation](https://supabase.com/docs/guides/ai) before implementation.
