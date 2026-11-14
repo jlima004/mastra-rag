@@ -116,7 +116,7 @@ jobs:
 
           status=000
           for attempt in $(seq 1 45); do
-            status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            status=$(curl --silent --request POST --output /dev/null --write-out '%{http_code}' \
               http://127.0.0.1:4123/internal/durability/turso/create || true)
             if [ "$status" = '401' ]; then break; fi
             if ! kill -0 "$server_pid" 2>/dev/null; then break; fi
