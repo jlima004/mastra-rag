@@ -1,4 +1,5 @@
 import { PgVector } from '@mastra/pg';
+import { resolveSupabaseTlsOptions } from './supabase-tls.ts';
 import {
   RAG_SCHEMA_NAME,
   requirePostgresConnectionString,
@@ -12,9 +13,13 @@ import {
 export function createSupabaseVectorStore(
   environment: DatabaseEnvironment = process.env,
 ): PgVector {
+  const connectionString = requirePostgresConnectionString(environment);
+  const ssl = resolveSupabaseTlsOptions(connectionString, environment);
+
   return new PgVector({
     id: 'supabase-rag-vectors',
-    connectionString: requirePostgresConnectionString(environment),
+    connectionString,
+    ...(ssl ? { ssl } : {}),
     schemaName: RAG_SCHEMA_NAME,
     max: 2,
     idleTimeoutMillis: 10_000,

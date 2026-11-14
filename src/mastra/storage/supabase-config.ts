@@ -4,6 +4,8 @@ export const RAG_SCHEMA_NAME = 'rag';
 
 export type DatabaseEnvironment = Readonly<{
   POSTGRES_CONNECTION_STRING?: string;
+  /** Optional private server-side base64-encoded Supabase root CA PEM. */
+  SUPABASE_CA_CERT_BASE64?: string;
 }>;
 
 /**

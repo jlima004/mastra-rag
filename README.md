@@ -91,3 +91,24 @@ Categories are restricted to `CONFIGURATION`, `AUTHENTICATION`, `TLS_CERTIFICATE
 After human approval for a separate merge and deploy, the operator can repeat the existing authenticated readiness request. If the result is `503`, inspect only `status` and `category` before deciding whether to change certificate trust. Never disable PostgreSQL TLS or server certificate verification.
 
 This PR changes no secrets, environment variables, database objects, cloud configuration, indexing, or ingestion behavior.
+
+## Supabase TLS remediation (PR #5; post-diagnostics)
+
+On 2026-11-14 the deployed authenticated readiness endpoint classified the failure as `TLS_CERTIFICATE` while the local WSL check succeeded with the explicitly trusted Supabase CA. This supports a missing CA trust chain or hostname/certificate mismatch **in the Cloud runtime**, but the exact underlying driver code has not been exposed.
+
+The `@mastra/pg@1.35.0` connection-string pool builder honors the explicit `ssl` configuration after parsing `sslmode`. The PgVector factory now accepts an **optional, per-pool** Supabase CA encoded in `SUPABASE_CA_CERT_BASE64` without modifying the process-wide Node.js trust store. When configured, it requires a valid single CA certificate, sets `rejectUnauthorized: true` and binds the TLS `servername` to the **validated** PostgreSQL hostname. HTTP/Mastra Studio, Turso and unrelated TLS connections remain unaffected. Without it, existing local `NODE_EXTRA_CA_CERTS` and default certificate trust remain unchanged.
+
+### Operator provisioning for Mastra Cloud production
+
+1. In the [Supabase project Database SSL configuration](https://supabase.com/dashboard/project/lmocjhpajhxegzobydau/settings/database), obtain and independently verify the *project's own* trusted CA certificate. The local verified file is `$HOME/.config/mastra-rag/supabase-ca.crt`. Check its fingerprint against the downloaded file, rather than sourcing CA material from a web snippet or an unrelated project.
+2. On WSL, encode the **certificate only** as one base64 line (this is not the private key):
+   ```bash
+   base64 -w 0 "$HOME/.config/mastra-rag/supabase-ca.crt"
+   ```
+3. Store that output as a private **Production** environment variable named `SUPABASE_CA_CERT_BASE64` in Mastra Cloud. Do not insert it into the PostgreSQL connection URL. Do not commit it, paste it in PR comments, or send it in chats. Keep existing `POSTGRES_CONNECTION_STRING` with `sslmode=verify-full` (preferred) or the foundation-accepted `sslmode=require`; the explicit per-pool TLS options still enforce full verification.
+4. Merge/deploy only after CI, independent review and human authorization. The platform may require restart/redeployment for environment variables to take effect. Keep the previous healthy deployment available for rollback.
+5. Run the existing operator-authenticated `GET /internal/readiness/supabase` check. Require HTTP **200** `{"status":"ok"}` before unblocking Cloud database readiness. Check HTTP 401 without a bearer token, `/health`, and Studio as separate gates. If still 503, inspect **only** the fixed diagnostic category and stop for a new cause investigation.
+
+### Safety / non-goals
+
+No new service or Postgres database; no schema migration, vector index, agent or ingestion. No `rejectUnauthorized:false`, insecure `sslmode`, custom `checkServerIdentity`, CA pasted into source, or global trust-store mutation. This PR does **not** establish that the Cloud connection passed — it requires human environment configuration and an authorized real deployment test.

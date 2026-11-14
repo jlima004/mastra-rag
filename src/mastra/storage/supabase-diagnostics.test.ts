@@ -38,3 +38,11 @@ test('recognizes nested driver causes and never emits unknown error strings', ()
   assert.equal(unknown.category, 'UNCLASSIFIED');
   assert.doesNotMatch(JSON.stringify(unknown), /NEVER_LOG_THIS|postgresql:\/\//);
 });
+
+test('classifies invalid Supabase CA configuration without revealing its value', () => {
+  const diagnostic = describeDatabaseCheckFailure(
+    new Error('SUPABASE_CA_CERT_BASE64 must contain one CA certificate (SENSITIVE_DATA)'),
+  );
+  assert.equal(diagnostic.category, 'CONFIGURATION');
+  assert.doesNotMatch(JSON.stringify(diagnostic), /SENSITIVE_DATA/);
+});
