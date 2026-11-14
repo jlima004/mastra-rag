@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { LibSQLStore } from '@mastra/libsql';
 import { isMastraPlatform } from '../security/server-auth.ts';
 
@@ -19,7 +20,7 @@ export function resolveRuntimeStorage(environment: StorageEnvironment = process.
   if (!url) {
     if (platform) throw new Error('The managed Turso database URL is required on Mastra Platform.');
     if (authToken) throw new Error('TURSO_AUTH_TOKEN requires TURSO_DATABASE_URL.');
-    return { url: 'file:./mastra.db' };
+    return { url: `file:${resolve(process.cwd(), 'mastra.db')}` };
   }
 
   if (url.startsWith('file:')) {

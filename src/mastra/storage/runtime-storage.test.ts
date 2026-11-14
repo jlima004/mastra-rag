@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 import test from 'node:test';
 import { resolveRuntimeStorage } from './runtime-storage.ts';
 
@@ -7,7 +8,7 @@ const url = 'libsql://project.example.turso.io';
 const authToken = 'private-test-token';
 
 test('local Mastra runtime uses an ignored persistent file', () => {
-  assert.deepEqual(resolveRuntimeStorage({}), { url: 'file:./mastra.db' });
+  assert.deepEqual(resolveRuntimeStorage({}), { url: `file:${resolve(process.cwd(), 'mastra.db')}` });
 });
 test('cloud runtime never falls back to ephemeral storage', () => {
   assert.throws(() => resolveRuntimeStorage(cloud), /managed Turso database/);
