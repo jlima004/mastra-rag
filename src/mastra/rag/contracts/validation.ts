@@ -107,6 +107,7 @@ export function resolveSourceIds(
   approved: readonly SourceManifestEntry[],
 ): readonly SourceManifestEntry[] {
   if (!Array.isArray(requested) || requested.length === 0 || requested.length > approved.length ||
+      Object.keys(requested).length !== requested.length ||
       requested.some(x => typeof x !== 'string' || !SOURCE_ID.test(x))) {
     throw new RagContractError('INVALID_SOURCE_ID');
   }
