@@ -56,7 +56,7 @@ function deriveUnitIds(blocks: readonly LegalBlock[], start: number, end: number
 }
 
 function splitWithinBudget(
-  text: string, offset: number, maxBodyBytes: number,
+  text: string, offset: number, maxBodyBytes: number, overlapBytes = 0,
 ): ReadonlyArray<{ start: number; end: number }> {
   if (maxBodyBytes < 8) throw new RagProcessingError('CHUNK_HEADER_TOO_LARGE');
   const pieces: { start: number; end: number }[] = [];
@@ -79,7 +79,21 @@ function splitWithinBudget(
       if (boundary) end = start + (boundary.index ?? 0) + boundary[0].length;
     }
     pieces.push({ start: offset + start, end: offset + end });
-    start = end;
+    if (end === text.length) break;
+    if (!overlapBytes) {
+      start = end;
+    } else {
+      let rewind = 0;
+      let nextStart = end;
+      for (const char of Array.from(text.slice(start, end)).reverse()) {
+        const n = size(char);
+        if (rewind + n > overlapBytes) break;
+        rewind += n;
+        nextStart -= char.length;
+      }
+      const firstCodePointLength = Array.from(text.slice(start, end))[0]?.length ?? 1;
+      start = Math.max(start + firstCodePointLength, nextStart);
+    }
   }
   return pieces;
 }
@@ -148,13 +162,8 @@ export function makeOfflineChunkSet(
   };
 
   if (config.strategy === 'recursive-baseline') {
-    const segments = splitWithinBudget(text, 0, config.maxBytes);
+    const segments = splitWithinBudget(text, 0, config.maxBytes, config.overlapBytes);
     for (const segment of segments) emit(segment.start, segment.end, '');
-    // Overlap is a calibration option only; this byte-budget baseline defaults
-    // to zero overlap until a real tokenizer is approved.
-    if (config.overlapBytes !== 0) {
-      throw new RagProcessingError('INVALID_DOCUMENT');
-    }
   } else {
     const groups: LegalBlock[][] = [];
     for (const b of doc.blocks) {
