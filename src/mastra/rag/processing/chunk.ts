@@ -178,7 +178,10 @@ export function makeOfflineChunkSet(
       const first = group[0];
       const from = first.start;
       const to = group[group.length - 1].end;
-      if (!first.articleLocator || first.kind === 'heading') {
+      // Non-normative chapter/section headings are kept in the normalized
+      // source for provenance and headers, but are never standalone vectors.
+      if (first.kind === 'heading') continue;
+      if (!first.articleLocator) {
         for (const segment of splitWithinBudget(text.slice(from, to), from, config.maxBytes)) {
           emit(segment.start, segment.end, '');
         }

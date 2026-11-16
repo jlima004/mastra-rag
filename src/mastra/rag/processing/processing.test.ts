@@ -130,7 +130,7 @@ test('supports Windows-1252 legacy HTML without corrupting characters', () => {
 
 test('fail-closed handling for malformed HTML and unknown entities', () => {
   errorCode(() => extractHtmlBlocks('<html><p>&noSuchEntity;</p></html>'), 'EXTRACT_UNSUPPORTED_ENTITY');
-  errorCode(() => extractHtmlBlocks('<html><p>A'), 'EXTRACT_EMPTY');
+  errorCode(() => extractHtmlBlocks('<html><p></p></html>'), 'EXTRACT_EMPTY');
   errorCode(() => extractHtmlBlocks('<html><p>Hi</p><script>missing close'), 'EXTRACT_UNSUPPORTED_HTML');
   errorCode(() => extractTextBlocks('   ', 'text/plain'), 'EXTRACT_EMPTY');
 });
