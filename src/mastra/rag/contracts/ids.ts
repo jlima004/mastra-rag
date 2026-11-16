@@ -53,7 +53,21 @@ function serializeCanonical(value: unknown, visiting: Set<object>): string {
   visiting.add(value);
   try {
     if (Array.isArray(value)) {
-      return '[' + value.map(item => serializeCanonical(item, visiting)).join(',') + ']';
+      // Array.map skips holes, which would collide with another JSON array.
+      // Reject holes, accessor properties and non-index own keys before hashing.
+      if (value.length > 10_000 || Object.keys(value).length !== value.length ||
+          Object.getOwnPropertySymbols(value).length > 0) {
+        throw new RagContractError('INVALID_CANONICAL_JSON');
+      }
+      const parts: string[] = [];
+      for (let index = 0; index < value.length; index++) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+        if (!descriptor || !('value' in descriptor)) {
+          throw new RagContractError('INVALID_CANONICAL_JSON');
+        }
+        parts.push(serializeCanonical(descriptor.value, visiting));
+      }
+      return '[' + parts.join(',') + ']';
     }
     const prototype = Object.getPrototypeOf(value);
     if (prototype !== Object.prototype && prototype !== null) {
