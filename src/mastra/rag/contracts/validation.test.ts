@@ -80,7 +80,7 @@ test('sourceId selection permits known IDs only, never caller-controlled URLs', 
   const entries = validateSourceManifest([lgpd]);
   assert.deepEqual(resolveSourceIds([lgpd.sourceId], entries).map(x => x.sourceId), [lgpd.sourceId]);
   for (const invalid of [
-    [lgpd.canonicalUri], ['unknown-legal-source'], [lgpd.sourceId, lgpd.sourceId],
+    new Array(1), [lgpd.canonicalUri], ['unknown-legal-source'], [lgpd.sourceId, lgpd.sourceId],
     [], 'br-planalto-lei-13709-2018',
   ]) expectCode(() => resolveSourceIds(invalid, entries), 'INVALID_SOURCE_ID');
 });
