@@ -111,7 +111,8 @@ export function validateSourceManifestEntry(input: unknown): SourceManifestEntry
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
   const license = safeDataRecord(data.license, LICENSE_KEYS);
-  if (!license || !['official-act-br', 'cc-by-4.0', 'other'].includes(String(license.kind)) ||
+  if (!license || typeof license.kind !== 'string' ||
+      !['official-act-br', 'cc-by-4.0', 'other'].includes(license.kind) ||
       typeof license.reference !== 'string' ||
       !license.reference.trim() || license.reference.length > 500) {
     throw new RagContractError('INVALID_MANIFEST_ENTRY');

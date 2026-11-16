@@ -74,6 +74,27 @@ test('validates manifest entry fields and extracts a safe frozen copy', () => {
   expectCode(() => validateSourceManifestEntry({ ...lgpd, tenantId: 'other' }), 'INVALID_MANIFEST_ENTRY');
   expectCode(() => validateSourceManifestEntry({ ...lgpd, language: 'en-US' }), 'INVALID_MANIFEST_ENTRY');
   expectCode(() => validateSourceManifestEntry({ ...lgpd, license: {kind: 'official-act-br', reference: ''} }), 'INVALID_MANIFEST_ENTRY');
+  // Values with array/string coercion must not masquerade as an enum member.
+  const mutableLicenseKind = ['official-act-br'];
+  expectCode(
+    () => validateSourceManifestEntry({
+      ...lgpd, license: { kind: mutableLicenseKind, reference: 'official act' },
+    }),
+    'INVALID_MANIFEST_ENTRY',
+  );
+  const maliciousLicenseKind = {
+    toString() { throw new Error('SECRET-license'); },
+  };
+  expectCode(
+    () => validateSourceManifestEntry({
+      ...lgpd, license: { kind: maliciousLicenseKind, reference: 'official act' },
+    }),
+    'INVALID_MANIFEST_ENTRY',
+  );
+  // A valid primitive enum member must remain accepted, immutable and a string.
+  const valid = validateSourceManifestEntry(lgpd);
+  assert.equal(valid.license.kind, 'official-act-br');
+  assert.equal(typeof valid.license.kind, 'string');
   expectCode(() => validateSourceManifestEntry({ ...lgpd, expectedMediaTypes: ['text/html', 'text/html'] }), 'INVALID_MANIFEST_ENTRY');
   expectCode(() => validateSourceManifestEntry({ ...lgpd, expectedMediaTypes: ['application/pdf'] }), 'INVALID_MANIFEST_ENTRY');
   expectCode(() => validateSourceManifestEntry({ ...lgpd, extractor: 'dou-html@1' }), 'INVALID_MANIFEST_ENTRY');
