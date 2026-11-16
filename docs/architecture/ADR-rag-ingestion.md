@@ -2,14 +2,14 @@
 
 | Field | Value |
 | --- | --- |
-| Status | **PROPOSED** — every decision below is `HUMAN_ADJUDICATION_PENDING` |
+| Status | **PARTIALLY RATIFIED — STAGE_A**: H1/H2 accepted, H3 baseline accepted (account/budget pending), H9 conditional dependency review; D4–D6 *principles only*. All remaining gates pending. |
 | Date | 2026-11-16 |
 | Baseline | `master` @ `15fe15cdffd51133be32c704eee0cc88f51b9d45` |
 | Scope | Architecture only. No code, dependency, DDL, migration, secret or deployment change. |
 | Normative companion | [`docs/specs/SPEC-rag-ingestion.md`](../specs/SPEC-rag-ingestion.md) |
 | Implementation plan | [`tasks/rag-ingestion/plan.md`](../../tasks/rag-ingestion/plan.md) |
 
-A recommendation in this document is not an approved decision. Implementation must not start until the project owner ratifies D1–D6 (see the "Human decisions" section).
+The owner ratified a deliberately limited Stage A subset on 2026-11-16; the exact authority and prohibitions are in [RAG07 Stage A partial ratification](../decisions/RAG07-stage-a-ratification.md). Individual recommendations below remain **proposals beyond that accepted scope**. Offline contracts may begin after the documentation PR is approved/merged; live ingestion, migrations, dependencies and paid operations require their own remaining gates.
 
 ## Context
 
@@ -271,22 +271,22 @@ High: publication keeps `previous_chunk_set_id`, so a bad publication can be rol
 | Job execution | MVP ingestion runs **synchronously in the request** (or as a CLI), not as a Mastra background worker. In-process workers do not survive crashes (E15b); a durable worker/workflow model is a later option once PubSub and crash recovery are designed. |
 | Residency / latency | Supabase is in São Paulo; Mastra Platform has no South American region (E16). Every DB round trip likely crosses continents. Operator must confirm the environment and Turso regions; `iad` is the closest offered region. |
 
-## Human decisions required
+## Human decision register (partial adjudication 2026-11-16)
 
-| ID | Decision | Recommendation |
-| --- | --- | --- |
-| H1 | Corpus / use case | LGPD + selected CD/ANPD resolutions (D1-A) |
-| H2 | Initial formats | HTML + Markdown/TXT; digital PDF in phase 2; no OCR |
-| H3 | Embedding model and provider account | `openai/text-embedding-3-small` @1536; fallback `gemini-embedding-001` @1536 paid tier |
-| H4 | Data model | Option A (PgVector vectors + app catalog), exact search first |
-| H5 | Migration location, tooling and who applies them | `db/migrations/` up/down SQL applied manually by the owner |
-| H6 | Least-privilege runtime role and DSN rotation before ingestion | Create `rag_app` (no superuser, no CREATE) |
-| H7 | Access model for the MVP | Operator-only ingestion and retrieval; reader/demo access later |
-| H8 | Region verification and latency acceptance | Verify environment + Turso regions; consider `iad` for new environments |
-| H9 | New runtime dependencies in later PRs | HTML parser, tokenizer, possibly `zod` as a direct dependency |
-| H10 | Supabase plan, backup/PITR, storage budget | Confirm before the persistence PR |
-| H11 | Monthly embedding spend cap and evaluation budget | Provider-side hard limit + per-job token budget |
-| H12 | Retention / purge windows | 7-day GC grace for superseded vectors; immediate purge on erasure |
+| ID | Decision | Recommendation | Decision state |
+| --- | --- | --- | --- |
+| H1 | Corpus / use case | LGPD + selected CD/ANPD resolutions (D1-A)  ACCEPTED_FOR_MVP; exact official manifest pending Step B |
+| H2 | Initial formats | HTML + Markdown/TXT; digital PDF in phase 2; no OCR  ACCEPTED_FOR_MVP |
+| H3 | Embedding model and provider account | `openai/text-embedding-3-small` @1536; fallback `gemini-embedding-001` @1536 paid tier  BASELINE_ACCEPTED; provider account and paid activity pending H11 |
+| H4 | Data model | Option A (PgVector vectors + app catalog), exact search first  PENDING; D4 principles only accepted |
+| H5 | Migration location, tooling and who applies them | `db/migrations/` up/down SQL applied manually by the owner  PENDING |
+| H6 | Least-privilege runtime role and DSN rotation before ingestion | Create `rag_app` (no superuser, no CREATE)  PENDING |
+| H7 | Access model for the MVP | Operator-only ingestion and retrieval; reader/demo access later  PENDING; no new production endpoints approved |
+| H8 | Region verification and latency acceptance | Verify environment + Turso regions; consider `iad` for new environments  PENDING |
+| H9 | New runtime dependencies in later PRs | HTML parser, tokenizer, possibly `zod` as a direct dependency  CONDITIONAL: evaluate choices; exact packages not approved |
+| H10 | Supabase plan, backup/PITR, storage budget | Confirm before the persistence PR  PENDING |
+| H11 | Monthly embedding spend cap and evaluation budget | Provider-side hard limit + per-job token budget  PENDING |
+| H12 | Retention / purge windows | 7-day GC grace for superseded vectors; immediate purge on erasure  PENDING; D5 principles only accepted |
 
 ## References (accessed 2026-11-16)
 

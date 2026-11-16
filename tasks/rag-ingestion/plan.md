@@ -1,8 +1,8 @@
 # RAG ingestion — incremental implementation plan
 
-Status: **PROPOSED — HUMAN_ADJUDICATION_PENDING**. Baseline `15fe15cdffd51133be32c704eee0cc88f51b9d45` (2026-11-16).
+Status: **STAGE_A_PARTIALLY_RATIFIED — IMPLEMENTATION_GATED**. Baseline `15fe15cdffd51133be32c704eee0cc88f51b9d45` (2026-11-16).
 
-Normative design: [`docs/specs/SPEC-rag-ingestion.md`](../../docs/specs/SPEC-rag-ingestion.md). Decisions: [`docs/architecture/ADR-rag-ingestion.md`](../../docs/architecture/ADR-rag-ingestion.md). Checklist: [`todo.md`](todo.md).
+Normative design: [`docs/specs/SPEC-rag-ingestion.md`](../../docs/specs/SPEC-rag-ingestion.md). Decisions: [`docs/architecture/ADR-rag-ingestion.md`](../../docs/architecture/ADR-rag-ingestion.md). [Stage A partial ratification](../../docs/decisions/RAG07-stage-a-ratification.md). Checklist: [`todo.md`](todo.md).
 
 PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PRs from one sequence, and steps may be merged or split during review. Steps are identified by letter (A–G); the number in parentheses is only the expected one.
 
@@ -20,9 +20,9 @@ PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PR
 | Step | Expected PR | Title | Gate (ratified decisions) | Touches live services? |
 | --- | --- | --- | --- | --- |
 | A | #7 | Specification and architecture decisions (this PR) | — | No |
-| B | (#8) | Source manifest, document contracts, deterministic IDs, validation | H1, H2 | No |
-| C | (#9) | Fetch, extraction, normalization and chunking (offline) | B merged, H9 (HTML parser, tokenizer; undici Agent if required for DNS pinning) | No (fixtures only; a manual fetch script is optional) |
-| D | (#10) | Embedding provider interface and OpenAI adapter | C merged, H3, H11 | No in CI (fake provider); optional manual smoke with owner's key |
+| B | (#8) | Source manifest, document contracts, deterministic IDs, validation | **H1/H2 accepted; start only after PR #7 merge** | No |
+| C | (#9) | Fetch, extraction, normalization and chunking (offline) | B merged; H9 authorizes dependency evaluation, **not installation**; package-specific owner review required | No (fixture-based tests only; no live fetch in CI) |
+| D | (#10) | Embedding provider interface and OpenAI adapter | C merged, H3 model baseline; **H11 before any paid/manual provider call** | No in CI (fake provider); live smoke only after H11 |
 | E1 | (#11a) | Catalog migration SQL, roles/grants, space provisioning script (reviewed, not applied by CI) | D merged, H4, H5, H6, H10 | Owner applies after merge |
 | E2 | (#11b) | Ingestion orchestration, publication, GC/delete, operator routes (synchronous MVP) | E1 merged and applied, H7, H12 | Yes — against Supabase with `rag_app` |
 | F | (#12) | Retrieval service, operator route and retrieval evaluation baseline | E2 merged, H8, H11 | Yes — first paid embeddings of the corpus, owner-approved |
@@ -35,7 +35,7 @@ PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PR
 - **Scope:** `docs/specs/SPEC-rag-ingestion.md`, `docs/architecture/ADR-rag-ingestion.md`, this plan, `todo.md`, README roadmap section.
 - **Dependencies:** none.
 - **Tests:** existing CI; relative links in the new documents resolve.
-- **Approval criteria:** owner ratifies or amends H1–H12; ADR status stays `PROPOSED` until then (ratification may be recorded in a follow-up commit that changes individual decisions to `ACCEPTED`).
+- **Approval criteria:** partial Stage A ratification is recorded; remaining H4–H8/H10–H12 gates stay pending. PR #7 requires a new CI, independent review and separate human merge authorization; no production or runtime implementation in this step.
 
 ## Step B — Contracts and validation (expected #8)
 
@@ -44,7 +44,7 @@ PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PR
   - Corpus manifest with the LGPD entry and the verified list of CD/ANPD resolutions (official URLs and license notes).
   - Deterministic ID functions (SPEC §6.4) using `node:crypto` only, plus canonical JSON.
   - Validation of manifest entries, host allowlist, URL shape, media-type sniffing and size limits (pure functions).
-- **Dependencies:** H1 (corpus), H2 (formats). `zod` as a direct dependency only if approved (H9); otherwise hand-written validators.
+- **Dependencies:** H1/H2 accepted; PR #7 must be merged. H9 permits evaluation, but does **not** approve adding `zod` or any other runtime dependency; default to pure functions unless a specific package is separately approved.
 - **Tests (offline):** golden ID values from SPEC §6.4; newline injection rejected; allowlist and private-host rejection; sniffing (HTML vs. PDF/ZIP magic bytes); limits at boundary values.
 - **Approval criteria:** golden values match the SPEC; no network, DB or secret access; tests added to the `npm run test` glob.
 

@@ -56,13 +56,14 @@ If you copied a database password with reserved URL characters, percent-encode t
 
 Infrastructure gates are complete: Supabase foundation (PR #2), production readiness (PR #3), Cloud readiness diagnostics (PR #4), Supabase TLS remediation (PR #5) and Turso durability (PR #6).
 
-PR #7 proposes the RAG ingestion architecture for human adjudication; nothing in it is implemented yet:
+PR #7 records a **partial Stage A owner ratification** for offline contracts (H1/H2, H3 baseline and H9 dependency evaluation, plus D4–D6 principles). All physical schema, operations, paid API calls and deployment gates remain pending; nothing in the pipeline is implemented yet:
 
 - Specification: [`docs/specs/SPEC-rag-ingestion.md`](docs/specs/SPEC-rag-ingestion.md)
-- Architecture decisions D1–D6 (status `PROPOSED`): [`docs/architecture/ADR-rag-ingestion.md`](docs/architecture/ADR-rag-ingestion.md)
+- Architecture decisions D1–D6 (partial ratification only): [`docs/architecture/ADR-rag-ingestion.md`](docs/architecture/ADR-rag-ingestion.md)
+- Formal scope and withheld gates: [`docs/decisions/RAG07-stage-a-ratification.md`](docs/decisions/RAG07-stage-a-ratification.md)
 - Incremental plan and checklist: [`tasks/rag-ingestion/plan.md`](tasks/rag-ingestion/plan.md), [`tasks/rag-ingestion/todo.md`](tasks/rag-ingestion/todo.md)
 
-Implementation starts only after the project owner ratifies those decisions. Keep application secrets out of the repository.
+Offline source contracts and validation may start in a separate PR **after PR #7 has been merged with human authorization**. Per-package approval is still required for new dependencies. No migrations, live ingestion, paid embeddings, runtime secrets or deployment are authorized by Stage A. Keep application secrets out of the repository.
 
 
 ## Production Readiness (intermediate PR before ingestion)

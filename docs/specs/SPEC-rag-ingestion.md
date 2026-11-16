@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | **PROPOSED — HUMAN_ADJUDICATION_PENDING** |
+| Status | **PARTIAL STAGE_A RATIFICATION** — only H1/H2, H3 baseline, H9 dependency review and D4–D6 principles accepted; remaining gates pending |
 | Date | 2026-11-16 |
 | Baseline | `master` @ `15fe15cdffd51133be32c704eee0cc88f51b9d45` |
 | Decisions | [`docs/architecture/ADR-rag-ingestion.md`](../architecture/ADR-rag-ingestion.md) (D1–D6, evidence IDs `E1`–`E20`) |
@@ -10,7 +10,7 @@
 
 The key words MUST, MUST NOT, SHOULD and MAY are normative **once this specification is ratified**. Until then they describe the proposal. Values marked *(calibrate)* are starting hypotheses that the evaluation in §13 must confirm or replace. Values marked *(unverified)* still need evidence.
 
-This document specifies behaviour; it does not authorize implementation, dependencies, DDL, migrations, secrets or deployment.
+This document specifies behaviour. The [owner's Stage A decision](../decisions/RAG07-stage-a-ratification.md) authorizes only offline contract preparation after PR #7 approval/merge; it does **not** authorize dependencies, DDL, migrations, secrets, paid embeddings, live ingestion or deployment. Unratified sections remain proposals.
 
 ---
 
@@ -642,6 +642,8 @@ COMMIT;
 
 When a fetch observes content whose chunk set is **already** the published pointer for `(document_id, space_id)`, the request is still a no-op for embeddings, but it MUST take the same advisory lock and update `document_publication.version_fetched_at` to this observation's `fetched_at` whenever the new value is strictly greater. Without that advance, a slow concurrent build of older content (fetched earlier, finishing later) can pass the newer-wins check against a stale watermark and overwrite a fresher observation of the current content.
 
+The required same-pointer branch must be explicit in the eventual transaction: **under the per-document publication advisory lock**, if the observed `$3` equals the current publication pointer, run `UPDATE rag.document_publication SET version_fetched_at = GREATEST(version_fetched_at, $4) WHERE document_id = $1 AND space_id = $2 AND chunk_set_id = $3`; do not change `chunk_set_id`, `previous_chunk_set_id`, `published_at` or bill another embedding call. This branch is distinct from the pointer-changing `ON CONFLICT ... WHERE ... IS DISTINCT FROM` shown above. Re-check deletion status before the update. A later-finishing, older observation must fail the freshness check using the advanced watermark. The query is **illustrative, not migration-ready SQL**.
+
 Pointer rollback (operator restoring `previous_chunk_set_id`) MUST run through the same transaction shape: take the lock, set the pointer, set the restored build back to `published` and the displaced one to `superseded`. Restoring a purged chunk set is rejected (`previous_chunk_set_id` MUST reference a build that still has vectors).
 
 ### 11.3 Visibility rule
@@ -858,4 +860,6 @@ Consequences: every Supabase round trip from a US runtime crosses continents (es
 
 ## 18. Pending decisions
 
-H1–H12 as listed in the ADR "Human decisions required" table. Offline contract and pipeline steps (B–D) MAY start after H1, H2, H3 and H9 are ratified. Persistence and live ingestion (E–F) MUST NOT start before H4, H5, H6, H7, H10, H11 and H12 are also ratified. H8 SHOULD be resolved before F. See plan.
+H1 and H2 are accepted for MVP. H3 is accepted **only as a model/evaluation baseline**; the provider account and any paid calls remain gated by H11. H9 is conditional permission to evaluate dependencies, **not** to install any specific package. The D4–D6 design **principles** are accepted, but not the final physical model, DDL, retention policy, production authorization or retrieval API. D2 chunking numbers remain calibration hypotheses. See [Stage A decision](../decisions/RAG07-stage-a-ratification.md) and ADR table.
+
+Offline Step B contracts can be prepared after this PR is merged with the normal CI/review/human gate. Step C follows Step B and per-dependency approval; offline mock-only Step D may be prepared without external calls. **Paid embeddings require H11.** Persistence and live ingestion (E–F) MUST NOT start before H4, H5, H6, H7, H10, H11 and H12 are ratified. H8 SHOULD be resolved before hosted retrieval benchmarking.

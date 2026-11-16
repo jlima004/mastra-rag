@@ -1,6 +1,6 @@
 # RAG ingestion — tracking checklist
 
-Status legend: `[ ]` not done · `[x]` done. Nothing below the "Step A" section has started. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
+Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** recorded on 2026-11-16; no offline implementation started. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
 
 ## Step A — Specification (PR #7)
 
@@ -14,15 +14,20 @@ Status legend: `[ ]` not done · `[x]` done. Nothing below the "Step A" section 
 
 ## Human decision gates
 
-- [ ] H1 Corpus / use case ratified (proposed: LGPD + selected CD/ANPD resolutions)
-- [ ] H2 Initial formats ratified (proposed: HTML + Markdown/TXT; PDF phase 2; no OCR)
-- [ ] H3 Embedding model and provider account ratified (proposed: `openai/text-embedding-3-small` @1536)
+- [x] D4–D6 architectural **principles** accepted (not their physical schema, SQL, live APIs, retention or operational grants)
+- [x] [Stage A partial decision](../../docs/decisions/RAG07-stage-a-ratification.md) recorded; H4–H8 and H10–H12 remain pending
+- [ ] PR #7 amended HEAD re-reviewed (CI + independent Codex) and merged by owner
+
+
+- [x] H1 Corpus / use case accepted for MVP: LGPD + selected CD/ANPD resolutions (exact official sources pending Step B)
+- [x] H2 Initial formats accepted: HTML + Markdown/TXT; PDF phase 2; no OCR
+- [x] H3 Model baseline accepted: `openai/text-embedding-3-small` @1536; **account/billing and paid use remain pending H11**
 - [ ] H4 Data model ratified (proposed: PgVector space tables + app catalog, exact search first)
 - [ ] H5 Migration location, tooling and applier ratified (proposed: `db/migrations/`, owner applies)
 - [ ] H6 Least-privilege `rag_app` role and DSN rotation approved
 - [ ] H7 MVP access model ratified (proposed: operator-only)
 - [ ] H8 Mastra environment and Turso regions verified; latency accepted or region plan decided
-- [ ] H9 New runtime dependencies approved (HTML parser, tokenizer or `@mastra/rag`, `zod` direct)
+- [x] H9 Dependency *evaluation* conditionally accepted; actual parser/tokenizer/`zod` package installations require separate version/security review and owner approval
 - [ ] H10 Supabase plan, backup/PITR and storage budget confirmed
 - [ ] H11 Embedding spend cap and evaluation budget set
 - [ ] H12 Retention and GC windows ratified (proposed: 7-day grace; immediate purge on erasure)
