@@ -137,7 +137,7 @@ export function normalizeLegalBlocks(
       } else {
         const inciso = /^([IVXLCDM]+)\s*[-–—]\s+/iu.exec(text);
         const number = inciso && romanToDecimal(inciso[1]);
-        if (number !== null && number !== false && number !== undefined) {
+        if (number !== null && number !== undefined) {
           currentInciso = (currentParagraph ?? currentArticle) + ':inc' + number;
           kind = 'inciso';
           locator = currentInciso;
