@@ -9,8 +9,13 @@ const ALLOWED_KEYS = ['sourceId', 'tenantId', 'kind', 'canonicalUri', 'expectedM
 const LICENSE_KEYS = ['kind', 'reference'];
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value) &&
-    (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  try {
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -36,8 +41,8 @@ function safeDataRecord(input: unknown, requiredKeys: readonly string[]): Record
 
 /** Defend all untrusted array inputs against holes and accessor side effects. */
 function safeDataArray(input: unknown, maxLength: number): unknown[] | null {
-  if (!Array.isArray(input) || input.length === 0 || input.length > maxLength) return null;
   try {
+    if (!Array.isArray(input) || input.length === 0 || input.length > maxLength) return null;
     if (Object.keys(input).length !== input.length ||
         Object.getOwnPropertySymbols(input).length > 0) return null;
     const values: unknown[] = [];
@@ -80,15 +85,14 @@ export function validateCanonicalSourceUrl(input: unknown): string {
 export function validateSourceManifestEntry(input: unknown): SourceManifestEntry {
   const data = safeDataRecord(input, ALLOWED_KEYS);
   if (!data) throw new RagContractError('INVALID_MANIFEST_ENTRY');
-  input = data;
   if (typeof data.sourceId !== 'string' || !SOURCE_ID.test(data.sourceId)) {
     throw new RagContractError('INVALID_SOURCE_ID');
   }
   const canonicalUri = validateCanonicalSourceUrl(data.canonicalUri);
-  if (input.tenantId !== 'public' || input.kind !== 'http' ||
-      input.language !== 'pt-BR' || typeof input.title !== 'string' ||
-      input.title.trim().length === 0 || input.title.length > 240 ||
-      typeof input.extractor !== 'string' || !EXTRACTORS.includes(input.extractor as SourceExtractor)) {
+  if (data.tenantId !== 'public' || data.kind !== 'http' ||
+      data.language !== 'pt-BR' || typeof data.title !== 'string' ||
+      data.title.trim().length === 0 || data.title.length > 240 ||
+      typeof data.extractor !== 'string' || !EXTRACTORS.includes(data.extractor as SourceExtractor)) {
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
   const media = safeDataArray(data.expectedMediaTypes, MEDIA_TYPES.length);
@@ -97,7 +101,7 @@ export function validateSourceManifestEntry(input: unknown): SourceManifestEntry
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
   const types = media as SourceMediaType[];
-  const extractor = input.extractor as SourceExtractor;
+  const extractor = data.extractor as SourceExtractor;
   if ((extractor === 'planalto-html@1' &&
          (!canonicalUri.startsWith('https://www.planalto.gov.br/') || !types.includes('text/html'))) ||
       (extractor === 'dou-html@1' &&
@@ -113,9 +117,9 @@ export function validateSourceManifestEntry(input: unknown): SourceManifestEntry
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
   return Object.freeze({
-    sourceId: input.sourceId, tenantId: 'public', kind: 'http',
+    sourceId: data.sourceId, tenantId: 'public', kind: 'http',
     canonicalUri, expectedMediaTypes: Object.freeze([...types]),
-    extractor, title: input.title, language: 'pt-BR',
+    extractor, title: data.title, language: 'pt-BR',
     license: Object.freeze({
       kind: license.kind as SourceManifestEntry['license']['kind'],
       reference: license.reference as string,
