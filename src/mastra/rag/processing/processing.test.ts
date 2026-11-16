@@ -87,6 +87,13 @@ test('determinism across runs, byte cap and source revision', () => {
   assert.notEqual(changedSet.chunkSetId, first.chunkSet.chunkSetId);
   assert.equal(first.chunkSet.tokenizer, 'utf8-byte-proxy@1');
   assert.equal(first.chunkSet.totalByteBudget, first.chunkSet.chunks.reduce((a,c) => a+c.byteCount,0));
+  console.log('RAG09_SYNTHETIC_BYTE_PROXY_STATS=' + JSON.stringify({
+    chunks: first.chunkSet.chunks.length,
+    minBytes: Math.min(...first.chunkSet.chunks.map(c => c.byteCount)),
+    maxBytes: Math.max(...first.chunkSet.chunks.map(c => c.byteCount)),
+    totalBytes: first.chunkSet.totalByteBudget,
+    source: 'synthetic-not-official',
+  }));
 });
 
 test('large single legal unit splits without byte overflow or surrogate corruption', () => {
