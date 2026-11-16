@@ -112,3 +112,35 @@ The `@mastra/pg@1.35.0` connection-string pool builder honors the explicit `ssl`
 ### Safety / non-goals
 
 No new service or Postgres database; no schema migration, vector index, agent or ingestion. No `rejectUnauthorized:false`, insecure `sslmode`, custom `checkServerIdentity`, CA pasted into source, or global trust-store mutation. This PR does **not** establish that the Cloud connection passed — it requires human environment configuration and an authorized real deployment test.
+
+## Turso durability verification (PR #6)
+
+The application configures persistent `LibSQLStore` on its Mastra instance, but production durability after a server restart must be tested separately. A temporary **operator-only, disabled-by-default** diagnostic is available for this purpose. It accesses the exact `mastra.getStorage().getStore('memory')` domain and creates one randomly generated Mastra thread, using a reserved resource ID. It does not create arbitrary SQL tables or modify Supabase.
+
+### Enable and run (only after an approved PR merge/deploy)
+
+1. Verify the attached managed Turso resource is **Ready** in Mastra Cloud. Set the *private Production environment* variable `TURSO_DURABILITY_PROBE_ENABLED=true`, while preserving the managed `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` values. The routes are disabled by default; they also reject file-backed storage. A server restart/redeploy may be necessary to apply the variable.
+2. Using the operator's existing `RAG_SERVER_API_TOKEN` only in the private terminal, create one probe:
+
+   ```fish
+   curl --fail-with-body -sS -X POST \
+     -H "Authorization: Bearer $RAG_SERVER_API_TOKEN" \
+     https://mastra-rag-d7b8.server.mastra.cloud/internal/durability/turso/create
+   ```
+
+   Expect HTTP `201` JSON with `status:"created"`, `probeId`, `fingerprint` (SHA-256), `createdAt`. **Keep the complete receipt**, but do not post the token or actual Turso connection details in GitHub.
+3. **Reboot only the Mastra Cloud runtime**, not the Turso database, via an authorized controlled restart. Confirm the new container and `/health` success in the deploy/runtime logs. Do **not** call the create route again.
+4. On the new running process, read the same ID using `GET /internal/durability/turso/read?id=<probeId>` with the same authorization header. Expect HTTP `200`, `status:"found"`, and **identical** `probeId`, `fingerprint` and `createdAt`. A prior read on the same process does not satisfy the durability gate.
+5. Remove only the probe: `DELETE /internal/durability/turso/delete?id=<probeId>` with the bearer token. Expect `200 {"status":"deleted"}`. A subsequent read should return `404 {"status":"not_found"}`.
+6. Remove `TURSO_DURABILITY_PROBE_ENABLED` (or set it to `false`) from Production and restart/deploy according to the platform's normal procedure. Authenticated routes must again return `404 {"status":"disabled"}`; anonymous requests still return `401`.
+
+If probe creation returns HTTP `503`, inspect **only the sanitized recovery fields**:
+- `{"status":"unavailable","cleanup":"verified_absent"}`: the create confirmation failed but cleanup was confirmed; retry only after investigating the failure.
+- `{"status":"unavailable","cleanup":"unconfirmed","probeId":"..."}`: cleanup could not be confirmed. Preserve the ID and retry the **DELETE** operator route later; it can remove a partial probe record with incomplete metadata, but only when the ID is in the reserved UUID namespace and the stored resource owner matches. Never print raw driver errors.
+- `{"status":"unavailable"}` without a recovery ID: failure occurred before the probe creation service was reached (for example storage initialization).
+
+The first test invocation may initialize **Mastra-owned memory tables** through the standard `memory.init()` method on Turso. This is an expected native storage initialization, not arbitrary SQL or a Supabase migration. Any authorization to execute the Cloud test includes only this narrowly scoped Mastra memory-domain change and a single probe thread.
+
+The routes accept no body, custom SQL, table name or arbitrary storage namespace. Probe IDs use a generated UUIDv4 and must match a strict prefix. The marker is random and is never returned; only its SHA-256 fingerprint is exposed. Driver errors are suppressed. No automatic restart or cleanup is executed by this feature. If the test fails, retain the receipt for controlled operator cleanup and keep the gate open. Do not run repeated writes or treat local SQLite persistence as proof of remote Turso durability.
+
+**Security:** Anyone who has the operator API token can use the probe while it is enabled. Enable only for the short validation window and disable immediately afterward. Do not expose the token, attach the test to a public agent, or treat this diagnostic as a user-facing feature.
