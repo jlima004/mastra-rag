@@ -8,9 +8,9 @@ Status legend: `[ ]` not done · `[x]` done. Nothing below the "Step A" section 
 - [x] ADR drafted with D1–D6 as `PROPOSED`: `docs/architecture/ADR-rag-ingestion.md`
 - [x] Plan and checklist drafted
 - [x] README roadmap section updated
-- [ ] CI green on the PR head
-- [ ] Independent review findings resolved
-- [ ] Codex review requested once for the candidate head; material findings resolved
+- [x] CI green on the PR head (`638d206`)
+- [x] Independent adversarial review findings resolved (namespace, GC, sync execution, deletion, model switch, evidence table)
+- [x] Codex review on `40bc6c2` (3× P2) addressed in R2; re-review on `638d206` reported no major issues
 
 ## Human decision gates
 
