@@ -109,14 +109,14 @@ type SourceManifestEntry = {
   kind: 'http';                // MVP: allowlisted HTTPS fetch only
   canonicalUri: string;        // https://, host in allowlist, no credentials/fragment
   expectedMediaTypes: Array<'text/html' | 'text/markdown' | 'text/plain'>;
-  extractor: 'planalto-html@1' | 'markdown@1' | 'plaintext@1';
+  extractor: 'planalto-html@1' | 'dou-html@1' | 'markdown@1' | 'plaintext@1';
   title: string;
   license: { kind: 'official-act-br' | 'cc-by-4.0' | 'other'; reference: string };
   language: 'pt-BR';
 };
 ```
 
-Host allowlist (MVP): `www.planalto.gov.br` (any path under `/ccivil_03/`), `www.in.gov.br` (official acts paths verified during the contracts PR). Prefer exact document URLs from the manifest over a broad `www.gov.br` host. Confirm and freeze the list in step B.
+Host allowlist (MVP): `www.planalto.gov.br` (paths under `/ccivil_03/`) and `www.in.gov.br` (DOU acts under `/en/web/dou/-/`). The manifest uses exact, reviewed official references, not arbitrary caller URLs. Step B performs **offline syntactic validation only**; the URLs and authoritative source references are documented in [sources-mvp.md](../../docs/rag/sources-mvp.md). DOU returned HTTP 502 to the research client and Planalto may challenge automated access, so Step C MUST confirm real network reachability, redirects, charset and legal-text freshness before ingestion. `dou-html@1` is a proposed extractor identifier, NOT an implemented parser. Do not expand the allowlist to all of `www.gov.br` or `in.gov.br` without explicit security review.
 
 ### 6.2 Ingestion request (operator route, later PR)
 

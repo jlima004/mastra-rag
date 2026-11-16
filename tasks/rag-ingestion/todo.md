@@ -34,12 +34,12 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 
 ## Step B — Contracts and validation (expected #8)
 
-- [ ] Manifest entry for LGPD with verified URL and license note
-- [ ] CD/ANPD resolution list verified against official sources
-- [ ] Deterministic ID functions + canonical JSON; golden values from SPEC §6.4 pass
-- [ ] Manifest/URL/allowlist validation; private-host rejection tests
-- [ ] Media-type sniffing and size-limit tests
-- [ ] Fixed error-code catalogue
+- [x] Manifest entry for LGPD with official canonical reference and copyright note; live availability pending Step C
+- [x] CD/ANPD candidates checked against ANPD's official regulation index: #15/#18 in manifest; amended #2 and corrected #19 documented as deferred; live DOU fetch pending Step C
+- [x] Deterministic IDs + strict canonical JSON implemented; SPEC §6.4 golden regression assertions added (CI pending)
+- [x] Manifest/URL/allowlist validation, unknown-ID and private-host syntax rejection tests added; DNS pinning deferred to Step C
+- [x] Offline magic-byte, UTF-8 text, legacy-HTML sniffing and size-limit tests added; full charset detection deferred to Step C
+- [x] Sanitized fixed error-code catalogue added
 - [ ] CI green, review, human merge
 
 ## Step C — Fetch, extraction, normalization, chunking (expected #9)
