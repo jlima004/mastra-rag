@@ -54,7 +54,15 @@ If you copied a database password with reserved URL characters, percent-encode t
 
 ## Next milestones
 
-PR #3: document ingestion, chunking and vector index creation; PR #4: retrieval, RAG agent and evaluation. Keep application secrets out of the repository.
+Infrastructure gates are complete: Supabase foundation (PR #2), production readiness (PR #3), Cloud readiness diagnostics (PR #4), Supabase TLS remediation (PR #5) and Turso durability (PR #6).
+
+PR #7 proposes the RAG ingestion architecture for human adjudication; nothing in it is implemented yet:
+
+- Specification: [`docs/specs/SPEC-rag-ingestion.md`](docs/specs/SPEC-rag-ingestion.md)
+- Architecture decisions D1–D6 (status `PROPOSED`): [`docs/architecture/ADR-rag-ingestion.md`](docs/architecture/ADR-rag-ingestion.md)
+- Incremental plan and checklist: [`tasks/rag-ingestion/plan.md`](tasks/rag-ingestion/plan.md), [`tasks/rag-ingestion/todo.md`](tasks/rag-ingestion/todo.md)
+
+Implementation starts only after the project owner ratifies those decisions. Keep application secrets out of the repository.
 
 
 ## Production Readiness (intermediate PR before ingestion)
