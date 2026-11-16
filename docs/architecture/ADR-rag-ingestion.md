@@ -275,18 +275,18 @@ High: publication keeps `previous_chunk_set_id`, so a bad publication can be rol
 
 | ID | Decision | Recommendation | Decision state |
 | --- | --- | --- | --- |
-| H1 | Corpus / use case | LGPD + selected CD/ANPD resolutions (D1-A)  ACCEPTED_FOR_MVP; exact official manifest pending Step B |
-| H2 | Initial formats | HTML + Markdown/TXT; digital PDF in phase 2; no OCR  ACCEPTED_FOR_MVP |
-| H3 | Embedding model and provider account | `openai/text-embedding-3-small` @1536; fallback `gemini-embedding-001` @1536 paid tier  BASELINE_ACCEPTED; provider account and paid activity pending H11 |
-| H4 | Data model | Option A (PgVector vectors + app catalog), exact search first  PENDING; D4 principles only accepted |
-| H5 | Migration location, tooling and who applies them | `db/migrations/` up/down SQL applied manually by the owner  PENDING |
-| H6 | Least-privilege runtime role and DSN rotation before ingestion | Create `rag_app` (no superuser, no CREATE)  PENDING |
-| H7 | Access model for the MVP | Operator-only ingestion and retrieval; reader/demo access later  PENDING; no new production endpoints approved |
-| H8 | Region verification and latency acceptance | Verify environment + Turso regions; consider `iad` for new environments  PENDING |
-| H9 | New runtime dependencies in later PRs | HTML parser, tokenizer, possibly `zod` as a direct dependency  CONDITIONAL: evaluate choices; exact packages not approved |
-| H10 | Supabase plan, backup/PITR, storage budget | Confirm before the persistence PR  PENDING |
-| H11 | Monthly embedding spend cap and evaluation budget | Provider-side hard limit + per-job token budget  PENDING |
-| H12 | Retention / purge windows | 7-day GC grace for superseded vectors; immediate purge on erasure  PENDING; D5 principles only accepted |
+| H1 | Corpus / use case | LGPD + selected CD/ANPD resolutions (D1-A) |  ACCEPTED_FOR_MVP; exact official manifest pending Step B |
+| H2 | Initial formats | HTML + Markdown/TXT; digital PDF in phase 2; no OCR |  ACCEPTED_FOR_MVP |
+| H3 | Embedding model and provider account | `openai/text-embedding-3-small` @1536; fallback `gemini-embedding-001` @1536 paid tier |  BASELINE_ACCEPTED; provider account and paid activity pending H11 |
+| H4 | Data model | Option A (PgVector vectors + app catalog), exact search first |  PENDING; D4 principles only accepted |
+| H5 | Migration location, tooling and who applies them | `db/migrations/` up/down SQL applied manually by the owner |  PENDING |
+| H6 | Least-privilege runtime role and DSN rotation before ingestion | Create `rag_app` (no superuser, no CREATE) |  PENDING |
+| H7 | Access model for the MVP | Operator-only ingestion and retrieval; reader/demo access later |  PENDING; no new production endpoints approved |
+| H8 | Region verification and latency acceptance | Verify environment + Turso regions; consider `iad` for new environments |  PENDING |
+| H9 | New runtime dependencies in later PRs | HTML parser, tokenizer, possibly `zod` as a direct dependency |  CONDITIONAL: evaluate choices; exact packages not approved |
+| H10 | Supabase plan, backup/PITR, storage budget | Confirm before the persistence PR |  PENDING |
+| H11 | Monthly embedding spend cap and evaluation budget | Provider-side hard limit + per-job token budget |  PENDING |
+| H12 | Retention / purge windows | 7-day GC grace for superseded vectors; immediate purge on erasure |  PENDING; D5 principles only accepted |
 
 ## References (accessed 2026-11-16)
 
