@@ -80,6 +80,12 @@ test('canonical serialization rejects unrepresentable, cyclic and executable inp
     assert.throws(() => canonicalJson(value),
       (error: unknown) => error instanceof RagContractError && error.code === 'INVALID_CANONICAL_JSON');
   }
+  const holes = new Array(2);
+  holes[1] = 'safe';
+  assert.throws(() => canonicalJson(holes), /INVALID_CANONICAL_JSON/);
+  const accessorArray = ['safe'];
+  Object.defineProperty(accessorArray, '0', { get() { throw new Error('SECRET'); }, enumerable: true });
+  assert.throws(() => canonicalJson(accessorArray), /INVALID_CANONICAL_JSON/);
   const protoKey = JSON.parse('{"__proto__":7}') as object;
   assert.throws(() => canonicalJson(protoKey), /INVALID_CANONICAL_JSON/);
 });
