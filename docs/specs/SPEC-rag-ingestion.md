@@ -153,7 +153,7 @@ A durable worker/workflow model (with PubSub, crash recovery and GC scheduling) 
 The idempotency key depends on `content_sha256`, so it is computed **after** fetching. A `rag.ingestion_job` row is inserted immediately after hashing, before any embedding call:
 
 - insert succeeds → this request owns the job and continues;
-- conflict on `idempotency_key` when the current publication for `(document_id, space_id)` already points at the chunk set that this content would produce → `deduplicated` / `no_op`, no paid calls;
+- conflict on `idempotency_key` when the current publication for `(document_id, space_id)` already points at the chunk set that this content would produce → `deduplicated` / `no_op`, **no paid calls**, but still advance the publication freshness watermark under the publication lock (§11.2.1);
 - conflict when the content hash matches an earlier version that is **not** currently published (content reverted) → see §11.4 "Content reversion"; the request continues as a republication of that version without re-embedding if vectors still exist;
 - conflict with a job in `failed` and `attempt < MAX_JOB_ATTEMPTS` → reclaim (`attempt + 1`) and continue; at the cap the job stays `failed` until an operator explicitly resets it.
 
@@ -638,6 +638,10 @@ COMMIT;
 
 `hashtextextended` is a built-in Postgres hashing function (present since PG11; lightly documented). A hash collision only serializes two unrelated documents; it does not corrupt state. Transaction-level advisory locks are released at commit/rollback and are safe with pooled connections; session-level locks MUST NOT be used.
 
+### 11.2.1 Freshness watermark on same-content observations
+
+When a fetch observes content whose chunk set is **already** the published pointer for `(document_id, space_id)`, the request is still a no-op for embeddings, but it MUST take the same advisory lock and update `document_publication.version_fetched_at` to this observation's `fetched_at` whenever the new value is strictly greater. Without that advance, a slow concurrent build of older content (fetched earlier, finishing later) can pass the newer-wins check against a stale watermark and overwrite a fresher observation of the current content.
+
 Pointer rollback (operator restoring `previous_chunk_set_id`) MUST run through the same transaction shape: take the lock, set the pointer, set the restored build back to `published` and the displaced one to `superseded`. Restoring a purged chunk set is rejected (`previous_chunk_set_id` MUST reference a build that still has vectors).
 
 ### 11.3 Visibility rule
@@ -649,7 +653,7 @@ Retrieval accepts a vector row only if its `chunk_set_id` equals `document_publi
 | Scenario | Behaviour | Example (synthetic IDs) |
 | --- | --- | --- |
 | First processing | Create source/document/version/chunk set/chunks; build `pending → embedding → verified`; publish | v1 → `chunk_set 1c06cde7…`, publication points to it; job `fb7c0b88…` `succeeded` |
-| Same content again (already published) | Fetch and hash repeat (cheap); same `idempotency_key`; publication already points at the matching chunk set → `deduplicated` / `no_op`; **no embedding call** | Re-run with v1 bytes while v1 is published → key `fb7c0b88…`, 0 tokens billed |
+| Same content again (already published) | Fetch and hash repeat (cheap); same `idempotency_key`; publication already points at the matching chunk set → `deduplicated` / `no_op`; **no embedding call**; advance `version_fetched_at` under the publication lock (§11.2.1) | Re-run with v1 bytes while v1 is published → key `fb7c0b88…`, 0 tokens billed, watermark moves forward |
 | Content reversion (v1 → v2 → v1 bytes) | Same `content_sha256` / `version_id` as the earlier v1; publication currently points at v2. Request is **not** treated as a no-op: if the v1 chunk set still has a non-purged build in this space, republish it (no re-embed); otherwise rebuild. `fetched_at` of this request becomes the new `version_fetched_at`, so newer-wins accepts the reversion | After v2 is live, re-fetch of v1 bytes → publication flips back to `chunk_set 1c06cde7…` |
 | Same content, new pipeline profile | Same `version_id`, new `chunk_set_id`, new build, publish replaces pointer | Profile with `maxTokens: 256` → new chunk set, new chunk IDs |
 | Document updated | New `content_sha256` → new version, chunk set and build; old chunk set remains visible until publication flips | v2 → `chunk_set 3e1c44dd…`; until publish, queries see v1 only |
@@ -677,12 +681,13 @@ Publish (§11.2) already `FOR SHARE`s the document and source rows, so a delete 
 1. Create the new space (`status = 'building'`). Retrieval continues to use the unique `active` space.
 2. While the new space is `building`, every successful ingest/publish for a document MUST also ensure a publication exists in the new space for the **same** `chunk_set_id` (or re-embed that chunk set into the new space). Updates published only in the old space MUST NOT leave the new space stale.
 3. Run `reindex` over every document that has a publication in the active space, targeting the new space (no refetch; reuse `rag.chunk`).
-4. Flip only when, for every document published in the old space, the new space has a publication with the **same** `chunk_set_id`. Execute two ordered statements (the partial unique index on `status = 'active'` is not deferrable): `UPDATE … SET status = 'retiring' WHERE space_id = old`; then `UPDATE … SET status = 'active' WHERE space_id = new`.
-5. After the GC grace period, `deleteIndex` the retiring space and set it to `retired`. Retrieval during `retiring` still serves the old space until step 4 completes; after the flip, only the new `active` space is queried.
+4. **Cutover fence (required):** acquire a process-wide cutover advisory lock (`hashtextextended('rag:space-cutover', 0)`) that ingestion also takes (briefly) before any publish while a space is `building`. Under that lock: (a) refuse new publishes that would change the old space without mirroring into the new one; (b) re-check parity — for every document published in the old space, the new space has a publication with the **same** `chunk_set_id`; (c) in **one** transaction, run the two ordered status updates (the partial unique index on `status = 'active'` is not deferrable): `UPDATE … SET status = 'retiring' WHERE space_id = old AND status = 'active'`; then `UPDATE … SET status = 'active' WHERE space_id = new AND status = 'building'`; abort the whole transaction if either row count ≠ 1 so there is never a committed interval with zero active spaces.
+5. After the GC grace period, `deleteIndex` the retiring space and set it to `retired`. Retrieval during `retiring` still serves the old space until step 4 commits; after the flip, only the new `active` space is queried.
 
 ### 11.5 Garbage collection and retention *(H12)*
 
 - Superseded and failed builds: vectors deleted with `deleteVectors({ indexName, filter: { chunk_set_id }, namespace: tenant_id })` after a **7-day** grace period (allows pointer rollback), then that build → `purged`.
+- **GC serialization:** for each candidate build, GC MUST take the same per-document advisory lock used by publication (§11.2), re-check that the build is still `superseded`/`failed` and is **not** the current `document_publication.chunk_set_id` (nor `previous_chunk_set_id` within the grace window if rollback is still allowed), and hold that lock across `deleteVectors` and the status transition to `purged`. Republication or pointer rollback of a build that GC has selected MUST wait on the same lock and MUST refuse builds already marked `purged`.
 - Catalog `rag.chunk` / `rag.chunk_set.normalized_text` for a chunk set are deleted **only when every** `index_build` row for that chunk set is in `purged` or `failed` across **all** spaces (so a model-switch reindex that reuses the same chunk set cannot lose its text). `document_version` rows are retained as provenance (hashes, URLs, timestamps only).
 - Erasure request or deleted source: no grace period; vectors and chunk text purged in the same operator action (§11.4.1); Mastra/Turso threads or traces that quote the content are handled by the separate retention procedure (§14).
 - MVP GC is invoked by an operator route or CLI (no scheduler). A cron/worker scheduler is deferred with the durable execution model (§6.2.1).
