@@ -47,6 +47,9 @@ test('rejects SSRF-like URLs and injected URL components before any networking',
     'https://www.in.gov.br/other/lei.htm',
     'https://www.in.gov.br/en/web/dou/-/res.htm?next=secret',
     'https://www.in.gov.br/en/web/dou/-/res.htm#section',
+    lgpd.canonicalUri + '?',
+    lgpd.canonicalUri + '#',
+    lgpd.canonicalUri + '?#',
     'https://www.in.gov.br/en/web/dou/-/%2e%2e/private',
     'https://www.in.gov.br/en/web/dou/-/a%2fb',
     'https://www.in.gov.br/en/web/dou/-//evil',
@@ -79,6 +82,9 @@ test('validates manifest entry fields and extracts a safe frozen copy', () => {
 test('sourceId selection permits known IDs only, never caller-controlled URLs', () => {
   const entries = validateSourceManifest([lgpd]);
   assert.deepEqual(resolveSourceIds([lgpd.sourceId], entries).map(x => x.sourceId), [lgpd.sourceId]);
+  const getterIds = [lgpd.sourceId];
+  Object.defineProperty(getterIds, '0', { enumerable: true, get() { throw new Error('SECRET-id'); } });
+  expectCode(() => resolveSourceIds(getterIds, entries), 'INVALID_SOURCE_ID');
   for (const invalid of [
     new Array(1), [lgpd.canonicalUri], ['unknown-legal-source'], [lgpd.sourceId, lgpd.sourceId],
     [], 'br-planalto-lei-13709-2018',
@@ -89,6 +95,17 @@ test('rejects duplicate IDs and URLs in the reviewed source manifest', () => {
   expectCode(() => validateSourceManifest([lgpd, { ...lgpd, title: 'Another title' }]), 'DUPLICATE_SOURCE');
   expectCode(() => validateSourceManifest([lgpd, { ...lgpd, sourceId: 'different-source' }]), 'DUPLICATE_SOURCE');
   expectCode(() => validateSourceManifest([]), 'INVALID_MANIFEST_ENTRY');
+  expectCode(() => validateSourceManifest(new Array(1)), 'INVALID_MANIFEST_ENTRY');
+  const arrayWithGetter = [lgpd];
+  Object.defineProperty(arrayWithGetter, '0', {
+    enumerable: true, configurable: true, get() { throw new Error('SECRET-manifest'); },
+  });
+  expectCode(() => validateSourceManifest(arrayWithGetter), 'INVALID_MANIFEST_ENTRY');
+  const fieldGetter = { ...lgpd };
+  Object.defineProperty(fieldGetter, 'sourceId', {
+    enumerable: true, get() { throw new Error('SECRET-property'); },
+  });
+  expectCode(() => validateSourceManifestEntry(fieldGetter), 'INVALID_MANIFEST_ENTRY');
 });
 
 test('sniffs HTML, Markdown and plain UTF-8 text without fetching', () => {
@@ -107,6 +124,12 @@ test('rejects PDF, archives, binary content, zero bytes and over-limit input', (
   expectCode(() => sniffSupportedMediaType(Buffer.from([0x50,0x4b,0x03,0x04,0x00]), ['text/plain']), 'UNSUPPORTED_MEDIA_TYPE');
   expectCode(() => sniffSupportedMediaType(Buffer.from([0x00,0x42]), ['text/plain']), 'BINARY_CONTENT_REJECTED');
   expectCode(() => sniffSupportedMediaType(Buffer.from([0xc3,0x28]), ['text/plain']), 'BINARY_CONTENT_REJECTED');
+  const lateBinary = Buffer.alloc(5000, 65);
+  lateBinary[4500] = 0;
+  expectCode(() => sniffSupportedMediaType(lateBinary, ['text/plain']), 'BINARY_CONTENT_REJECTED');
+  const lateHtmlBinary = Buffer.concat([Buffer.from('<html>'), Buffer.alloc(5000, 65)]);
+  lateHtmlBinary[4500] = 0;
+  expectCode(() => sniffSupportedMediaType(lateHtmlBinary, ['text/html']), 'BINARY_CONTENT_REJECTED');
   expectCode(() => sniffSupportedMediaType(new Uint8Array(RAG_LIMITS.MAX_RAW_BYTES + 1), ['text/plain']), 'RAW_BYTES_EXCEEDED');
 });
 

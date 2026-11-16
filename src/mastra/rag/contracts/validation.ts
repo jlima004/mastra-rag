@@ -13,9 +13,43 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 }
 
-function exactKeys(object: Record<string, unknown>, keys: readonly string[]): boolean {
-  return Object.keys(object).every(key => keys.includes(key)) &&
-    keys.every(key => Object.hasOwn(object, key));
+/**
+ * Never read untrusted accessor properties. Return a null-prototype record of
+ * own data values with exactly the declared keys or reject it as malformed.
+ */
+function safeDataRecord(input: unknown, requiredKeys: readonly string[]): Record<string, unknown> | null {
+  if (!isPlainObject(input)) return null;
+  try {
+    const descriptors = Object.getOwnPropertyDescriptors(input);
+    if (Reflect.ownKeys(descriptors).length !== requiredKeys.length) return null;
+    const result: Record<string, unknown> = Object.create(null);
+    for (const key of requiredKeys) {
+      const descriptor = descriptors[key];
+      if (!descriptor || !('value' in descriptor) || !descriptor.enumerable) return null;
+      result[key] = descriptor.value;
+    }
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+/** Defend all untrusted array inputs against holes and accessor side effects. */
+function safeDataArray(input: unknown, maxLength: number): unknown[] | null {
+  if (!Array.isArray(input) || input.length === 0 || input.length > maxLength) return null;
+  try {
+    if (Object.keys(input).length !== input.length ||
+        Object.getOwnPropertySymbols(input).length > 0) return null;
+    const values: unknown[] = [];
+    for (let index = 0; index < input.length; index++) {
+      const descriptor = Object.getOwnPropertyDescriptor(input, String(index));
+      if (!descriptor || !('value' in descriptor)) return null;
+      values.push(descriptor.value);
+    }
+    return values;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -24,7 +58,8 @@ function exactKeys(object: Record<string, unknown>, keys: readonly string[]): bo
  */
 export function validateCanonicalSourceUrl(input: unknown): string {
   if (typeof input !== 'string' || input.length > 2048 ||
-      !input.startsWith('https://') || /[\\%\s\x00-\x1f\x7f]/.test(input)) {
+      !input.startsWith('https://') || input.includes('?') || input.includes('#') ||
+      /[\\%\s\x00-\x1f\x7f]/.test(input)) {
     throw new RagContractError('UNSAFE_SOURCE_URL');
   }
   let parsed: URL;
@@ -43,26 +78,25 @@ export function validateCanonicalSourceUrl(input: unknown): string {
 
 /** Parser-free Step B validation; no fetching, DNS resolution, or URL auto-correction. */
 export function validateSourceManifestEntry(input: unknown): SourceManifestEntry {
-  if (!isPlainObject(input) || !exactKeys(input, ALLOWED_KEYS)) {
-    throw new RagContractError('INVALID_MANIFEST_ENTRY');
-  }
-  if (typeof input.sourceId !== 'string' || !SOURCE_ID.test(input.sourceId)) {
+  const data = safeDataRecord(input, ALLOWED_KEYS);
+  if (!data) throw new RagContractError('INVALID_MANIFEST_ENTRY');
+  input = data;
+  if (typeof data.sourceId !== 'string' || !SOURCE_ID.test(data.sourceId)) {
     throw new RagContractError('INVALID_SOURCE_ID');
   }
-  const canonicalUri = validateCanonicalSourceUrl(input.canonicalUri);
+  const canonicalUri = validateCanonicalSourceUrl(data.canonicalUri);
   if (input.tenantId !== 'public' || input.kind !== 'http' ||
       input.language !== 'pt-BR' || typeof input.title !== 'string' ||
       input.title.trim().length === 0 || input.title.length > 240 ||
       typeof input.extractor !== 'string' || !EXTRACTORS.includes(input.extractor as SourceExtractor)) {
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
-  if (!Array.isArray(input.expectedMediaTypes) || input.expectedMediaTypes.length === 0 ||
-      input.expectedMediaTypes.length > MEDIA_TYPES.length ||
-      input.expectedMediaTypes.some(value => !MEDIA_TYPES.includes(value)) ||
-      new Set(input.expectedMediaTypes).size !== input.expectedMediaTypes.length) {
+  const media = safeDataArray(data.expectedMediaTypes, MEDIA_TYPES.length);
+  if (!media || media.some(value => !MEDIA_TYPES.includes(value as SourceMediaType)) ||
+      new Set(media).size !== media.length) {
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
-  const types = input.expectedMediaTypes as SourceMediaType[];
+  const types = media as SourceMediaType[];
   const extractor = input.extractor as SourceExtractor;
   if ((extractor === 'planalto-html@1' &&
          (!canonicalUri.startsWith('https://www.planalto.gov.br/') || !types.includes('text/html'))) ||
@@ -72,10 +106,10 @@ export function validateSourceManifestEntry(input: unknown): SourceManifestEntry
       (extractor === 'plaintext@1' && !types.includes('text/plain'))) {
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
-  if (!isPlainObject(input.license) || !exactKeys(input.license, LICENSE_KEYS) ||
-      !['official-act-br', 'cc-by-4.0', 'other'].includes(String(input.license.kind)) ||
-      typeof input.license.reference !== 'string' ||
-      !input.license.reference.trim() || input.license.reference.length > 500) {
+  const license = safeDataRecord(data.license, LICENSE_KEYS);
+  if (!license || !['official-act-br', 'cc-by-4.0', 'other'].includes(String(license.kind)) ||
+      typeof license.reference !== 'string' ||
+      !license.reference.trim() || license.reference.length > 500) {
     throw new RagContractError('INVALID_MANIFEST_ENTRY');
   }
   return Object.freeze({
@@ -83,17 +117,16 @@ export function validateSourceManifestEntry(input: unknown): SourceManifestEntry
     canonicalUri, expectedMediaTypes: Object.freeze([...types]),
     extractor, title: input.title, language: 'pt-BR',
     license: Object.freeze({
-      kind: input.license.kind as SourceManifestEntry['license']['kind'],
-      reference: input.license.reference,
+      kind: license.kind as SourceManifestEntry['license']['kind'],
+      reference: license.reference as string,
     }),
   });
 }
 
 export function validateSourceManifest(input: unknown): readonly SourceManifestEntry[] {
-  if (!Array.isArray(input) || input.length === 0 || input.length > 100) {
-    throw new RagContractError('INVALID_MANIFEST_ENTRY');
-  }
-  const entries = input.map(validateSourceManifestEntry);
+  const values = safeDataArray(input, 100);
+  if (!values) throw new RagContractError('INVALID_MANIFEST_ENTRY');
+  const entries = values.map(validateSourceManifestEntry);
   if (new Set(entries.map(e => e.sourceId)).size !== entries.length ||
       new Set(entries.map(e => e.canonicalUri)).size !== entries.length) {
     throw new RagContractError('DUPLICATE_SOURCE');
@@ -106,12 +139,11 @@ export function resolveSourceIds(
   requested: unknown,
   approved: readonly SourceManifestEntry[],
 ): readonly SourceManifestEntry[] {
-  if (!Array.isArray(requested) || requested.length === 0 || requested.length > approved.length ||
-      Object.keys(requested).length !== requested.length ||
-      requested.some(x => typeof x !== 'string' || !SOURCE_ID.test(x))) {
+  const values = safeDataArray(requested, approved.length);
+  if (!values || values.some(x => typeof x !== 'string' || !SOURCE_ID.test(x))) {
     throw new RagContractError('INVALID_SOURCE_ID');
   }
-  const ids = requested as string[];
+  const ids = values as string[];
   if (new Set(ids).size !== ids.length) throw new RagContractError('INVALID_SOURCE_ID');
   const entries = new Map(approved.map(e => [e.sourceId, e]));
   return Object.freeze(ids.map(id => {
@@ -149,7 +181,7 @@ export function sniffSupportedMediaType(
     throw new RagContractError('UNSUPPORTED_MEDIA_TYPE');
   }
   const sample = input.subarray(0, Math.min(input.byteLength, 4096));
-  for (const byte of sample) {
+  for (const byte of input) {
     if (byte === 0 || (byte < 32 && byte !== 9 && byte !== 10 && byte !== 13)) {
       throw new RagContractError('BINARY_CONTENT_REJECTED');
     }
