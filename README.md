@@ -65,6 +65,19 @@ PR #7 records a **partial Stage A owner ratification** for offline contracts (H1
 
 Offline source contracts and validation may start in a separate PR **after PR #7 has been merged with human authorization**. Per-package approval is still required for new dependencies. No migrations, live ingestion, paid embeddings, runtime secrets or deployment are authorized by Stage A. Keep application secrets out of the repository.
 
+### Step B — Offline document contracts
+
+The [contracts implementation](src/mastra/rag/contracts/) validates immutable source manifests,
+strict official-host HTTPS URLs, UTF-8 text/HTML media signatures, 5 MiB limits,
+and versioned SHA-256 identifiers. The reviewed [source catalogue](docs/rag/sources-mvp.md)
+records which ANPD acts are included or deferred. All tests run with no network,
+database, API token, or embedding provider. Additions in this step are inert:
+no fetcher, migration, production endpoint, agent, vector index, or deployment.
+
+Run `npm run test` for the original regression suite and new Step B contracts tests.
+Live DOU/Planalto accessibility and consolidated legal wording must be verified in a
+separate Step C gate; an official link is not proof that the endpoint is reachable.
+
 
 ## Production Readiness (intermediate PR before ingestion)
 

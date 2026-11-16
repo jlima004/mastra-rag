@@ -39,6 +39,8 @@ PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PR
 
 ## Step B — Contracts and validation (expected #8)
 
+**Implementation scope:** pure Node/TypeScript contract library in `src/mastra/rag/contracts/`, reviewed manifest and official-source evidence at [`docs/rag/sources-mvp.md`](../../docs/rag/sources-mvp.md). No fetcher, agent, embeddings or PostgreSQL client. Step C owns DNS pinning, redirect validation, streaming fetch and actual source content verification. DOU/Planalto network access is explicitly **not demonstrated** by Step B.
+
 - **Scope:**
   - `src/mastra/rag/contracts/` (or the location agreed in review): `SourceManifestEntry`, `FetchedDocument`, error-code enum, limits (SPEC §6, §7.3, §7.4).
   - Corpus manifest with the LGPD entry and the verified list of CD/ANPD resolutions (official URLs and license notes).
