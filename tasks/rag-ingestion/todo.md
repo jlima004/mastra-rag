@@ -158,6 +158,24 @@ Scope is preparation and **synthetic local restore testing only**; no hosted SQL
 - [ ] H6 least-privilege hosted role and remaining `public.rls_auto_enable()` advisor separately adjudicated and authorized
 - [ ] H7, H11, H12 and any E2 remote operation separately approved; **H10 no-backup does not imply permission to ingest**
 
+## H5/H6/H10 capacity — hosted operational adjudication proposal (2026-11-17)
+
+Reference: [hosted adjudication matrix](../../docs/decisions/RAG-E1-H5-H6-H10-hosted-adjudication.md). **This is a proposal, not hosted execution authority.** Supabase read-only checks only; PR #14 merged and H10 no-backup policy preserved.
+
+- [x] Read-only recheck: project `mastra-rag` PostgreSQL 17.11, vector 0.8.2, private `rag` empty, `rag_app` absent, one foundation migration
+- [x] Read-only role/function review: two `public.rls_auto_enable()` SECURITY DEFINER advisor WARNs confirmed; no remote security changes
+- [x] Free organization has other inactive projects; org-wide database size contribution **unmeasured**, so project-only size is insufficient to approve an ingest cap
+- [x] H5 single hosted ledger and owner-only applier proposed; foundation history remapping and exact CLI pin remain to be validated
+- [x] H6 role/extension USAGE, catalog and PgVector operator sequence proposed; no privileged remote action authorized
+- [x] H10 capacity proposal documented: 2k active vectors; 1 rebuild; 100 MiB rag; 250/300 MiB project; 350/400 MB organization; values **unratified**
+- [x] H10 `NO_BACKUP_MVP` decision preserved; no real backup/restore/RPO/RTO preconditions
+- [ ] Exact-HEAD CI and independent Codex review of this documentation-only proposal
+- [ ] Separate human merge approval for adjudication document PR
+- [ ] **Human ratification** of H5-D1/D2, H6-D1/D2 and H10-C1/C2, including actual numeric limits and risk handling
+- [ ] Confirm organization-wide quota headroom, including any contribution from inactive projects; physical disk/WAL monitoring before E2
+- [ ] Separate human approval of role and security operator package, catalog migration, vector space provisioning, runtime DSN, and E2 ingest
+- [ ] H7 operator access model, H11 paid provider budget and H12 retention/GC separately closed
+
 ## Step E2 — Ingestion orchestration (expected #11b)
 
 - [ ] Runtime PgVector with constructor `disableInit: true`; PgVector not registered in `new Mastra({ vectors })`
