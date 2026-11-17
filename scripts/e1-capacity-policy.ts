@@ -110,8 +110,17 @@ export function assessE1H10Capacity(
   if (s.diskTotalBytes! === 0 || s.diskUsedBytes! > s.diskTotalBytes!) {
     blocks.push('H10_PHYSICAL_DISK_INVALID');
   }
+  // Accounting containment is mandatory: app-owned rag relations belong to
+  // this database, and this database belongs to the Free organization total.
+  // A partial delta can otherwise admit a job that crosses two hard stops.
+  if (s.ragBytes > s.databaseBytes) {
+    blocks.push('H10_PROJECT_SNAPSHOT_UNDERCOUNTS_RAG');
+  }
   if (s.organizationBytes! < s.databaseBytes) {
     blocks.push('H10_ORGANIZATION_AGGREGATE_INCONSISTENT');
+  }
+  if (d.ragAdditionalBytes > d.databaseAdditionalBytes) {
+    blocks.push('H10_PROJECT_DELTA_UNDERESTIMATED');
   }
   if (d.organizationAdditionalBytes < d.databaseAdditionalBytes) {
     blocks.push('H10_ORGANIZATION_DELTA_UNDERESTIMATED');
