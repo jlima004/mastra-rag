@@ -204,6 +204,7 @@ Authority: [explicit H5-D1/D2, H6-D1/D2, H10-C1/C2 owner ratification](../../doc
 - [x] H5 staged `supabase/migrations/20261117213614_rag_catalog.sql` as exact reviewed `db/migrations/0001_rag_catalog.up.sql` copy, plus CI bytewise identity guard; **not pushed to hosted**
 - [x] H6 added disposable `rag_app` role/RLS/grants assertions and isolated event-trigger `EXECUTE` revocation regression; no hosted role/privilege changes
 - [x] H10 pure capacity admission candidate with tests for limits, unknown org/disk/WAL, invalid inputs and overflow; **not wired to E2 runtime**
+- [x] Read-only project-level SQL meter for DB/`rag` size exercised in disposable PG17; **org aggregate and disk/WAL still require separate evidence**
 - [ ] Exact-HEAD PR #17 CI (117+ Node tests, build/auth, PG17 RLS/security, local CLI) PASS with artifacts reviewed
 - [ ] Independent Codex adversarial review of exact HEAD (P0/P1/P2 reconciled)
 - [ ] Separate owner authorization to merge/deploy PR #17
