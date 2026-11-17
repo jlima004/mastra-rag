@@ -1,5 +1,7 @@
 # RAG-E1 — H5/H6/H10 hosted operational adjudication (proposal)
 
+> **Subsequent owner ratification (2026-11-17):** The six recommended H5-D1/D2, H6-D1/D2, H10-C1/C2 directions and numerical capacity limits were **ratified** in [the owner decision](RAG-E1-H5-H6-H10-owner-ratification.md) after PR #15 merged at `d7f745e73acd0601ad7067e6905a46f807ae20ef`. Sections below are the *historical proposal* and their unchecked options were pending at authorship. Ratification does **not** approve hosted DDL, credential changes, paid calls or ingestion; physical measurements, exact CLI pin, security disposition and enforced admission remain outstanding.
+
 | Property | Value |
 | --- | --- |
 | Date | 2026-11-17 |

@@ -1,6 +1,6 @@
 # RAG ingestion — tracking checklist
 
-**H10 current state (2026-11-17):** [no backups in MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md); backup/restore/RPO/RTO checks from earlier sections are historical and superseded. Storage capacity and all hosted action approvals remain pending.
+**Latest decisions (2026-11-17):** [H5/H6/H10 owner ratification](../../docs/decisions/RAG-E1-H5-H6-H10-owner-ratification.md) approved the operator design and storage **numerical policy**; capacity measurement/enforcement and all hosted permissions remain pending. [NO_BACKUP_MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md) remains in force; older backup/restore/RPO/RTO requirements are superseded.
 
 Status legend: `[ ]` not done · `[x]` done. Stage A ratified partially on 2026-11-16; Steps B–D offline merged; E1 H4/H5/H6 directions and conditional H10 policy ratified 2026-11-17 for **local implementation only**. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
 
@@ -175,6 +175,25 @@ Reference: [hosted adjudication matrix](../../docs/decisions/RAG-E1-H5-H6-H10-ho
 - [ ] Confirm organization-wide quota headroom, including any contribution from inactive projects; physical disk/WAL monitoring before E2
 - [ ] Separate human approval of role and security operator package, catalog migration, vector space provisioning, runtime DSN, and E2 ingest
 - [ ] H7 operator access model, H11 paid provider budget and H12 retention/GC separately closed
+
+## H5/H6/H10 owner ratification — latest authority (2026-11-17)
+
+Authority: [explicit H5-D1/D2, H6-D1/D2, H10-C1/C2 owner ratification](../../docs/decisions/RAG-E1-H5-H6-H10-owner-ratification.md). Historic unchecked proposal checkboxes above reflect the PR #15 drafting time; **these choices are now ratified**, while their remote implementation is not.
+
+- [x] PR #15 merged to `master` at `d7f745e73acd0601ad7067e6905a46f807ae20ef`, post-merge CI #44177541850 **SUCCESS**, Mastra Cloud build and health **PASS**, owner confirms deploy
+- [x] H5-D1: one hosted `supabase_migrations.schema_migrations` ledger; owner-only human-controlled applier; foundation migration `20261113233720` preserved
+- [x] H5-D2: Supabase CLI v3 direction, **exact CLI version not yet pinned** and historical foundation mapping not yet verified
+- [x] H6-D1: `rag_app` least-privilege server-only contract, `rag` + `extensions` USAGE, RLS, `public` namespace; role/catalog/space operations independently gated
+- [x] H6-D2: separately investigate both `public.rls_auto_enable()` WARNs; **no risk acceptance or remote revocation yet**
+- [x] H10-C1: **2,000** active vectors; maximum one additional rebuild space; **80/100 MiB rag** warning/stop; **250/300 MiB project** warning/stop; **350/400 MB organization** warning/stop
+- [x] H10-C2: require organization-wide Free headroom and independent physical disk/WAL metrics; fail closed for new ingestion/reindex on missing or exceeded metrics
+- [x] H10 backup: **NO_BACKUP_MVP** unaffected; no external/real backup, PITR, RPO/RTO or real restore drill
+- [ ] Pinned specific v3 CLI, current `--help` proof, local/remote history mapping and generated timestamp migration matched to canonical reviewed SQL
+- [ ] Isolated review of `rls_auto_enable()` WARNs and **separate** remediation or explicit risk-acceptance owner decision
+- [ ] Measure/verify aggregate org Free quota usage (two other inactive projects), disk/WAL, representative corpus footprint; implement tested capacity admission before E2
+- [ ] Operator role/SQL/space/DSN package reviewed under exact-HEAD CI and independent Codex review
+- [ ] **Distinct explicit owner authorizations** before any hosted role/grant/DDL, PgVector space creation, DSN rotation, paid embedding or real ingestion
+- [ ] H7 operator access, H11 spend cap and H12 retention/GC ratified before live E2
 
 ## Step E2 — Ingestion orchestration (expected #11b)
 

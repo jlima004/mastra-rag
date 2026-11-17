@@ -1,5 +1,7 @@
 # RAG ingestion — incremental implementation plan
 
+> **Latest owner authority (2026-11-17):** [H5/H6/H10 hosted operational ratification](../../docs/decisions/RAG-E1-H5-H6-H10-owner-ratification.md) supersedes the pending decision status in earlier historical sections. **Single Supabase migration ledger, minimal server-only `rag_app`, independent security review, and numeric H10 capacity caps are RATIFIED DIRECTIONS**, not hosted execution approval. Pinned CLI version, role/SQL operator package, security disposition, organization/disk measurements and capacity enforcement remain open. H10 [NO_BACKUP_MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md) remains in force.
+
 > **Current H10 policy (owner, 2026-11-17):** [No backups in the MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md). Historical H10 backup/restore conditions in older checkpoints below are superseded. Capacity sizing/enforcement and the independent hosted authorization gates remain required.
 
 > **Current operational checkpoint (2026-11-17):** [H5/H6/H10 hosted adjudication proposal](../../docs/decisions/RAG-E1-H5-H6-H10-hosted-adjudication.md), based on read-only live Supabase state and post-merge PR #14 `master` `9b62857a`. Single-ledger historian, role procedure, security advisor disposition and H10 capacity limits are **proposals awaiting human ratification**; none authorizes hosted writes. The [H10 no-backup MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md) decision remains settled.
