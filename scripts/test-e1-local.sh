@@ -50,7 +50,7 @@ psql_local < db/local/0002_e1_space_role_policies.sql
 psql_local < db/local/0003_e1_positive_proofs.sql
 
 expect_denied 'rag_app cannot create DDL' "SET ROLE rag_app; CREATE TABLE rag.e1_forbidden(id integer);" "permission denied for schema rag"
-expect_denied 'anon cannot see private catalog' "SET ROLE anon; SELECT * FROM rag.source LIMIT 1; "permission denied for schema rag"
+expect_denied 'anon cannot see private catalog' "SET ROLE anon; SELECT * FROM rag.source LIMIT 1;" "permission denied for schema rag"
 expect_denied 'rag_app cannot write another namespace' "SET ROLE rag_app; INSERT INTO rag.chunks_te3s_1536_v1 (vector_id,embedding,namespace,metadata) VALUES ('forbidden', ('[' || repeat('0.01,',1535) || '0.01]')::extensions.vector(1536), 'other','{}'::jsonb);" "row-level security policy"
 expect_denied 'ingest v1 cannot bypass v2 persisted-identity guard' "SET ROLE rag_app; INSERT INTO rag.ingestion_job (idempotency_key,idempotency_version,kind,source_id,document_id,space_id,rendered_chunk_set_id) VALUES (repeat('7',64),1,'ingest','synthetic-lgpd',repeat('a',64),'chunks_te3s_1536_v1',repeat('d',64));" "violates check constraint"
 expect_denied 'duplicate rendered set cannot overwrite PK' "SET ROLE rag_app; INSERT INTO rag.chunk_set (chunk_set_id,base_chunk_set_id,rendering_identity_version,version_id,document_id,pipeline_profile_id,pipeline_profile,normalized_text,normalized_sha256,effective_charset,chunk_count,total_byte_budget) VALUES (repeat('d',64),repeat('e',64),'rag:chunkset-rendered:v2',repeat('b',64),repeat('a',64),repeat('f',64),'{}'::jsonb,'synthetic',repeat('1',64),'utf-8',1,80);" "duplicate key value violates unique constraint"
