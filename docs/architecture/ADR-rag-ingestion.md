@@ -1,5 +1,7 @@
 # ADR: RAG ingestion, embeddings, storage and retrieval (D1–D6)
 
+> **Latest H10 owner decision (2026-11-17):** [No database backups for the MVP](../decisions/RAG-H10-mvp-no-backup.md) overrides earlier Free-with-tested-backup advice below. H10 storage-capacity approval remains pending, and no hosted SQL/role/ingestion is authorized. Previous checkpoint sections preserve historical decisions, not the current backup policy.
+
 > **E1 direction ratification (2026-11-17):** The owner [approved H4/H5/H6 architectural directions and H10's conditional Free-with-tested-backup approach](../decisions/RAG-E1-owner-ratification.md) for **local E1 implementation and testing**. Detailed physical DDL, safe role/grants, migration history, and backup/restore readiness remain subject to independent evidence and explicit separate approvals. Historical Stage A status and proposed DDL below are not full operational ratification.
 
 | Field | Value |
@@ -23,7 +25,7 @@ The [E1 adjudication proposal](../decisions/RAG-E1-adjudication-proposal.md) rec
 - E1-P2-03: normalized-text equality across different raw versions cannot imply same rendered v2 identity or automatic embedding no-op. Defer cross-version embedding reuse.
 - H5: reconcile repo migration history with the preexisting Supabase migration `20261113233720` before any catalog DDL. Owner owns remote application; local disposable Postgres 17 tests first.
 - H6: role `rag_app` is not yet provisioned, and a separate review is required for security-advisor findings on the existing `public.rls_auto_enable()` event-trigger function; no privilege changes authorized.
-- H10: Free plan backup/PITR limitations require an owner-approved off-site logical backup + isolated restore strategy (or separately approved paid capability), real capacity estimate and explicit recovery risk acceptance before persistent ingestion.
+- H10 (historical backup proposal, **superseded**): the owner subsequently decided **no backups in the MVP**; remaining H10 work is corpus sizing, a storage ceiling and enforcement. Permanent data loss and undefined RPO/RTO are accepted as inherent risks of this choice, not a demonstrated recovery capability.
 
 No hosted SQL, role/grant, credential, vector provisioning or paid operation is authorized. A separate human decision must first adjudicate H4/H5/H6/H10.
 ## Context
@@ -299,7 +301,7 @@ High: publication keeps `previous_chunk_set_id`, so a bad publication can be rol
 | H7 | Access model for the MVP | Operator-only ingestion and retrieval; reader/demo access later |  PENDING; no new production endpoints approved |
 | H8 | Region verification and latency acceptance | Verify environment + Turso regions; consider `iad` for new environments |  PENDING |
 | H9 | New runtime dependencies in later PRs | HTML parser, tokenizer, possibly `zod` as a direct dependency |  CONDITIONAL: evaluate choices; exact packages not approved |
-| H10 | Supabase plan, backup/PITR, storage budget | Confirm before the persistence PR |  PENDING |
+| H10 | Supabase Free / storage budget / no-backup MVP | No backups or real restore drill in MVP; approve and enforce corpus capacity limits before persistence |  **NO_BACKUP_MVP_DECIDED / CAPACITY_PENDING** ([decision](../decisions/RAG-H10-mvp-no-backup.md)) |
 | H11 | Monthly embedding spend cap and evaluation budget | Provider-side hard limit + per-job token budget |  PENDING |
 | H12 | Retention / purge windows | 7-day GC grace for superseded vectors; immediate purge on erasure |  PENDING; D5 principles only accepted |
 
