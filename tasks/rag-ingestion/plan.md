@@ -124,7 +124,7 @@ separates what is demonstrated from future runtime and DB integration.
 - **Scope:** `db/migrations/0001_rag_catalog.up.sql` / `.down.sql` from SPEC §10.2, with RLS policies (including SELECT+UPDATE on PgVector space tables so `ON CONFLICT DO UPDATE` works) and grants (SPEC §10.4); operator provisioning script that calls `createIndex({ indexName: 'chunks_te3s_1536_v1', dimension: 1536, metric: 'cosine', indexConfig: { type: 'flat' } })`. Non-transactional migration class documented for future `CREATE INDEX CONCURRENTLY` (HNSW).
 - **Dependencies:** D merged; H4, H5, H6, H10.
 - **Tests:** SQL reviewed; a local container applies up then down cleanly.
-- **Owner actions after merge:** logical dump of `rag`; apply migration; create `rag_app` and rotate the runtime DSN; run provisioning; confirm readiness (`NOT rolsuper`).
+- **Owner actions after separately authorized hosted gates (not authorized by E1 merge):** reconcile the single Supabase migration ledger and reviewed SQL/target under H5; create and verify least-privilege `rag_app` under H6 **before** applying catalogue policies/grants; apply only the independently approved non-destructive migration; provision the `flat` PgVector space under its own approval; verify RLS, permissions, namespace and readiness (`NOT rolsuper`). Runtime DSN/credential changes require separate approval. **No logical dump, pre-migration backup or real restore is required or planned in the MVP** ([H10 owner decision](../../docs/decisions/RAG-H10-mvp-no-backup.md)); the storage-capacity ceiling and enforcement remain pending.
 - **Approval criteria:** SQL reviewed line by line; down script reviewed; no application code changes required to boot.
 
 ## Step E2 — Ingestion orchestration (expected #11b)
