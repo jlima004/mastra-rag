@@ -1,6 +1,6 @@
 # RAG ingestion — incremental implementation plan
 
-Status: **STAGE_A_PARTIALLY_RATIFIED — IMPLEMENTATION_GATED**. Baseline `15fe15cdffd51133be32c704eee0cc88f51b9d45` (2026-11-16).
+Status: **E1_LOCAL_IMPLEMENTATION_AUTHORIZED / HOSTED_OPERATIONS_GATED** (2026-11-17). Stage A historical baseline `15fe15cdffd51133be32c704eee0cc88f51b9d45`; E1 approved implementation base `8030b63e24aed4dab8d558b892846fc0b75d3278`.
 
 Normative design: [`docs/specs/SPEC-rag-ingestion.md`](../../docs/specs/SPEC-rag-ingestion.md). Decisions: [`docs/architecture/ADR-rag-ingestion.md`](../../docs/architecture/ADR-rag-ingestion.md). [Stage A partial ratification](../../docs/decisions/RAG07-stage-a-ratification.md). Checklist: [`todo.md`](todo.md).
 
@@ -13,6 +13,14 @@ PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PR
 Before a separate implementation PR may start: (1) reconcile Step C rendered v2 identity, catalog uniqueness, v2 ingest idempotency and raw-only normalized no-op; (2) confirm H5 migration historian/applier against existing Supabase migration `20261113233720`; (3) ratify `rag_app`/RLS/namespace security boundaries and review existing `rls_auto_enable()` advisory; (4) approve storage/backup/restore and residual risk on Free, or a paid alternative. Then exact-HEAD CI, independent review, and human adjudication.
 
 This Draft PR is documentation only. **No DDL, Supabase/Turso writes, credentials, provisioning, paid API calls, new dependency, merge or deploy is authorized.** E1 implementation / production application approvals remain separate.
+
+## Owner decision — E1 local development authorized (2026-11-17)
+
+After PR #11 merged into `master` @ `8030b63e24aed4dab8d558b892846fc0b75d3278` (post-merge CI SUCCESS), the owner **ratified directions** H4/H5/H6 and H10's conditional operational policy. Authority: [owner ratification](../../docs/decisions/RAG-E1-owner-ratification.md). Detailed local implementation plan: [E1 work order](step-e1-local-work-order.md).
+
+**Allowed now:** separate Draft PR for locally tested catalog SQL, role/RLS, operator provisioning and E1-P2-01/02/03 reconciliation, plus backup/capacity plan. **Not allowed:** applying remote DDL, creating/rotating remote credentials/roles, hosted vector provisioning, paid embeddings, ingestion, merging/deploying the implementation without separate approval. H10 operational acceptance remains pending until backup and isolated restore evidence exist. H7/H8/H9/H11/H12 remain gated.
+
+The preceding adjudication checkpoint section is historical: its directions were subsequently ratified **for local E1 implementation only**, not for hosted operations.
 
 ## Rules that apply to every step
 
@@ -101,7 +109,7 @@ separates what is demonstrated from future runtime and DB integration.
 - **Optional manual check (owner):** a script that embeds two synthetic strings with the owner's key locally and prints only dimensions and token usage.
 - **Approval criteria:** worst-case paid call count is bounded and tested; no key read at import time; runtime starts without `OPENAI_API_KEY`.
 
-## Step E1 — Migration and provisioning (expected #11a; BLOCKED pending E1 adjudication)
+## Step E1 — Migration and provisioning (local-only Draft now authorized; hosted execution BLOCKED)
 
 - **Scope:** `db/migrations/0001_rag_catalog.up.sql` / `.down.sql` from SPEC §10.2, with RLS policies (including SELECT+UPDATE on PgVector space tables so `ON CONFLICT DO UPDATE` works) and grants (SPEC §10.4); operator provisioning script that calls `createIndex({ indexName: 'chunks_te3s_1536_v1', dimension: 1536, metric: 'cosine', indexConfig: { type: 'flat' } })`. Non-transactional migration class documented for future `CREATE INDEX CONCURRENTLY` (HNSW).
 - **Dependencies:** D merged; H4, H5, H6, H10.
