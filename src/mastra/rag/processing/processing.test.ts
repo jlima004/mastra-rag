@@ -217,6 +217,9 @@ test('metadata-only title changes alter rendered chunk IDs, not source version o
   assert.equal(first.chunkSet.profileId, second.chunkSet.profileId);
   assert.equal(first.chunkSet.baseChunkSetId, second.chunkSet.baseChunkSetId);
   assert.equal(first.chunkSet.normalizedSha256, second.chunkSet.normalizedSha256);
+  assert.equal(first.chunkSet.headerMetadataSha256,
+    sha256(first.chunkSet.headerMetadataCanonicalJson!));
+  assert.notEqual(first.chunkSet.headerMetadataCanonicalJson, second.chunkSet.headerMetadataCanonicalJson);
   assert.notEqual(first.chunkSet.headerMetadataSha256, second.chunkSet.headerMetadataSha256);
   assert.notEqual(first.chunkSet.chunkSetId, second.chunkSet.chunkSetId);
   assert.notDeepEqual(first.chunkSet.chunks.map(c => c.content), second.chunkSet.chunks.map(c => c.content));
@@ -225,6 +228,8 @@ test('metadata-only title changes alter rendered chunk IDs, not source version o
   const recursiveFirst = makeOfflineChunkSet(first.normalized, fixture(), source, RECURSIVE_PROXY_CONFIG);
   const recursiveRenamed = makeOfflineChunkSet(second.normalized, fixture(), renamed, RECURSIVE_PROXY_CONFIG);
   assert.equal(recursiveFirst.chunkSetId, recursiveRenamed.chunkSetId);
+  assert.equal(recursiveFirst.headerMetadataCanonicalJson, null);
+  assert.equal(recursiveFirst.headerMetadataSha256, null);
 });
 
 test('render-aware v2 IDs have an independent exact SHA-256 golden fixture', () => {
@@ -255,6 +260,8 @@ test('identical raw bytes decoded with different HTTP charsets cannot reuse chun
   assert.equal(a.chunkSet.profileId, b.chunkSet.profileId);
   assert.notEqual(a.normalized.normalizedText, b.normalized.normalizedText);
   assert.notEqual(a.normalized.normalizedSha256, b.normalized.normalizedSha256);
+  assert.equal(a.chunkSet.effectiveCharset, 'utf-8');
+  assert.equal(b.chunkSet.effectiveCharset, 'windows-1252');
   assert.equal(a.chunkSet.baseChunkSetId, b.chunkSet.baseChunkSetId);
   assert.equal(a.chunkSet.normalizedSha256, a.normalized.normalizedSha256);
   assert.equal(b.chunkSet.normalizedSha256, b.normalized.normalizedSha256);
