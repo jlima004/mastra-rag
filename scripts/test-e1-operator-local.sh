@@ -20,6 +20,19 @@ pg() {
 pg rag_e1 < db/local/0004_e1_operator_privilege_proofs.sql
 echo 'E1_OPERATOR_ROLE_CONTRACT_PASS'
 
+# Read-only SQL telemetry covers project + rag relations only. In particular it
+# MUST NOT pretend to prove organization aggregate or physical disk/WAL usage.
+e1_h10_measurement="$(pg rag_e1 < db/readonly/e1_h10_project_measurements.sql)"
+E1_H10_MEASUREMENT="${e1_h10_measurement}" node -e "
+const assert = require('node:assert/strict');
+const m = JSON.parse(process.env.E1_H10_MEASUREMENT);
+assert.deepEqual(Object.keys(m).sort(), ['database_bytes','rag_relation_bytes']);
+assert.ok(Number.isSafeInteger(m.database_bytes) && m.database_bytes > 0);
+assert.ok(Number.isSafeInteger(m.rag_relation_bytes) && m.rag_relation_bytes > 0);
+assert.ok(m.database_bytes >= m.rag_relation_bytes);
+"
+echo 'E1_H10_READONLY_PROJECT_MEASUREMENTS_PASS'
+
 # Exercise a replica of the observed hosted PUBLIC event-trigger function in
 # a DIFFERENT disposable local database. Does not touch hosted or rag_e1.
 pg rag_e1 -c 'CREATE DATABASE rag_e1_security;' >/dev/null
