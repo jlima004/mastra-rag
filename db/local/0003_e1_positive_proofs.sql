@@ -18,17 +18,17 @@ BEGIN
 END;
 $$;
 
+INSERT INTO rag.embedding_space
+  (space_id,provider,embedding_model,embedding_version,dimension,metric,vector_type)
+VALUES ('chunks_te3s_1536_v1','openai','text-embedding-3-small',1,1536,'cosine','vector');
+
 SET ROLE rag_app;
-DO $$ BEGIN
+DO $ BEGIN
   IF NOT row_security_active('rag.source'::regclass) OR
      NOT row_security_active('rag.chunks_te3s_1536_v1'::regclass) THEN
     RAISE EXCEPTION 'E1_RLS_NOT_ACTIVE_FOR_APP';
   END IF;
 END $$;
-
-INSERT INTO rag.embedding_space
-  (space_id,provider,embedding_model,embedding_version,dimension,metric,vector_type)
-VALUES ('chunks_te3s_1536_v1','openai','text-embedding-3-small',1,1536,'cosine','vector');
 
 INSERT INTO rag.source (source_id,kind,canonical_uri,license_kind,license_ref)
 VALUES ('synthetic-lgpd','http','https://example.test/fixture','official-act-br','synthetic');
