@@ -15,8 +15,8 @@ BEGIN
   END IF;
 
   IF EXISTS (
-    SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member
-    WHERE r.rolname='rag_app'
+    SELECT 1 FROM pg_auth_members m JOIN pg_roles member_role ON member_role.oid=m.member
+    WHERE member_role.rolname='rag_app'
   ) THEN
     RAISE EXCEPTION 'E1_OPERATOR_ROLE_MEMBERSHIP_DETECTED';
   END IF;
