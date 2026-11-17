@@ -113,7 +113,7 @@ VALUES (
 )
 ON CONFLICT (namespace,vector_id)
 DO UPDATE SET embedding=EXCLUDED.embedding, metadata=EXCLUDED.metadata;
-DO $
+DO $$
 BEGIN
   IF (SELECT count(*) FROM rag.chunks_te3s_1536_v1
       WHERE namespace='public' AND vector_id='synthetic-vector-1'
@@ -125,7 +125,7 @@ BEGIN
     RAISE EXCEPTION 'E1_RESTORED_ROLE_NAMESPACE_LEAK';
   END IF;
 END;
-$;
+$$;
 ROLLBACK;
 SQL
 
