@@ -6,6 +6,14 @@ Normative design: [`docs/specs/SPEC-rag-ingestion.md`](../../docs/specs/SPEC-rag
 
 PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PRs from one sequence, and steps may be merged or split during review. Steps are identified by letter (A–G); the number in parentheses is only the expected one.
 
+## RAG-E1 documentation-only adjudication checkpoint (2026-11-17)
+
+**State: ADJUDICATION_OPEN / DESIGN_RECONCILIATION_REQUIRED.** Proposal and read-only GitHub/Supabase evidence: [RAG-E1 adjudication proposal](../../docs/decisions/RAG-E1-adjudication-proposal.md). Step D PR #10 was merged into `master` as `0075155cb6da360487ea59dee47c7bb3fd3449c4` (CI SUCCESS 105/105). E1 H4/H5/H6/H10 are **not yet ratified**.
+
+Before a separate implementation PR may start: (1) reconcile Step C rendered v2 identity, catalog uniqueness, v2 ingest idempotency and raw-only normalized no-op; (2) confirm H5 migration historian/applier against existing Supabase migration `20261113233720`; (3) ratify `rag_app`/RLS/namespace security boundaries and review existing `rls_auto_enable()` advisory; (4) approve storage/backup/restore and residual risk on Free, or a paid alternative. Then exact-HEAD CI, independent review, and human adjudication.
+
+This Draft PR is documentation only. **No DDL, Supabase/Turso writes, credentials, provisioning, paid API calls, new dependency, merge or deploy is authorized.** E1 implementation / production application approvals remain separate.
+
 ## Rules that apply to every step
 
 - No step starts before the decisions it depends on are ratified (column "Gate").
@@ -93,7 +101,7 @@ separates what is demonstrated from future runtime and DB integration.
 - **Optional manual check (owner):** a script that embeds two synthetic strings with the owner's key locally and prints only dimensions and token usage.
 - **Approval criteria:** worst-case paid call count is bounded and tested; no key read at import time; runtime starts without `OPENAI_API_KEY`.
 
-## Step E1 — Migration and provisioning (expected #11a)
+## Step E1 — Migration and provisioning (expected #11a; BLOCKED pending E1 adjudication)
 
 - **Scope:** `db/migrations/0001_rag_catalog.up.sql` / `.down.sql` from SPEC §10.2, with RLS policies (including SELECT+UPDATE on PgVector space tables so `ON CONFLICT DO UPDATE` works) and grants (SPEC §10.4); operator provisioning script that calls `createIndex({ indexName: 'chunks_te3s_1536_v1', dimension: 1536, metric: 'cosine', indexConfig: { type: 'flat' } })`. Non-transactional migration class documented for future `CREATE INDEX CONCURRENTLY` (HNSW).
 - **Dependencies:** D merged; H4, H5, H6, H10.
