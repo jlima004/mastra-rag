@@ -53,6 +53,7 @@ test('rejects unknown IDs and malformed timestamps without revealing input', () 
     () => assessRenderedPublication({ chunkSetId: A, versionFetchedAt: 'wrong' },
       { chunkSetId: B, fetchedAt: t2 }),
     () => assessRenderedPublication(null, { chunkSetId: A, fetchedAt: '2026-11-17' }),
+    () => assessRenderedPublication(null, { chunkSetId: A, fetchedAt: '2026-02-30T12:00:00Z' }),
     () => assessRenderedPublication(null, { chunkSetId: A, fetchedAt: 'nope' }),
   ]) {
     assert.throws(action, (error: unknown) =>
