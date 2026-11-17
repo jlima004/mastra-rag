@@ -62,6 +62,11 @@ export function parseRetryAfter(raw: string | null, nowMs = Date.now()): number 
     const ms = seconds * 1000;
     return Number.isSafeInteger(ms) ? ms : null;
   }
+  // Only RFC 1123 GMT dates are accepted. Date.parse('-1') and similar
+  // ambiguous strings can otherwise parse as historical dates and return 0.
+  if (!/^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/.test(value)) {
+    return null;
+  }
   const target = Date.parse(value);
   if (!Number.isFinite(target) || !Number.isFinite(nowMs)) return null;
   return Math.max(0, Math.ceil(target - nowMs));
@@ -129,7 +134,13 @@ export function createOpenAIEmbeddingProvider(
       }
       if (embedOptions.signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
       // The paid-call gate is checked BEFORE touching any secret/provider.
-      const model = await getModel();
+      // Provider initialization can throw secret-bearing errors too.
+      let model: RouterEmbeddingModel;
+      try { model = await getModel(); }
+      catch (error) {
+        if (error instanceof RagEmbeddingError) throw error;
+        throw sanitizeProviderFailure(error, embedOptions.signal);
+      }
       if (embedOptions.signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
       let raw: { embeddings: unknown; usage?: unknown };
       try {

@@ -100,6 +100,18 @@ test('injected Mastra doEmbed boundary forwards inputs/signal but creates model 
   assert.deepEqual(inputsObserved,[['palavra sintética'],['query sintética']]);
 });
 
+test('lazy router constructor failures are sanitized even before doEmbed', async () => {
+  const secret='RAW_PROVIDER_CONSTRUCTOR_SECRET';
+  const provider=createOpenAIEmbeddingProvider({
+    modelFactory: async()=>{throw new Error(secret);},
+  });
+  await assert.rejects(provider.embed(['synthetic'],{signal,purpose:'document'}), e => {
+    assert.ok(code(e,'EMBED_PROVIDER_FAILURE'));
+    assert.doesNotMatch(JSON.stringify(e),/RAW_PROVIDER_CONSTRUCTOR_SECRET/);
+    return true;
+  });
+});
+
 test('provider validates shape and finite values before returning embeddings', async () => {
   const wrongShape = createOpenAIEmbeddingProvider({
     modelFactory: () => ({ doEmbed: async () => ({
