@@ -71,7 +71,12 @@ CREATE TABLE rag.chunk_set (
   pipeline_profile_id text NOT NULL CHECK (pipeline_profile_id ~ '^[0-9a-f]{64}$'),
   pipeline_profile jsonb NOT NULL,
   normalized_text text NOT NULL CHECK (length(normalized_text) <= 1000000),
-  normalized_sha256 text NOT NULL CHECK (normalized_sha256 ~ '^[0-9a-f]{64}
+  normalized_sha256 text NOT NULL CHECK (normalized_sha256 ~ '^[0-9a-f]{64}$'),
+  -- The same raw version can be decoded with different effective charsets.
+  effective_charset text NOT NULL CHECK (effective_charset IN ('utf-8','windows-1252')),
+  -- Persist the exact canonical hash input used in the structural header.
+  header_metadata_canonical_json text,
+  header_metadata_sha256 text CHECK (
     header_metadata_sha256 IS NULL OR header_metadata_sha256 ~ '^[0-9a-f]{64}$'),
   chunk_count integer NOT NULL CHECK (chunk_count BETWEEN 1 AND 2000),
   -- Step C byte proxy is NOT verified model tokens. Keep measured counts NULL
