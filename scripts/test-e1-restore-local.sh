@@ -24,7 +24,7 @@ fi
 pg() {
   local database="$1"
   shift
-  docker exec -i "${cid}" psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d "${database}" "$@"
+  docker exec -i "${cid}" psql -X -q -A -t -v ON_ERROR_STOP=1 -U postgres -d "${database}" "$@"
 }
 
 archive="$(mktemp -t rag-e1-synthetic-backup-XXXXXXXX.dump)"
