@@ -1,5 +1,7 @@
 # RAG-E1 — Local catalog implementation and operational boundaries
 
+> **2026-11-17 H10 update:** [The owner decided no backups in the MVP](../decisions/RAG-H10-mvp-no-backup.md). Earlier backup/restore language in this original E1 note is superseded; only the storage-capacity gate remains from H10.
+
 **State:** E1 local-only candidate; **NOT** hosted-migration ready. Baseline: `master` at `8030b63e24aed4dab8d558b892846fc0b75d3278`. Human direction ratification: [E1 decision](../decisions/RAG-E1-owner-ratification.md).
 
 ## Identity contract reconciled (E1-P2-01/02/03)
@@ -29,7 +31,7 @@ The existing hosted Supabase project has migration `20261113233720_enable_pgvect
 
 1. Record immutable hosted migration history and the existing schema ownership/extension status again.
 2. Approve a **single** migration applier and history convention (manual owner-reviewed SQL vs Supabase CLI history, not both). Choose/freeze a new Supabase migration identifier or a documented operator ledger before modifying the hosted database. Never mark the pre-existing migration as unapplied.
-3. Review the exact final SQL line by line and a pre-application logical backup; prove it can be restored in a **disposable** instance.
+3. Review the exact SQL line by line, compare against a disposable local dry-run, and exclude destructive operations without separate human risk adjudication. **No pre-application backup is required or planned for the MVP.**
 4. Give separate explicit owner authorization for role setup, catalog DDL and flat space provisioning. Each requires its own evidence.
 5. Re-run RLS/grant/security advisors and no-secret startup checks **after** a separately approved application. Never deploy or rotate DSNs from this PR.
 
@@ -41,7 +43,7 @@ The Supabase organization currently uses Free. Automatic daily backups and PITR 
 
 For capacity planning, let `n` be total distinct rendered chunks in the **current active** space, with `d = 1536` float32 components; vector data alone consumes roughly `4*d*n = 6,144 n` bytes, **excluding** vector header/row/index/TOAST overhead. For example, at **2,000 chunks as a hypothetical scenario** the raw float values alone would be ~12.3 MB, not an actual corpus measurement. Catalog normalized text, chunk text, indexes, old/retiring spaces, PG/WAL overhead and future growth must be measured separately using representative documents. Draft a minimum storage headroom ceiling before persistent ingestion.
 
-Before any remote persistence: obtain actual LGPD/ANPD corpus estimate (Step C official source still unverified), approve a project-specific storage cap, define external encrypted logical backup destination, access control, key management and scheduled execution; demonstrate a **real restore in isolated infrastructure**, and record owner-accepted backup frequency, RPO, RTO and failure alert procedure. Do **not** claim backup/restore PASS on paper alone. If Free cannot meet approved recovery constraints, separately request plan/cost authorization.
+**Updated H10 MVP decision:** no hosted, external, manual or scheduled backup; no real restore drill or RPO/RTO commitment. Before persistent ingestion, still size the actual LGPD/ANPD corpus and approve/enforce a project-specific storage cap. Data loss may be permanent; re-fetch/re-embedding is a possible future rebuild path, not a proven recovery guarantee. See [H10 owner decision](../decisions/RAG-H10-mvp-no-backup.md).
 
 ## Security review required before hosted operations
 
