@@ -1,5 +1,7 @@
 # RAG-E1 — Adjudication checkpoint (proposal; not ratified)
 
+> **Subsequent owner decision — 2026-11-17:** The owner explicitly ratified the **directions** H4/H5/H6 and H10's Free-with-backup-prerequisites policy. See [RAG-E1 owner ratification](RAG-E1-owner-ratification.md). This file preserves the earlier proposed checkpoint and its evidence; statements below that those *directions* remain unratified are **historical**. Exact DDL/roles, H10 operational evidence and any hosted execution remain pending. A separate **local-only E1 Draft PR** may be prepared; no merge, paid usage or hosted operations are authorized by that decision.
+
 | Field | Value |
 | --- | --- |
 | Opened | 2026-11-17 |
