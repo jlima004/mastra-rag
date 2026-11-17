@@ -195,6 +195,23 @@ Authority: [explicit H5-D1/D2, H6-D1/D2, H10-C1/C2 owner ratification](../../doc
 - [ ] **Distinct explicit owner authorizations** before any hosted role/grant/DDL, PgVector space creation, DSN rotation, paid embedding or real ingestion
 - [ ] H7 operator access, H11 spend cap and H12 retention/GC ratified before live E2
 
+## E1 — Pacote operacional LOCAL (PR #17 Draft, 2026-11-17)
+
+[Execution plan and evidence](../../docs/rag/e1-operator-package.md), base `master` `01536e23491eada66667acbc1189289628792cf9`. H5/H6/H10 policy ratified; **no Supabase hosted writes approved**.
+
+- [x] H5 mirrored exact existing hosted foundation statements at `supabase/migrations/20261113233720_enable_pgvector_create_private_rag_schema.sql` (read-only; never reapply)
+- [x] H5 pinned CLI `3.1.0` via `supabase/setup-cli@v3` and ran isolated `migration new rag_catalog`; recorded CLI-generated filename from CI #44181461137
+- [x] H5 staged `supabase/migrations/20261117213614_rag_catalog.sql` as exact reviewed `db/migrations/0001_rag_catalog.up.sql` copy, plus CI bytewise identity guard; **not pushed to hosted**
+- [x] H6 added disposable `rag_app` role/RLS/grants assertions and isolated event-trigger `EXECUTE` revocation regression; no hosted role/privilege changes
+- [x] H10 pure capacity admission candidate with tests for limits, unknown org/disk/WAL, invalid inputs and overflow; **not wired to E2 runtime**
+- [x] Read-only project-level SQL meter for DB/`rag` size exercised in disposable PG17; **org aggregate and disk/WAL still require separate evidence**
+- [ ] Exact-HEAD PR #17 CI (117+ Node tests, build/auth, PG17 RLS/security, local CLI) PASS with artifacts reviewed
+- [ ] Independent Codex adversarial review of exact HEAD (P0/P1/P2 reconciled)
+- [ ] Separate owner authorization to merge/deploy PR #17
+- [ ] Future read-only hosted ledger check under pinned CLI, confirmed `rag_app` secret procedure and security advisor disposition
+- [ ] Real organization quota/disk/WAL measurements and robust concurrent capacity reservations before E2
+- [ ] Separate human authorization for hosted role/grants, catalog migration, flat vector space, secrets and E2 live ingestion; H7/H11/H12 still open
+
 ## Step E2 — Ingestion orchestration (expected #11b)
 
 - [ ] Runtime PgVector with constructor `disableInit: true`; PgVector not registered in `new Mastra({ vectors })`

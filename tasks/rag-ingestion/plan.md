@@ -36,6 +36,10 @@ The preceding adjudication checkpoint section is historical: its directions were
 - **Evidence:** PR #13 merged as `248c0ba096c55e8e432ab0bfbfb3a49e2c2a8f28` with CI SUCCESS; its synthetic local restore drill remains a fixture test, not a production backup.
 - **Authority:** [H10 MVP decision](../../docs/decisions/RAG-H10-mvp-no-backup.md). Supersedes older backup-related gate language below, not other decisions.
 
+## E1 local operator package — PR #17 (2026-11-17)
+
+The [operator package work order](../../docs/rag/e1-operator-package.md) stages the CLI-generated H5 migration and foundation-history mapping, H6 local privilege and event-trigger regressions, and H10 pure projected capacity checks. **All work is local/CI only.** Actual hosted role, migration, space, DSN or ingest execution is not approved. The H10 [no-backup MVP decision](../../docs/decisions/RAG-H10-mvp-no-backup.md) remains in force. Numeric H10 limits are ratified but live enforcement and organization/disk measurements remain open.
+
 ## Rules that apply to every step
 
 - No step starts before the decisions it depends on are ratified (column "Gate").
