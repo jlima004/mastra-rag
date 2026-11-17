@@ -88,14 +88,33 @@ Reference: [E1 decision proposal](../../docs/decisions/RAG-E1-adjudication-propo
 - [x] Supabase read-only evidence obtained: Free, São Paulo, PostgreSQL 17, `rag` schema with no tables, pgvector installed, migration baseline `20261113233720`, no `rag_app`
 - [x] Existing `public.rls_auto_enable()` security-advisor warnings recorded for separate authorized investigation; no grants changed
 - [x] Proposals E1-P2-01/02/03 documented (rendered identity, v2 ingestion idempotency, no-op semantics)
-- [ ] Exact-head CI and independent Codex review of documentation-only Draft PR; address P0/P1/P2
+- [x] PR #11 exact-head CI PASS and Codex review with no material findings; documentation PR merged
 - [ ] Owner H4 decision: physical identity uniqueness, RLS, indexes/constraints and effective v2 provenance
 - [ ] Owner H5 decision: migration paths/history, owner applier, backups and rollback
 - [ ] Owner H6 decision: `rag_app` privilege/role policy, safe treatment of security advisory
 - [ ] Owner H10 decision: actual storage estimate and backup/isolated restore with RPO/RTO, or separately approved paid plan
-- [ ] Separate explicit owner authorization for an E1 implementation PR; no DDL/upsert/secret changes from this checkpoint
+- [x] Owner explicitly authorized a separate **local-only E1 Draft PR**; remote DDL/upsert/secret changes remain withheld
 
-## Step E1 — Migration and provisioning (expected #11a)
+## Step E1 — Local-only candidate implementation (PR #12 Draft)
+
+Evidence and boundaries: [Step E1 local note](../../docs/rag/step-e1-local.md). No hosted SQL, billing, deployment or credentials changed.
+
+- [x] E1-P2-01: rendered identity provenance exposed (base/rendered ID, effective charset, normalized SHA, canonical header metadata)
+- [x] E1-P2-02: `rag:job:v2` pure key and independent frozen SHA-256 goldens; historical `rag:job:v1` preserved
+- [x] E1-P2-03: pure `no_op`/freshness/reversion assessment; E2 DB-locked publication remains unimplemented
+- [x] Catalog up/down SQL candidate created with rendered identity, nullable measured tokens and guarded RLS
+- [x] Local-only `flat` PgVector operator script and disposable PostgreSQL 17 SQL fixtures authored
+- [x] Runtime vector-store factory configured with `disableInit: true`
+- [ ] Exact-head PostgreSQL 17 + pgvector up/down/up, role/RLS/upsert and negative tests PASS
+- [ ] Full exact-head baseline CI/tests/typecheck/build/auth smokes PASS
+- [ ] Independent Codex review of final HEAD; all P0/P1/P2 remediated
+- [ ] H5 remote migration-history/owner-applier mapping independently approved
+- [ ] H6 existing security advisor finding resolved/accepted separately before hosted changes
+- [ ] H10 actual storage sizing and isolated backup/restore proof with owner-accepted RPO/RTO
+- [ ] Owner separately authorizes PR #12 merge
+- [ ] Owner separately authorizes any hosted catalog migration, role/DSN rotation, and space provisioning
+
+
 
 - [ ] Migration up/down SQL reviewed (catalog, indexes, RLS including space-table UPDATE, grants)
 - [ ] Provisioning script with `indexConfig: { type: 'flat' }`
