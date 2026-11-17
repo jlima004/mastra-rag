@@ -1,5 +1,7 @@
 # RAG ingestion — tracking checklist
 
+**H10 current state (2026-11-17):** [no backups in MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md); backup/restore/RPO/RTO checks from earlier sections are historical and superseded. Storage capacity and all hosted action approvals remain pending.
+
 Status legend: `[ ]` not done · `[x]` done. Stage A ratified partially on 2026-11-16; Steps B–D offline merged; E1 H4/H5/H6 directions and conditional H10 policy ratified 2026-11-17 for **local implementation only**. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
 
 ## Step A — Specification (PR #7)
@@ -28,7 +30,7 @@ Status legend: `[ ]` not done · `[x]` done. Stage A ratified partially on 2026-
 - [ ] H7 MVP access model ratified (proposed: operator-only)
 - [ ] H8 Mastra environment and Turso regions verified; latency accepted or region plan decided
 - [x] H9 Dependency *evaluation* conditionally accepted; actual parser/tokenizer/`zod` package installations require separate version/security review and owner approval
-- [x] H10 Free-with-backup-and-restore policy **direction ratified**; [ ] operational backup/restore evidence and capacity budget **pending**
+- [x] H10 **NO_BACKUP_MVP** decided 2026-11-17 ([owner decision](../../docs/decisions/RAG-H10-mvp-no-backup.md)); [ ] actual corpus and storage-limit enforcement pending
 - [ ] H11 Embedding spend cap and evaluation budget set
 - [ ] H12 Retention and GC windows ratified (proposed: 7-day grace; immediate purge on erasure)
 
@@ -72,11 +74,11 @@ Authority: [RAG-E1 owner ratification](../../docs/decisions/RAG-E1-owner-ratific
 - [x] H4 direction ratified for local E1: catalog + PgVector, flat-first; E1-P2-01/02/03 physical reconciliation required
 - [x] H5 direction ratified for local E1: versioned SQL, test up/down/up locally, owner-only remote application
 - [x] H6 direction ratified for local E1: least-privilege `rag_app`, RLS, namespace; local proofs required
-- [x] H10 policy direction ratified: Free for MVP development, off-site logical backup + tested restore **before persistent ingestion**
+- [x] H10 historical Free-with-backup policy superseded by **no backups in the MVP** (see [later decision](../../docs/decisions/RAG-H10-mvp-no-backup.md))
 - [ ] H4 exact DDL and persistent IDs independently reviewed and tested locally
 - [ ] H5 migration history reconciled with preexisting Supabase migration `20261113233720`
 - [ ] H6 least-privilege and PgVector upsert proven under local PostgreSQL RLS; `rls_auto_enable` advisory reviewed separately
-- [ ] H10 capacity estimate, real isolated restore, RPO/RTO and budget approved for persistent ingestion
+- [ ] H10 capacity estimate, project-size ceiling and admission checks approved before persistent ingestion; **no real backup/restore or RPO/RTO gate for MVP**
 - [ ] E1 separate implementation Draft has code/SQL, local CI, exact-HEAD independent review, human merge authorization
 - [ ] E1 hosted migrations, role/DSN rotation and provisioning separately authorized; do not infer from ratification
 
@@ -92,7 +94,7 @@ Reference: [E1 decision proposal](../../docs/decisions/RAG-E1-adjudication-propo
 - [ ] Owner H4 decision: physical identity uniqueness, RLS, indexes/constraints and effective v2 provenance
 - [ ] Owner H5 decision: migration paths/history, owner applier, backups and rollback
 - [ ] Owner H6 decision: `rag_app` privilege/role policy, safe treatment of security advisory
-- [ ] Owner H10 decision: actual storage estimate and backup/isolated restore with RPO/RTO, or separately approved paid plan
+- [x] Owner H10 backup policy superseded: **no backups in MVP**; [ ] storage-capacity budget remains undecided
 - [x] Owner explicitly authorized a separate **local-only E1 Draft PR**; remote DDL/upsert/secret changes remain withheld
 
 ## Step E1 — Local-only implementation (PR #12 MERGED; hosted execution still blocked)
@@ -110,7 +112,7 @@ Evidence and boundaries: [Step E1 local note](../../docs/rag/step-e1-local.md). 
 - [x] Independent Codex review of final HEAD; P1 DSN-remediation accepted, no material findings at `2f73b800`
 - [ ] H5 remote migration-history/owner-applier mapping independently approved
 - [ ] H6 existing security advisor finding resolved/accepted separately before hosted changes
-- [ ] H10 actual storage sizing and isolated backup/restore proof with owner-accepted RPO/RTO
+- [ ] H10 actual corpus sizing, storage ceiling and operator enforcement; no backups or RPO/RTO in MVP
 - [x] Owner merged PR #12 @ `4547f6abe15a414b65a09d710888d8bbaa2f86a6`, post-merge CI #44136691725 SUCCESS
 - [ ] Owner separately authorizes any hosted catalog migration, role/DSN rotation, and space provisioning
 
@@ -120,7 +122,7 @@ Evidence and boundaries: [Step E1 local note](../../docs/rag/step-e1-local.md). 
 - [ ] Provisioning script with `indexConfig: { type: 'flat' }`
 - [ ] Non-transactional migration class noted for future HNSW
 - [ ] CI green, review, human merge
-- [ ] Owner: logical dump of `rag` taken
+- [x] Owner decided **no logical dump of `rag` in MVP**; excluded from MVP acceptance
 - [ ] Owner: migration applied
 - [ ] Owner: `rag_app` created, runtime DSN rotated, readiness probe green (`NOT rolsuper`)
 - [ ] Owner: space `chunks_te3s_1536_v1` provisioned
@@ -134,17 +136,27 @@ Scope is preparation and **synthetic local restore testing only**; no hosted SQL
 - [x] Verified Free backup limitations, vector extension and current size via read-only project checks
 - [x] H5 single-ledger / owner-applier migration contract **proposed**, not yet operator-ratified
 - [x] H6 hosted role setup and password/DSN boundary **documented**, not executed
-- [x] H10 provisional capacity thresholds, daily logical off-site backup design and recovery targets **proposed**, not owner-accepted
-- [x] Disposable `pg_dump` → distinct local PostgreSQL 17 database `pg_restore` proof **implemented in CI**; actual result pending
-- [ ] CI on exact Draft HEAD: 117+ tests, build/auth smokes and isolated synthetic backup/restore PASS
-- [ ] Independent Codex review of the Draft HEAD, with P0/P1/P2 addressed
-- [ ] Human merge approval for this operational-preparation PR
+- [x] H10 capacity ceilings proposed but not ratified; **backup and RPO/RTO proposals withdrawn for MVP**
+- [x] Synthetic disposable `pg_dump` → separate PostgreSQL 17 database `pg_restore` CI proof PASS (PR #13); **not a production backup**
+- [x] PR #13 CI PASS on exact HEAD `a5a85ab`: 117/117 tests, build/auth smokes, synthetic restore and role upsert
+- [x] PR #13 Codex re-review on final HEAD: P2 extension usage corrected, no new material findings
+- [x] PR #13 merged into `master` @ `248c0ba096c55e8e432ab0bfbfb3a49e2c2a8f28`; post-merge CI SUCCESS
 - [ ] Formal owner approval of **single** migration applier, CLI version/history contract
 - [ ] Separate owner approval of H6 role privileges and review of `rls_auto_enable()` advisor findings
-- [ ] Owner approval of actual corpus storage budget and backup RPO/RTO
-- [ ] Off-site encrypted backup destination/key/retention **configured** and monitored after separate approval
-- [ ] Real hosted backup obtained by a separately authorized owner operator and restored in isolated environment (synthetic drill is not this gate)
+- [ ] Owner approval of actual corpus storage budget; **no RPO/RTO objective for MVP**
+- [x] Off-site backup destination/key/retention excluded from MVP by H10 decision
+- [x] Real hosted backup and restore drill excluded from MVP by H10 decision
 - [ ] Hosted E1 DDL/role/DSN/space provisioning separately authorized and verified
+
+## H10 MVP no-backup decision — latest owner override (2026-11-17)
+
+- [x] Owner explicitly chose **no backups for MVP**: no hosted PITR, external dump, pre-migration backup, automatic export or real-database restore drill
+- [x] RPO/RTO objectives withdrawn for MVP; risk of permanent database loss and unrecoverable history explicitly documented (no operational recovery guarantee)
+- [x] Keep the PR #13 synthetic restoration as local **CI correctness evidence only**, not as a condition for hosting MVP data
+- [ ] Size the verified official corpus and choose an owner-approved Free-plan storage cap/monitoring/admission stop; example thresholds from earlier readiness are not automatically approved
+- [ ] H5 migration ledger and non-destructive SQL plan independently ratified and remotely authorized
+- [ ] H6 least-privilege hosted role and remaining `public.rls_auto_enable()` advisor separately adjudicated and authorized
+- [ ] H7, H11, H12 and any E2 remote operation separately approved; **H10 no-backup does not imply permission to ingest**
 
 ## Step E2 — Ingestion orchestration (expected #11b)
 

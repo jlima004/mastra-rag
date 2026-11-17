@@ -1,5 +1,7 @@
 # RAG-E1 — Human architectural direction ratification
 
+> **Later owner decision (2026-11-17):** [H10 no backup in the MVP](RAG-H10-mvp-no-backup.md) supersedes the H10 backup/restore prerequisite in this *historical* ratification. Capacity and all other gates remain open; no hosted operation is authorized by that decision.
+
 | Field | Value |
 | --- | --- |
 | Decision date | 2026-11-17 |
