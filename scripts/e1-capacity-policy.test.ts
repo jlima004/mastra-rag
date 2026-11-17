@@ -96,6 +96,43 @@ test('invalid disk measurements block rather than divide by zero', () => {
 test('organization sum cannot be less than one included project', () => {
   assert.ok(evaluate({ organizationBytes: 2_000_000 }).blocks.includes('H10_ORGANIZATION_AGGREGATE_INCONSISTENT'));
 });
+test('P2 regression: growth in rag cannot be omitted from project and org projections', () => {
+  const s = snapshot({
+    databaseBytes: 299 * MiB,
+    organizationBytes: 399_000_000,
+    diskUsedBytes: 380 * MiB,
+  });
+  const inconsistent = projection({
+    newActiveVectors: 0,
+    ragAdditionalBytes: 2 * MiB,
+    databaseAdditionalBytes: 0,
+    organizationAdditionalBytes: 0,
+    physicalDiskAdditionalBytes: 2 * MiB,
+  });
+  const rejected = assessE1H10Capacity(s, inconsistent);
+  assert.equal(rejected.admitted, false);
+  assert.ok(rejected.blocks.includes('H10_PROJECT_DELTA_UNDERESTIMATED'));
+
+  const accounted = assessE1H10Capacity(s, {
+    ...inconsistent,
+    databaseAdditionalBytes: 2 * MiB,
+    organizationAdditionalBytes: 2 * MiB,
+  });
+  assert.equal(accounted.admitted, false);
+  assert.ok(accounted.blocks.includes('H10_PROJECT_HARD_STOP'));
+  assert.ok(accounted.blocks.includes('H10_ORGANIZATION_HARD_STOP'));
+});
+
+test('rag relation snapshot cannot exceed enclosing project database size', () => {
+  const result = evaluate({
+    ragBytes: 60 * MiB,
+    databaseBytes: 50 * MiB,
+    organizationBytes: 100_000_000,
+  });
+  assert.equal(result.admitted, false);
+  assert.ok(result.blocks.includes('H10_PROJECT_SNAPSHOT_UNDERCOUNTS_RAG'));
+});
+
 test('an undercounted organization projection is rejected', () => {
   assert.ok(evaluate({}, { organizationAdditionalBytes: 0 }).blocks.includes('H10_ORGANIZATION_DELTA_UNDERESTIMATED'));
 });
