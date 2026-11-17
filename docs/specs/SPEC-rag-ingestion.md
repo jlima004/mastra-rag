@@ -198,6 +198,15 @@ Profile used for the examples:
 
 Because `chunk_id` includes `chunk_set_id`, the same ordinal in v1 and v2 yields different IDs, and identical text in two documents never shares a vector row (PgVector upsert is `ON CONFLICT … DO UPDATE`, ADR E4).
 
+**Step C offline rendering identity refinement (RAG09 R1, proposed; no migration):** The §6.4 canonical `chunkSetId(versionId, profileId)` and its golden examples remain unchanged for the baseline contract. The experimental **structure-aware** chunk renderer also incorporates an immutable fingerprint of the *source title* used to construct context headers, without making `pipeline_profile_id` document-specific:
+
+- `base_chunk_set_id = chunkSetId(version_id, pipeline_profile_id)` (unchanged v1 function).
+- `header_metadata_sha256 = sha256(canonicalJson({sourceTitle: source.title}))`.
+- `rendered_chunk_set_id = sha256("rag:chunkset-rendered:v1\\n" + base_chunk_set_id + "\\n" + header_metadata_sha256)`.
+- `chunk_id = chunkId(rendered_chunk_set_id, ordinal)`. Recursive-baseline chunks contain no title header and keep `base_chunk_set_id`.
+
+This avoids reusing the same vector ID for different rendered content when a reviewed manifest title changes without a raw-document revision. The normalized legal hierarchy/headings come from the hashed source bytes; `source.title` is the external header input. The *future persistent ingestion idempotency key must incorporate the effective rendered chunk-set ID or header metadata fingerprint*, otherwise title-only changes can be incorrectly skipped as duplicates. No Step B hash helper, existing golden fixture, migration, published vector ID, provider call or live index is changed by this R1. This versioned refinement needs explicit reconciliation in the future persistence design before H4/H5 approval. The offline renderer's `utf8-byte-proxy@1` remains an experimental byte budget, not the production tokenizer.
+
 ### 6.5 Required metadata
 
 Catalog (authoritative): all fields in §10. Vector row metadata (PgVector `metadata` JSONB) is an **allowlist**:

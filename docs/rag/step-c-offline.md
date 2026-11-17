@@ -12,12 +12,12 @@ network-capable fetcher, even if this code is later deployed.
 
 | Capability | Implementation | Evidence boundary |
 | --- | --- | --- |
-| HTTPS fetch | Built-in node:https; reviewed exact source ID; pinned public IPv4 on each hop; TLS/SNI validation; 10 s socket/60 s total timeout; manual max-3 redirects and 5 MiB byte cap | **Mock DNS and HTTP only** in CI; no live source was requested |
+| HTTPS fetch | Built-in node:https; reviewed exact source ID; pinned public IPv4 on each hop; explicit `family: 4`, `autoSelectFamily: false`, plus correct scalar/all-address lookup callback contracts; TLS/SNI validation; 10 s socket/60 s total timeout; manual max-3 redirects and 5 MiB byte cap | **Mock DNS and HTTP only** in CI; native request options and both lookup callback shapes tested without live connections |
 | Charset | Declared header vs HTML meta reconciliation; UTF-8 and Windows-1252 | Synthetic fixtures, not vendor HTML integration |
 | Extraction | Restricted deterministic HTML text tokenizer; suppresses script/style/iframes/nav/footer/revoked s/strike/del; amendment text retained as metadata | NOT a full HTML5 parser; unsupported entities and malformed tags fail closed |
 | Legal units | Article, chapter/section, paragraph, Roman-numeral inciso and alínea; stable law locators | Tests with **fictional** articles and sections, not an official corpus |
 | Normalization | Unicode NFC, whitespace collapse, stable block boundaries; SHA-256; exact UTF-16 body offsets | Reconstructed through String.slice in tests |
-| Chunking | Structural chunker with caput context and recursive baseline with overlap; deterministic profile/chunk-set/chunk IDs | **UTF-8 byte budgets**, NOT model tokens; experimental configuration differs from SPEC §6.4 golden token-based profile |
+| Chunking | Structural chunker with caput context, minimum 8-byte body budget after the 5-byte separator, and recursive baseline with overlap; versioned render-metadata SHA-256 in structural chunk-set IDs | **UTF-8 byte budgets**, NOT model tokens; experimental rendered ID formula is described in SPEC §6.4 and differs from baseline golden token-based profile |
 
 No new dependencies, runtime endpoints, DB tables/indexes, secret values,
 embeddings, Supabase or Turso mutations were added.
@@ -34,6 +34,14 @@ The initial parser intentionally supports a restricted HTML subset without
 adding H9-gated dependencies. It must not be relied on for current legal text
 from the Planalto/DOU sites. Unexpected HTML shapes or entities must be
 investigated before considering live ingestion.
+
+## R1 reviewer P2 remediation (offline)
+
+1. The native TLS transport explicitly requests IPv4 and disables automatic family selection; its pinned lookup callback returns either a single address or `[{address, family:4}]` according to Node's `options.all`. Tests exercise the exact production options builder with **no socket connection**.
+2. Header selection reserves **five separator bytes plus eight body bytes** before accepting detailed, simplified or locator-only headers; boundary regression tests use synthetic 499/500/505-byte headers.
+3. Structure-aware chunk-set identity binds `source.title` through a versioned SHA-256 render-metadata fingerprint, with the pipeline profile still reusable. A title-only change must produce different rendered chunk-set and chunk IDs while keeping the raw version and pipeline profile stable. Recursive chunks have no title header and retain their base IDs. The SPEC §6.4 refinement is **proposed for later persistence design**, not a change to existing Step B golden IDs or a migration.
+
+Step D/E must also reconcile ingestion idempotency keys with the *effective rendered chunk-set* identity; this R1 does not authorize any database or production operations.
 
 ## Deliberately unfulfilled Step C gates
 

@@ -50,6 +50,7 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 - [x] NFC normalizer + exact UTF-16 offsets reproduce all emitted body substrings in synthetic tests
 - [x] Structural + recursive byte-budget-proxy baseline implemented and tested for deterministic chunk IDs and overlap; **actual token-count calibration pending H9**
 - [ ] Official LGPD source snapshot, current text review, provenance and measured `cl100k_base` token statistics (blocked: verified source access and H9 tokenizer). Synthetic fixture committed; byte-proxy stats are not model token statistics.
+- [ ] RAG09 R1 (three Codex P2s: native lookup callback, minimum body budget, rendered metadata identity) — CI and Codex re-review required; no merge or deploy
 - [ ] CI green, review, human merge
 
 ## Step D — Embeddings (expected #10)
