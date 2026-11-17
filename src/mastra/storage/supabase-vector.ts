@@ -21,6 +21,8 @@ export function createSupabaseVectorStore(
     connectionString,
     ...(ssl ? { ssl } : {}),
     schemaName: RAG_SCHEMA_NAME,
+    // E1: the runtime must never create/alter tables automatically.
+    disableInit: true,
     max: 2,
     idleTimeoutMillis: 10_000,
     pgPoolOptions: { connectionTimeoutMillis: 5_000 },

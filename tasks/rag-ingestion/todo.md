@@ -1,6 +1,6 @@
 # RAG ingestion — tracking checklist
 
-Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** recorded on 2026-11-16. Steps B–D offline now merged; E1 physical adjudication remains pending. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
+Status legend: `[ ]` not done · `[x]` done. Stage A ratified partially on 2026-11-16; Steps B–D offline merged; E1 H4/H5/H6 directions and conditional H10 policy ratified 2026-11-17 for **local implementation only**. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
 
 ## Step A — Specification (PR #7)
 
@@ -22,13 +22,13 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 - [x] H1 Corpus / use case accepted for MVP: LGPD + selected CD/ANPD resolutions (exact official sources pending Step B)
 - [x] H2 Initial formats accepted: HTML + Markdown/TXT; PDF phase 2; no OCR
 - [x] H3 Model baseline accepted: `openai/text-embedding-3-small` @1536; **account/billing and paid use remain pending H11**
-- [ ] H4 Data model ratified (proposed: PgVector space tables + app catalog, exact search first)
-- [ ] H5 Migration location, tooling and applier ratified (proposed: `db/migrations/`, owner applies)
-- [ ] H6 Least-privilege `rag_app` role and DSN rotation approved
+- [x] H4 direction ratified for **local E1** (PgVector + catalog, exact search first); physical SQL and E1-P2 reconciliation remain pending
+- [x] H5 direction ratified for **local E1** (versioned `db/migrations/`, owner-only remote applier); migration history and SQL approval pending
+- [x] H6 least-privilege **design direction** ratified for local tests; hosted role creation and DSN rotation **not approved**
 - [ ] H7 MVP access model ratified (proposed: operator-only)
 - [ ] H8 Mastra environment and Turso regions verified; latency accepted or region plan decided
 - [x] H9 Dependency *evaluation* conditionally accepted; actual parser/tokenizer/`zod` package installations require separate version/security review and owner approval
-- [ ] H10 Supabase plan, backup/PITR and storage budget confirmed
+- [x] H10 Free-with-backup-and-restore policy **direction ratified**; [ ] operational backup/restore evidence and capacity budget **pending**
 - [ ] H11 Embedding spend cap and evaluation budget set
 - [ ] H12 Retention and GC windows ratified (proposed: 7-day grace; immediate purge on erasure)
 
@@ -65,6 +65,21 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 - [ ] H9: approved tokenizer for validated preflight accounting; no package installed in this PR
 - [x] PR #10 exact-head CI full PASS (105/105), independent Codex re-review no material findings, human merge @ `0075155`. **No live embedding, DDL or production ingestion authorized**.
 
+## RAG-E1 — Owner direction ratification and implementation kickoff (2026-11-17)
+
+Authority: [RAG-E1 owner ratification](../../docs/decisions/RAG-E1-owner-ratification.md). Work order: [Step E1 local implementation](step-e1-local-work-order.md). This updates **direction status only**, not hosted-operations approval.
+
+- [x] H4 direction ratified for local E1: catalog + PgVector, flat-first; E1-P2-01/02/03 physical reconciliation required
+- [x] H5 direction ratified for local E1: versioned SQL, test up/down/up locally, owner-only remote application
+- [x] H6 direction ratified for local E1: least-privilege `rag_app`, RLS, namespace; local proofs required
+- [x] H10 policy direction ratified: Free for MVP development, off-site logical backup + tested restore **before persistent ingestion**
+- [ ] H4 exact DDL and persistent IDs independently reviewed and tested locally
+- [ ] H5 migration history reconciled with preexisting Supabase migration `20261113233720`
+- [ ] H6 least-privilege and PgVector upsert proven under local PostgreSQL RLS; `rls_auto_enable` advisory reviewed separately
+- [ ] H10 capacity estimate, real isolated restore, RPO/RTO and budget approved for persistent ingestion
+- [ ] E1 separate implementation Draft has code/SQL, local CI, exact-HEAD independent review, human merge authorization
+- [ ] E1 hosted migrations, role/DSN rotation and provisioning separately authorized; do not infer from ratification
+
 ## RAG-E1 — Documentation-only adjudication checkpoint (2026-11-17)
 
 Reference: [E1 decision proposal](../../docs/decisions/RAG-E1-adjudication-proposal.md). Authorized: record/review decisions only; H4/H5/H6/H10 remain PENDING.
@@ -73,14 +88,33 @@ Reference: [E1 decision proposal](../../docs/decisions/RAG-E1-adjudication-propo
 - [x] Supabase read-only evidence obtained: Free, São Paulo, PostgreSQL 17, `rag` schema with no tables, pgvector installed, migration baseline `20261113233720`, no `rag_app`
 - [x] Existing `public.rls_auto_enable()` security-advisor warnings recorded for separate authorized investigation; no grants changed
 - [x] Proposals E1-P2-01/02/03 documented (rendered identity, v2 ingestion idempotency, no-op semantics)
-- [ ] Exact-head CI and independent Codex review of documentation-only Draft PR; address P0/P1/P2
+- [x] PR #11 exact-head CI PASS and Codex review with no material findings; documentation PR merged
 - [ ] Owner H4 decision: physical identity uniqueness, RLS, indexes/constraints and effective v2 provenance
 - [ ] Owner H5 decision: migration paths/history, owner applier, backups and rollback
 - [ ] Owner H6 decision: `rag_app` privilege/role policy, safe treatment of security advisory
 - [ ] Owner H10 decision: actual storage estimate and backup/isolated restore with RPO/RTO, or separately approved paid plan
-- [ ] Separate explicit owner authorization for an E1 implementation PR; no DDL/upsert/secret changes from this checkpoint
+- [x] Owner explicitly authorized a separate **local-only E1 Draft PR**; remote DDL/upsert/secret changes remain withheld
 
-## Step E1 — Migration and provisioning (expected #11a)
+## Step E1 — Local-only candidate implementation (PR #12 Draft)
+
+Evidence and boundaries: [Step E1 local note](../../docs/rag/step-e1-local.md). No hosted SQL, billing, deployment or credentials changed.
+
+- [x] E1-P2-01: rendered identity provenance exposed (base/rendered ID, effective charset, normalized SHA, canonical header metadata)
+- [x] E1-P2-02: `rag:job:v2` pure key and independent frozen SHA-256 goldens; historical `rag:job:v1` preserved
+- [x] E1-P2-03: pure `no_op`/freshness/reversion assessment; E2 DB-locked publication remains unimplemented
+- [x] Catalog up/down SQL candidate created with rendered identity, nullable measured tokens and guarded RLS
+- [x] Local-only `flat` PgVector operator script and disposable PostgreSQL 17 SQL fixtures authored
+- [x] Runtime vector-store factory configured with `disableInit: true`
+- [ ] Exact-head PostgreSQL 17 + pgvector up/down/up, role/RLS/upsert and negative tests PASS
+- [ ] Full exact-head baseline CI/tests/typecheck/build/auth smokes PASS
+- [ ] Independent Codex review of final HEAD; all P0/P1/P2 remediated
+- [ ] H5 remote migration-history/owner-applier mapping independently approved
+- [ ] H6 existing security advisor finding resolved/accepted separately before hosted changes
+- [ ] H10 actual storage sizing and isolated backup/restore proof with owner-accepted RPO/RTO
+- [ ] Owner separately authorizes PR #12 merge
+- [ ] Owner separately authorizes any hosted catalog migration, role/DSN rotation, and space provisioning
+
+
 
 - [ ] Migration up/down SQL reviewed (catalog, indexes, RLS including space-table UPDATE, grants)
 - [ ] Provisioning script with `indexConfig: { type: 'flat' }`

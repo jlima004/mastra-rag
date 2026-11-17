@@ -1,5 +1,7 @@
 # ADR: RAG ingestion, embeddings, storage and retrieval (D1–D6)
 
+> **E1 direction ratification (2026-11-17):** The owner [approved H4/H5/H6 architectural directions and H10's conditional Free-with-tested-backup approach](../decisions/RAG-E1-owner-ratification.md) for **local E1 implementation and testing**. Detailed physical DDL, safe role/grants, migration history, and backup/restore readiness remain subject to independent evidence and explicit separate approvals. Historical Stage A status and proposed DDL below are not full operational ratification.
+
 | Field | Value |
 | --- | --- |
 | Status | **PARTIALLY RATIFIED — STAGE_A**: H1/H2 accepted, H3 baseline accepted (account/budget pending), H9 conditional dependency review; D4–D6 *principles only*. All remaining gates pending. |

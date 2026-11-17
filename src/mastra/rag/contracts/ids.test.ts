@@ -3,7 +3,7 @@ import test from 'node:test';
 import { RagContractError } from './errors.ts';
 import {
   canonicalJson, sha256, documentId, documentVersionId, pipelineProfileId,
-  chunkSetId, chunkId, ingestionIdempotencyKey,
+  chunkSetId, chunkId, ingestionIdempotencyKey, renderedIngestionIdempotencyKey,
 } from './ids.ts';
 
 const tenant = 'public';
@@ -99,4 +99,36 @@ test('id spaces and ordinals are distinct and reproducible', () => {
   assert.notEqual(chunkId(set, 0), chunkId(set, 1));
   assert.notEqual(chunkId(set, 7), ingestionIdempotencyKey(d, 'a'.repeat(64), p, 'chunks_te3s_1536_v1'));
   assert.notEqual(chunkId(set, 7), chunkId(chunkSetId(v, 'b'.repeat(64)), 7));
+});
+
+test('RAG-E1 rag:job:v2 golden binds exact rendered ID, space and document', () => {
+  const doc = 'a'.repeat(64);
+  const rendered = 'b'.repeat(64);
+  const space = 'chunks_te3s_1536_v1';
+  assert.equal(
+    renderedIngestionIdempotencyKey(doc, rendered, space),
+    '389ee94283699d332a8c6aab5bb322441cf091b12bf012ced790a817d2dedc2b',
+  );
+  assert.equal(
+    renderedIngestionIdempotencyKey(doc, 'c'.repeat(64), space),
+    'feca433753e5af95088f025548b1d43a26f167a71c9fc218c4f17874e0f416bc',
+  );
+  assert.notEqual(renderedIngestionIdempotencyKey(doc, rendered, space),
+    renderedIngestionIdempotencyKey(doc, rendered, 'chunks_te3s_1536_v2'));
+  assert.notEqual(renderedIngestionIdempotencyKey(doc, rendered, space),
+    renderedIngestionIdempotencyKey('d'.repeat(64), rendered, space));
+  assert.equal(renderedIngestionIdempotencyKey(doc, rendered, space),
+    renderedIngestionIdempotencyKey(doc, rendered, space));
+});
+
+test('rag:job:v2 rejects malformed components, never silently falls back to historical v1', () => {
+  for (const [doc, render, space] of [
+    ['oops', 'b'.repeat(64), 'chunks_te3s_1536_v1'],
+    ['a'.repeat(64), 'B'.repeat(64), 'chunks_te3s_1536_v1'],
+    ['a'.repeat(64), 'b'.repeat(64), 'bad-space'],
+    ['a'.repeat(64), 'b'.repeat(64), 'chunks_ab\nsecret'],
+  ]) {
+    assert.throws(() => renderedIngestionIdempotencyKey(doc, render, space),
+      (err: unknown) => err instanceof RagContractError && err.code === 'INVALID_HASH_COMPONENT');
+  }
 });

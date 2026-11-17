@@ -1,5 +1,7 @@
 # SPEC: RAG document ingestion, indexing and retrieval
 
+> **E1 decision update (2026-11-17):** [Owner ratified H4/H5/H6 directions and H10's conditional Free/backup policy](../decisions/RAG-E1-owner-ratification.md) **for local E1 development only**. The original Stage A table and candidate §10/§11 physical details below remain historical/unratified at the SQL level. The E1-P2-01/02/03 reconciliation still blocks freezing DDL. No remote migration, role/DSN change, hosted provisioning, paid calls or ingestion is authorized.
+
 | Field | Value |
 | --- | --- |
 | Status | **PARTIAL STAGE_A RATIFICATION** — only H1/H2, H3 baseline, H9 dependency review and D4–D6 principles accepted; remaining gates pending |
