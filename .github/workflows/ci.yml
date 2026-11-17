@@ -130,3 +130,34 @@ jobs:
           test "$disabled_status" = 404 || { echo "FAIL: durability route returned $disabled_status"; exit 1; }
           node -e "const a=require('node:assert/strict'); const fs=require('node:fs'); a.deepEqual(JSON.parse(fs.readFileSync('/tmp/turso-disabled.json','utf8')), {status:'disabled'});"
           echo 'PASS: Turso durability probe is authenticated and disabled by default.'
+
+  e1-local-postgres:
+    name: E1 disposable PostgreSQL 17 + PgVector migration/RLS checks
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: e1-local-ci-only
+          POSTGRES_DB: rag_e1
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rag_e1"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify catalog up/down/up, rendered identity, RLS, namespace and local flat PgVector
+        env:
+          E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/test-e1-local.sh
