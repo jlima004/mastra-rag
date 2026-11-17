@@ -59,20 +59,24 @@ test('ratified at-most-one rebuilding space rejects second additional space', ()
   assert.ok(evaluate({ additionalSpaces: 1 }, { newAdditionalSpaces: 1 }).blocks.includes('H10_EXTRA_SPACE_CAP'));
 });
 test('rag warnings and hard stop follow binary MiB exactly', () => {
-  assert.ok(evaluate({ ragBytes: 80 * MiB }, { ragAdditionalBytes: 0 }).warnings.includes('H10_RAG_WARNING'));
-  assert.equal(evaluate({ ragBytes: 100 * MiB - 1 }, { ragAdditionalBytes: 0 }).admitted, true);
-  assert.ok(evaluate({ ragBytes: 100 * MiB }, { ragAdditionalBytes: 0 }).blocks.includes('H10_RAG_HARD_STOP'));
+  const enclosing = { databaseBytes: 120 * MiB, organizationBytes: 150_000_000 };
+  const unchanged = { ragAdditionalBytes: 0, databaseAdditionalBytes: 0, organizationAdditionalBytes: 0 };
+  assert.ok(evaluate({ ...enclosing, ragBytes: 80 * MiB }, unchanged).warnings.includes('H10_RAG_WARNING'));
+  assert.equal(evaluate({ ...enclosing, ragBytes: 100 * MiB - 1 }, unchanged).admitted, true);
+  assert.ok(evaluate({ ...enclosing, ragBytes: 100 * MiB }, unchanged).blocks.includes('H10_RAG_HARD_STOP'));
 });
 test('project warnings and hard stop follow binary MiB exactly', () => {
-  assert.ok(evaluate({ databaseBytes: 250 * MiB, organizationBytes: 280_000_000 }, { databaseAdditionalBytes: 0, organizationAdditionalBytes: 0 }).warnings.includes('H10_PROJECT_WARNING'));
-  assert.equal(evaluate({ databaseBytes: 300 * MiB - 1, organizationBytes: 320_000_000 }, { databaseAdditionalBytes: 0, organizationAdditionalBytes: 0 }).admitted, true);
-  assert.ok(evaluate({ databaseBytes: 300 * MiB, organizationBytes: 330_000_000 }, { databaseAdditionalBytes: 0, organizationAdditionalBytes: 0 }).blocks.includes('H10_PROJECT_HARD_STOP'));
+  const unchanged = { ragAdditionalBytes: 0, databaseAdditionalBytes: 0, organizationAdditionalBytes: 0 };
+  assert.ok(evaluate({ databaseBytes: 250 * MiB, organizationBytes: 280_000_000 }, unchanged).warnings.includes('H10_PROJECT_WARNING'));
+  assert.equal(evaluate({ databaseBytes: 300 * MiB - 1, organizationBytes: 320_000_000 }, unchanged).admitted, true);
+  assert.ok(evaluate({ databaseBytes: 300 * MiB, organizationBytes: 330_000_000 }, unchanged).blocks.includes('H10_PROJECT_HARD_STOP'));
 });
 test('organization aggregate warning and hard stop use decimal MB, not binary', () => {
   assert.equal(E1_H10_LIMITS.organizationHardBytes, 400_000_000);
-  assert.ok(evaluate({ organizationBytes: 350_000_000 }, { organizationAdditionalBytes: 0, databaseAdditionalBytes: 0 }).warnings.includes('H10_ORGANIZATION_WARNING'));
-  assert.equal(evaluate({ organizationBytes: 399_999_999 }, { organizationAdditionalBytes: 0, databaseAdditionalBytes: 0 }).admitted, true);
-  assert.ok(evaluate({ organizationBytes: 400_000_000 }, { organizationAdditionalBytes: 0, databaseAdditionalBytes: 0 }).blocks.includes('H10_ORGANIZATION_HARD_STOP'));
+  const unchanged = { ragAdditionalBytes: 0, databaseAdditionalBytes: 0, organizationAdditionalBytes: 0 };
+  assert.ok(evaluate({ organizationBytes: 350_000_000 }, unchanged).warnings.includes('H10_ORGANIZATION_WARNING'));
+  assert.equal(evaluate({ organizationBytes: 399_999_999 }, unchanged).admitted, true);
+  assert.ok(evaluate({ organizationBytes: 400_000_000 }, unchanged).blocks.includes('H10_ORGANIZATION_HARD_STOP'));
 });
 test('org aggregate unavailable blocks, even when project is small', () => {
   assert.ok(evaluate({ organizationBytes: null }).blocks.includes('H10_METRICS_MISSING_OR_INVALID'));
