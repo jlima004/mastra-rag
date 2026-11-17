@@ -31,7 +31,12 @@ export type OfflineChunk = Readonly<{
 export type OfflineChunkSet = Readonly<{
   versionId: string;
   profileId: string;
+  /** Historical Step B identity; distinct renderings may share it. */
+  baseChunkSetId: string;
+  /** Authoritative rendered v2 identity, used for future catalog and chunk IDs. */
   chunkSetId: string;
+  renderingIdentityVersion: 'rag:chunkset-rendered:v2';
+  normalizedSha256: string;
   /** Hash of the external metadata that affects rendered context headers. */
   headerMetadataSha256: string | null;
   tokenizer: 'utf8-byte-proxy@1';
@@ -266,7 +271,9 @@ export function makeOfflineChunkSet(
   }
   if (!result.length) throw new RagProcessingError('CHUNK_EMPTY');
   return Object.freeze({
-    versionId, profileId, chunkSetId: setId, headerMetadataSha256,
+    versionId, profileId, baseChunkSetId: baseSetId, chunkSetId: setId,
+    renderingIdentityVersion: 'rag:chunkset-rendered:v2',
+    normalizedSha256: doc.normalizedSha256, headerMetadataSha256,
     tokenizer: 'utf8-byte-proxy@1',
     strategy: config.strategy,
     chunks: Object.freeze(result),
