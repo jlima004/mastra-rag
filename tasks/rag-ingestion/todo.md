@@ -1,6 +1,6 @@
 # RAG ingestion — tracking checklist
 
-Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** recorded on 2026-11-16; no offline implementation started. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
+Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** recorded on 2026-11-16. Steps B–D offline now merged; E1 physical adjudication remains pending. PR numbers after #7 are provisional (see [`plan.md`](plan.md)).
 
 ## Step A — Specification (PR #7)
 
@@ -53,7 +53,7 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 - [x] RAG09 R1–R3 remediations reviewed by Codex with no final findings; PR #9 merged into master and deploy confirmed
 - [x] RAG09 CI post-merge 85/85 tests; Codex final review without findings; human merge and deploy complete
 
-## Step D — Embeddings (PR #10 Draft; offline-only)
+## Step D — Embeddings (PR #10 merged; offline-only)
 
 - [x] `EmbeddingProvider` interface and immutable MVP space registry type
 - [x] Lazy `ModelRouterEmbeddingModel` adapter for `openai/text-embedding-3-small`; explicit paid-call gate, injection-only tests
@@ -63,7 +63,22 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 - [x] No OpenAI key at import, no server registration; missing-key startup requires CI smoke
 - [ ] H11: owner-ratified account, provider-side hard spend cap, daily/token budgets, paid authorization
 - [ ] H9: approved tokenizer for validated preflight accounting; no package installed in this PR
-- [ ] PR #10 CI full PASS, independent review, human merge. No deploy authorized by Step D.
+- [x] PR #10 exact-head CI full PASS (105/105), independent Codex re-review no material findings, human merge @ `0075155`. **No live embedding, DDL or production ingestion authorized**.
+
+## RAG-E1 — Documentation-only adjudication checkpoint (2026-11-17)
+
+Reference: [E1 decision proposal](../../docs/decisions/RAG-E1-adjudication-proposal.md). Authorized: record/review decisions only; H4/H5/H6/H10 remain PENDING.
+
+- [x] GitHub baseline verified: Step D PR #10 merged as `0075155`; CI SUCCESS 105/105
+- [x] Supabase read-only evidence obtained: Free, São Paulo, PostgreSQL 17, `rag` schema with no tables, pgvector installed, migration baseline `20261113233720`, no `rag_app`
+- [x] Existing `public.rls_auto_enable()` security-advisor warnings recorded for separate authorized investigation; no grants changed
+- [x] Proposals E1-P2-01/02/03 documented (rendered identity, v2 ingestion idempotency, no-op semantics)
+- [ ] Exact-head CI and independent Codex review of documentation-only Draft PR; address P0/P1/P2
+- [ ] Owner H4 decision: physical identity uniqueness, RLS, indexes/constraints and effective v2 provenance
+- [ ] Owner H5 decision: migration paths/history, owner applier, backups and rollback
+- [ ] Owner H6 decision: `rag_app` privilege/role policy, safe treatment of security advisory
+- [ ] Owner H10 decision: actual storage estimate and backup/isolated restore with RPO/RTO, or separately approved paid plan
+- [ ] Separate explicit owner authorization for an E1 implementation PR; no DDL/upsert/secret changes from this checkpoint
 
 ## Step E1 — Migration and provisioning (expected #11a)
 

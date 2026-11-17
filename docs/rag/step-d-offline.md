@@ -1,6 +1,6 @@
 # RAG10 — Step D embedding contracts and offline evidence
 
-**Status:** PR #10 Draft, offline code only. **No paid calls, no DB writes, no deployment approval.**
+**Status (updated 2026-11-17):** PR #10 **merged** into `master` @ `0075155cb6da360487ea59dee47c7bb3fd3449c4` after exact-HEAD CI (105/105) and independent Codex re-review. Offline code only. **No paid calls, no DB writes, no deployment approval.**
 
 ## Scope
 
@@ -68,3 +68,7 @@ smoke tests must continue to run with **no OPENAI_API_KEY**.
 
 No credentials, billed usage, API calls, Supabase/Turso writes or deployment
 are authorized by this document.
+
+## Next decision boundary — E1
+
+The [RAG-E1 adjudication proposal](../decisions/RAG-E1-adjudication-proposal.md) starts H4/H5/H6/H10 design review. The physical catalog and persistent ingest identity are **not yet approved**. Step C rendered chunk-set ID v2 must be reconciled with catalog uniqueness, the proposed `rag:job:v2` key and raw-version-change no-op behavior before any E1 migration. This decision record does **not** authorize E1 implementation, role/DSN changes, live ingestion, tokenizers or provider spending.

@@ -373,6 +373,17 @@ The MVP implementation wraps `ModelRouterEmbeddingModel` for `'openai/text-embed
 
 Every call into PgVector (`upsert`, `query`, `deleteVectors`, `updateVector`, `deleteVector`) MUST pass `namespace: tenant_id` explicitly. Omitting it silently defaults to `"default"` and misses every row written under `public` (ADR E9b). The adapter wrapper MUST make `namespace` a required parameter so a forgotten argument is a type error.
 
+### E1 checkpoint addendum — **PROPOSED, NOT RATIFIED** (2026-11-17)
+
+The owner authorized a documentation-only adjudication checkpoint; see [RAG-E1 adjudication proposal](../decisions/RAG-E1-adjudication-proposal.md). H4/H5/H6/H10 remain **PENDING**. No DDL, runtime role, credential, hosted write, real embedding or deployment is authorized by this addendum.
+
+- **E1-P2-01:** §10.2 `UNIQUE(version_id, pipeline_profile_id)` is incompatible with Step C's rendering identity refinement in §6.4. Proposed physical key: rendered chunk-set ID v2, with base ID, normalized hash, and rendering-header metadata/hash explicitly verifiable. Step B goldens and Step C rendered-hash formula remain unchanged.
+- **E1-P2-02:** §6.2 and §6.4 `rag:job:v1` do not bind the effective rendered input. Proposed v2: `sha256("rag:job:v2\ningest\n" + document_id + "\n" + rendered_chunk_set_id + "\n" + space_id)`; it is inserted **after deterministic rendering and before any embedding/upsert**. Keep v1 golden as historical. The existing immediately-after-fetch row insertion becomes an **unratified proposal to revise**, not the implementation target.
+- **E1-P2-03:** §11.4 raw-changed/normalized-equal no-op is inconsistent with rendered v2 identity (which includes base identity derived from raw version). Proposed conservative MVP: only the identical **rendered chunk-set ID** is an embedding no-op; otherwise create distinct version/render/provenance, and defer any cross-version vector reuse until separately specified.
+- **H9/H11:** Step C UTF-8 byte proxy and Step D byte+8 reservation do not establish measured tokenizer counts or actual provider billing. Persisted token-count fields and paid ingestion remain gated pending calibration and spending approval.
+
+Existing DDL §10.2, ingestion pseudocode §6.2 and scenario table §11.4 remain **historical proposals** and contain these known unresolved conflicts. Do **not** execute or treat them as frozen contracts. The E1 implementation must update them and add deterministic, concurrency/reversion, role/RLS and local Postgres tests after adjudication.
+
 ## 10. Logical data model (Supabase schema `rag`)
 
 ### 10.1 Entities and relations
