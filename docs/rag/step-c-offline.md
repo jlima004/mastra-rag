@@ -35,13 +35,15 @@ adding H9-gated dependencies. It must not be relied on for current legal text
 from the Planalto/DOU sites. Unexpected HTML shapes or entities must be
 investigated before considering live ingestion.
 
-## R1 reviewer P2 remediation (offline)
+## R1/R2 Codex P2 remediation (offline)
 
-1. The native TLS transport explicitly requests IPv4 and disables automatic family selection; its pinned lookup callback returns either a single address or `[{address, family:4}]` according to Node's `options.all`. Tests exercise the exact production options builder with **no socket connection**.
-2. Header selection reserves **five separator bytes plus eight body bytes** before accepting detailed, simplified or locator-only headers; boundary regression tests use synthetic 499/500/505-byte headers.
-3. Structure-aware chunk-set identity binds `source.title` through a versioned SHA-256 render-metadata fingerprint, with the pipeline profile still reusable. A title-only change must produce different rendered chunk-set and chunk IDs while keeping the raw version and pipeline profile stable. Recursive chunks have no title header and retain their base IDs. The SPEC §6.4 refinement is **proposed for later persistence design**, not a change to existing Step B golden IDs or a migration.
+1. Native TLS transport uses typed `family: 4`, pinned IPv4, preserved server name and TLS certificate verification; the lookup callback returns either a scalar `(address, 4)` or `[{address, family: 4}]` according to `options.all`. Tests exercise both without outgoing sockets.
+2. Header selection reserves **five separator bytes plus eight minimum body bytes** before accepting detailed, simplified or locator-only headers. Synthetic boundary tests use 499/500/505-byte breadcrumbs.
+3. Source metadata-only changes (such as title corrections) now alter structural rendered chunk-set IDs while keeping the raw version and reusable pipeline profile stable.
+4. **New R2 finding:** the same raw bytes decoded under different effective HTTP charsets can produce different normalized text. The new `rag:chunkset-rendered:v2` binds `normalized_sha256` to chunk-set identity for **both** structural and recursive strategies, plus the structural title fingerprint when applicable. Tests reproduce UTF-8 vs Windows-1252 on identical raw bytes; a hard-coded SHA-256 golden assertion covers the versioned formula.
+5. The SPEC §6.4 newline separators now match `join('\n')`; this corrects the previous double-backslash transcription, independent of the charset change.
 
-Step D/E must also reconcile ingestion idempotency keys with the *effective rendered chunk-set* identity; this R1 does not authorize any database or production operations.
+Step D/E must reconcile ingestion job idempotency with the *effective rendered chunk-set* identity before persistence. No Step B golden ID was modified; no migration, new package, provider call, remote fetch or deploy is authorized.
 
 ## Deliberately unfulfilled Step C gates
 
