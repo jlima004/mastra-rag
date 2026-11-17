@@ -1,5 +1,7 @@
 # RAG-E1 — Local-only implementation work order
 
+> **Later owner H10 decision (2026-11-17):** [No backups in the MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md). This original E1 work order is historical; the operational E1-04 acceptance instructions below reflect the later decision. No pre-migration backup, external backup or real-database restore is an MVP gate. Storage capacity, H5/H6 and hosted-operation authorizations remain independently pending.
+
 **State:** IMPLEMENTATION_BRIEF_READY / CODE_PENDING. **Authority:** [owner ratification](../../docs/decisions/RAG-E1-owner-ratification.md). **Base:** `master` @ `8030b63e24aed4dab8d558b892846fc0b75d3278` (merged PR #11).
 
 This work order prepares a **separate Draft PR**. A Draft opening is not evidence that E1 code, tests, SQL review, H10 operational readiness or merge gates are complete.
@@ -37,11 +39,11 @@ This work order prepares a **separate Draft PR**. A Draft opening is not evidenc
 4. Add tests for `rag_app` privilege denials, runtime `disableInit:true`, schema-qualified queries and no `vectors` registration in public Mastra runtime. Avoid privilege escalation via SECURITY DEFINER.
 5. Do not change the existing hosted `public.rls_auto_enable()` function/event trigger or its grants. Record security-advisor finding and proposed separate review, without implying exploitability.
 
-### E1-04 — H10 recovery/capacity evidence (offline)
+### E1-04 — H10 MVP capacity and no-backup risk (owner policy supersession)
 
-1. Estimate corpus footprint and index overhead as hypotheses using explicit assumptions and validation parameters, separating current ~11 MB database baseline from future vector footprint.
-2. Document a versioned logical backup/off-site encryption and isolated restore procedure, including sensitive data controls, who executes it and failure handling. **Do not claim restore PASS until tested.**
-3. Record proposed RPO/RTO, project storage ceiling, monitoring and owner approval requirements. Retain H10 OPERATIONAL_PENDING for hosted ingestion; free-tier limitations are not waived by direction ratification.
+1. Estimate corpus footprint, catalogue/index/vector overhead and Free-tier headroom using explicit assumptions; separate the historical ~11 MB database baseline from the actual corpus measurement. Propose a bounded storage ceiling and admission-stop/monitoring controls; **the numeric ceilings remain subject to owner approval and enforcement before persistent ingestion**.
+2. **No database backups in the MVP:** do not request or implement pre-migration dumps, external/encrypted backups, scheduled exports, paid PITR or real-database restore drills as operational tasks or acceptance requirements. Do not define promised RPO/RTO. The owner [explicitly superseded those requirements](../../docs/decisions/RAG-H10-mvp-no-backup.md).
+3. Record the risk of **permanent loss** of catalog, publication state, historical versions and embeddings, with no verified recovery path or restoration guarantee. Synthetic isolated PostgreSQL dump/restore remains a **CI fixture correctness test only**, not a production backup. Preserve H5 single-ledger/non-destructive migration safety, H6 least privilege, capacity approval and separately authorized hosted execution.
 
 ### E1-05 — Adversarial tests, review and handoff
 
@@ -62,9 +64,9 @@ This work order prepares a **separate Draft PR**. A Draft opening is not evidenc
 - [ ] E1-01 identity contract + golden tests reconciled.
 - [ ] E1-02 migrations and local up/down/up validated.
 - [ ] E1-03 least privilege, RLS, namespace and `flat` provisioning validated locally.
-- [ ] E1-04 H10 recovery/capacity *plan* documented (remote readiness may remain pending).
+- [ ] E1-04 H10 **no-backup MVP decision** recorded with irreversible-loss risk and storage-capacity proposal; capacity acceptance/enforcement remains pending, without a real backup/restore/RPO/RTO requirement.
 - [ ] Exact-HEAD CI and independent reviewer PASS, no open material findings.
 - [ ] Owner reviews and explicitly approves **merge separately**.
-- [ ] Owner later independently authorizes any hosted migration, grants/role/DSN rotation, provisioning, backup setup or deploy.
+- [ ] Owner later independently authorizes any hosted migration, grants/role/DSN rotation, provisioning or deploy; **no backup setup is planned for the MVP**.
 
 **The documentation-only kickoff PR may begin with the ratification and this work order; mark feature/CI gates as pending until corresponding implementation exists.**
