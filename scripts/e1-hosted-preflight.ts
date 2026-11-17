@@ -47,9 +47,10 @@ export function evaluateHostedPreflight(value: unknown): HostedPreflightDecision
       x.service_role_rag_usage !== false) {
     blockers.push('E1_PRIVATE_SCHEMA_EXPOSURE');
   }
-  if (!Array.isArray(x.migration_versions) ||
-      x.migration_versions.length !== EXPECTED_APPLIED_VERSIONS.length ||
-      !EXPECTED_APPLIED_VERSIONS.every((v, i) => x.migration_versions[i] === v) ||
+  const migrationVersions = x.migration_versions;
+  if (!Array.isArray(migrationVersions) ||
+      migrationVersions.length !== EXPECTED_APPLIED_VERSIONS.length ||
+      !EXPECTED_APPLIED_VERSIONS.every((v, i) => migrationVersions[i] === v) ||
       x.foundation_sql_sha256 !== EXPECTED_FOUNDATION_SHA256 ||
       x.foundation_statement_count !== 1) {
     blockers.push('E1_HOSTED_MIGRATION_DRIFT');
