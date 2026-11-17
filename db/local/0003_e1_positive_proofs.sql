@@ -43,14 +43,14 @@ VALUES (repeat('b',64),repeat('a',64),repeat('c',64),
 INSERT INTO rag.chunk_set
   (chunk_set_id,base_chunk_set_id,rendering_identity_version,version_id,document_id,
    pipeline_profile_id,pipeline_profile,normalized_text,normalized_sha256,
-   header_metadata_sha256,chunk_count,total_byte_budget)
+   effective_charset,header_metadata_canonical_json,header_metadata_sha256,chunk_count,total_byte_budget)
 VALUES
   (repeat('d',64),repeat('e',64),'rag:chunkset-rendered:v2',
    repeat('b',64),repeat('a',64),repeat('f',64),'{}'::jsonb,'synthetic',repeat('1',64),
-   repeat('2',64),1,80),
+   'utf-8','{"sourceTitle":"Synthetic"}',repeat('2',64),1,80),
   (repeat('6',64),repeat('e',64),'rag:chunkset-rendered:v2',
    repeat('b',64),repeat('a',64),repeat('f',64),'{}'::jsonb,'synthetic',repeat('1',64),
-   repeat('3',64),1,80);
+   'windows-1252','{"sourceTitle":"Renamed"}',repeat('3',64),1,80);
 
 DO $$
 BEGIN
