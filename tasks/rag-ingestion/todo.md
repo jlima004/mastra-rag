@@ -16,7 +16,7 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 
 - [x] D4–D6 architectural **principles** accepted (not their physical schema, SQL, live APIs, retention or operational grants)
 - [x] [Stage A partial decision](../../docs/decisions/RAG07-stage-a-ratification.md) recorded; H4–H8 and H10–H12 remain pending
-- [ ] PR #7 amended HEAD re-reviewed (CI + independent Codex) and merged by owner
+- [x] PR #7 amended HEAD re-reviewed (CI + independent Codex) and merged by owner
 
 
 - [x] H1 Corpus / use case accepted for MVP: LGPD + selected CD/ANPD resolutions (exact official sources pending Step B)
@@ -40,16 +40,17 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 - [x] Manifest/URL/allowlist validation, unknown-ID and private-host syntax rejection tests added; DNS pinning deferred to Step C
 - [x] Offline magic-byte, UTF-8 text, legacy-HTML sniffing and size-limit tests added; full charset detection deferred to Step C
 - [x] Sanitized fixed error-code catalogue added
-- [ ] CI green, review, human merge
+- [x] PR #8 CI green (60/60), final Codex review no findings, human merge + deploy confirmed
 
 ## Step C — Fetch, extraction, normalization, chunking (expected #9)
 
-- [ ] Fetcher: HTTPS, allowlist, manual redirects ≤ 3, private IP rejection, timeouts, byte cap
-- [ ] Planalto extractor: charset, revoked text removal, amendment metadata, structure tree
-- [ ] Legal locators (`lgpd:art5:inc2`, `lgpd:art55-j`, `parunico`) tested
-- [ ] Normalizer + offsets reproduce body substrings
-- [ ] Structure-aware chunker + recursive baseline; determinism test
-- [ ] LGPD snapshot fixture committed; chunk statistics in PR description
+- [x] Inert native HTTPS fetcher implemented with reviewed manifest allowlist, manual redirects ≤ 3, DNS IPv4 pinning/public-only filtering, timeouts and 5 MiB streaming cap; **only mocked transport executed in tests**
+- [x] Experimental restricted-HTML fixture extractor with UTF-8/Windows-1252 charset, revoked markup removal, amendment annotations and legal hierarchy; **official Planalto/DOU HTML parser validation still pending H9**
+- [x] Legal locators (`lgpd:art5:inc2`, `lgpd:art55-j`, `parunico`) have synthetic regression tests
+- [x] NFC normalizer + exact UTF-16 offsets reproduce all emitted body substrings in synthetic tests
+- [x] Structural + recursive byte-budget-proxy baseline implemented and tested for deterministic chunk IDs and overlap; **actual token-count calibration pending H9**
+- [ ] Official LGPD source snapshot, current text review, provenance and measured `cl100k_base` token statistics (blocked: verified source access and H9 tokenizer). Synthetic fixture committed; byte-proxy stats are not model token statistics.
+- [ ] RAG09 R1 (three Codex P2s: native lookup callback, minimum body budget, rendered metadata identity) — CI and Codex re-review required; no merge or deploy
 - [ ] CI green, review, human merge
 
 ## Step D — Embeddings (expected #10)

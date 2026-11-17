@@ -198,6 +198,16 @@ Profile used for the examples:
 
 Because `chunk_id` includes `chunk_set_id`, the same ordinal in v1 and v2 yields different IDs, and identical text in two documents never shares a vector row (PgVector upsert is `ON CONFLICT … DO UPDATE`, ADR E4).
 
+**Step C offline rendered-identity refinement (RAG09 R1/R2, PROPOSED; no migration):** The §6.4 canonical `chunkSetId(versionId, profileId)` and its golden examples remain unchanged as the **base chunk-set identity**. The offline renderer must additionally bind the actual normalized output, because identical raw source bytes can be decoded differently under different HTTP charsets. Structure-aware rendering also binds external `source.title` metadata that appears in context headers; the reusable `pipeline_profile_id` and raw document-version identity are not changed:
+
+- `base_chunk_set_id = chunkSetId(version_id, pipeline_profile_id)` (unchanged Step B function).
+- `normalized_sha256 = sha256(normalized_text)` (asserted against the normalizer output).
+- For structure-aware chunks: `header_metadata_sha256 = sha256(canonicalJson({sourceTitle: source.title}))`; for recursive chunks (without title headers), use `null`.
+- `rendered_chunk_set_id = sha256("rag:chunkset-rendered:v2\n" + base_chunk_set_id + "\n" + normalized_sha256 + "\n" + (header_metadata_sha256 ?? "-"))`.
+- `chunk_id = chunkId(rendered_chunk_set_id, ordinal)` for **both** strategies.
+
+The newline characters between components are the same actual LF separators used by the Step B canonical ID functions and the rendering code's `join('\n')`. An independently computed synthetic golden assertion for v2 appears in `processing.test.ts`. This guards against both title-only source metadata changes and charset-dependent normalized-text changes without reusing vector IDs for different rendered chunk contents. The *future persistent ingestion idempotency key must also bind the effective rendered chunk-set ID*, otherwise a title/charset-only change can be incorrectly skipped. These changes do not modify Step B golden IDs or authorize a production migration. Before H4/H5 ratification, reconcile the persistent identity and idempotency specifications with this proposed v2 rendered formula. The offline `utf8-byte-proxy@1` budget remains experimental, not model token counts.
+
 ### 6.5 Required metadata
 
 Catalog (authoritative): all fields in §10. Vector row metadata (PgVector `metadata` JSONB) is an **allowlist**:

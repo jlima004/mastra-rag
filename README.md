@@ -4,7 +4,7 @@ Mastra TypeScript project for a future document-grounded RAG using [Supabase Pos
 
 ## Status
 
-**PR #2 scope: database foundation only.** There are no agents, ingestion pipelines, embeddings, or vector indexes yet.
+**Current scope:** infrastructure and offline Step B contracts are merged. Step C implements experimental extraction, normalization and chunking **without registering a live ingestion pipeline**. There are no agents, embeddings, production document ingestion or vector indexes yet.
 
 - The existing Mastra Cloud project association is preserved.
 - The Supabase project is `lmocjhpajhxegzobydau` in São Paulo.
@@ -78,6 +78,26 @@ Run `npm run test` for the original regression suite and new Step B contracts te
 Live DOU/Planalto accessibility and consolidated legal wording must be verified in a
 separate Step C gate; an official link is not proof that the endpoint is reachable.
 
+
+### Step C — Offline processing prototype (PR #9 Draft)
+
+Step C adds a [dependency-free processing library](src/mastra/rag/processing/)
+with injected DNS-pinned HTTPS transport, deterministic legal HTML extraction,
+UTF-8/Windows-1252 decoding, article/inciso locators, NFC normalization,
+verifiable body offsets, and structural/recursive chunking. No agent, scheduled
+fetch, API route or production crawler invokes the network-capable fetcher.
+Tests use mock DNS and mock HTTP only.
+
+**Limits:** the parser supports a restricted subset of synthetic HTML; production
+Planalto/DOU HTML compatibility and an actual LGPD snapshot are not proven.
+The chunker uses an **experimental UTF-8 byte-budget proxy** (512 bytes structural,
+400 bytes/60 overlap baseline), NOT measured `cl100k_base` tokens.
+Adoption of a maintained HTML parser and token counting require explicit
+H9 package approval and legal-corpus calibration. The synthetic fixture is
+not an official document or evidence of current wording.
+
+See [Step C operator and evidence notes](docs/rag/step-c-offline.md).
+No authorized live fetching, DDL, Supabase/Turso changes, embeddings or deployment.
 
 ## Production Readiness (intermediate PR before ingestion)
 

@@ -50,7 +50,17 @@ PR numbers after #7 are **provisional**: GitHub assigns numbers to issues and PR
 - **Tests (offline):** golden ID values from SPEC §6.4; newline injection rejected; allowlist and private-host rejection; sniffing (HTML vs. PDF/ZIP magic bytes); limits at boundary values.
 - **Approval criteria:** golden values match the SPEC; no network, DB or secret access; tests added to the `npm run test` glob.
 
-## Step C — Fetch, extraction, normalization, chunking (expected #9)
+## Step C — Fetch, extraction, normalization, chunking (PR #9 Draft)
+
+**Scope clarification, 2026-11-16:** The owner authorized offline Step C only.
+The native HTTPS implementation is *not registered* in the running application;
+the test transport injects mocked DNS and HTTP. A dependency-free restricted
+fixture parser and UTF-8 byte-budget chunker are implementation prototypes,
+not proof of production HTML correctness or cl100k_base token counts.
+The official LGPD snapshot, live URL availability and H9 approval for exact
+parser/tokenizer packages remain acceptance blockers. See
+[`docs/rag/step-c-offline.md`](../../docs/rag/step-c-offline.md).
+
 
 - **Scope:**
   - Fetcher with HTTPS, allowlist, manual redirects (≤ 3, each re-validated), DNS/IP private-range rejection, timeouts and streaming byte cap (SPEC §7).
