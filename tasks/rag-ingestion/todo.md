@@ -212,6 +212,22 @@ Authority: [explicit H5-D1/D2, H6-D1/D2, H10-C1/C2 owner ratification](../../doc
 - [ ] Real organization quota/disk/WAL measurements and robust concurrent capacity reservations before E2
 - [ ] Separate human authorization for hosted role/grants, catalog migration, flat vector space, secrets and E2 live ingestion; H7/H11/H12 still open
 
+## E1 — Hosted execution readiness (read-only checkpoint, 2026-11-17)
+
+Evidence: [hosted readiness runbook](../../docs/rag/e1-hosted-execution-readiness.md). Scope: **read-only Supabase assay + local/CI evidence validation; NO hosted writes.** PR #17 merged to `master` at `737b13d9a0de0ff0c27d93a7422f9ed03291a931` with post-merge CI and Mastra Cloud deployment PASS.
+
+- [x] H5 hosted migration ledger re-read through connected Supabase metadata: exactly `20261113233720`, SHA-256 of foundation `9c36f409c82917f523f6c034ab576409a0e3ee6711901c4b09bcc04e3b2e4e13`; catalog version `20261117213614` not present
+- [x] Hosted read-only SQL confirms PostgreSQL 17.11, `rag` empty, `rag_app` absent, pgvector 0.8.2 in `extensions`, private schema and 11,228,851 DB bytes
+- [x] H6 security advisor re-read: two unresolved `public.rls_auto_enable()` WARNs, no production REVOKE or risk acceptance
+- [x] H10 three-project Free organization confirmed (two INACTIVE); **org-wide size and physical disk/WAL unknown**; no paused-project restore/provisioning
+- [x] Dedicated read-only hosted baseline SQL and fail-closed pure validator with CI tests; validator **cannot authorize any write**
+- [ ] Current PR exact-head CI and independent Codex review; separate human document-only merge approval
+- [ ] Human-only Supabase CLI v3.1.0 **remote** migration-list reconciliation/dry-run with explicit read-only target approval and no repair; prior connected metadata check does not count as a CLI proof
+- [ ] H6 PostgREST-equivalent independent security analysis and owner decision for REVOKE or residual-risk acceptance
+- [ ] Organization quota metering and disk/WAL provider telemetry, verified fresh; enforce transactional H10 admission later
+- [ ] Independent human approvals for remote role/secret, catalog SQL, vector space, DSN; H7/H11/H12 and E2 ingestion remain blocked
+- [x] H10 `NO_BACKUP_MVP` remains in force
+
 ## Step E2 — Ingestion orchestration (expected #11b)
 
 - [ ] Runtime PgVector with constructor `disableInit: true`; PgVector not registered in `new Mastra({ vectors })`
