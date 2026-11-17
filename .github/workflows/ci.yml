@@ -161,3 +161,7 @@ jobs:
         env:
           E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/test-e1-local.sh
+      - name: Verify synthetic rag schema backup and isolated logical restore
+        env:
+          E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/test-e1-restore-local.sh
