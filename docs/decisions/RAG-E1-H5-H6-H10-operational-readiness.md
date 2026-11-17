@@ -1,5 +1,7 @@
 # RAG-E1 — H5/H6/H10 operational readiness checkpoint
 
+> **Superseding owner direction (2026-11-17):** [H10: no backups in the MVP](RAG-H10-mvp-no-backup.md). This document records the historical preparation proposal; backup/export/real restore/RPO/RTO requirements below were **withdrawn for the MVP**. H5/H6 remote actions and H10 capacity remain separately gated.
+
 **2026-11-17.** Baseline: `master` @ `4547f6abe15a414b65a09d710888d8bbaa2f86a6` (PR #12 merged; post-merge CI SUCCESS). **State:** `H5_H6_H10_PREPARATION / LOCAL_RESTORE_DRILL_PENDING / HOSTED_PERSISTENCE_BLOCKED`.
 
 This is an implementation-independent **readiness proposal**, not authority to run DDL, provision `rag_app` on hosted Supabase, export a real database, purchase services, rotate credentials or ingest any content. The owner approved preparing the operational H5/H6/H10 evidence and an **isolated** backup/restore proof; execution on the hosted database still requires explicit, separately scoped owner approval. See [owner architectural ratification](../decisions/RAG-E1-owner-ratification.md) and [Step E1 local baseline](../rag/step-e1-local.md).
@@ -28,10 +30,10 @@ Adjudication/verification contract:
 
 1. Read `supabase_migrations.schema_migrations` and the namespace/extension ownership through **read-only** approved access, compare with `list_migrations`, and record a SHA-256 manifest of the intended reviewed SQL. Confirm exactly the 20261113233720 foundation migration before E1.
 2. Select and **pin** a specific Supabase CLI version. Validate `supabase --version`, `supabase migration new --help`, `supabase migration list --help`, and `supabase db dump --help`. Prefer explicit remote-target flags and interactive target confirmation; do not infer v2 semantics in v3.
-3. Using the CLI, generate the **new filename** (do not invent timestamps). Compare the finalized migration content with `db/migrations/0001_rag_catalog.up.sql` and record how the checked-in SQL remains the canonical source without undocumented drift. Capture a preflight diff and an owner-approved, external logical backup first.
+3. Using the CLI, generate the **new filename** (do not invent timestamps). Compare the finalized migration content with `db/migrations/0001_rag_catalog.up.sql` and record how the checked-in SQL remains the canonical source without undocumented drift. Capture a preflight diff and independent isolated dry-run. **No backup is required or planned in the MVP; reject destructive/irreversible operations without separate adjudication.**
 4. Stage role/provisioning boundaries separately: foundational `rag`/vector extension already exists; E1 tables depend on an operator-provisioned `rag_app`. Catalog SQL requires the role to exist before its `CREATE POLICY` and `GRANT` statements. Privileged role setup, catalog migration, and PgVector `flat` provisioning need **distinct execution approvals**.
-5. For execution, verify project reference, hostname/port/database, `rag` schema, migration SQL SHA and backup/restore manifest **before** application. Take an immutable preflight evidence snapshot. A failed check is a hard stop.
-6. On approved application, re-read hosted ledger and verify catalog constraints/FKs, RLS, permissions, PgVector table, `disableInit:true`, and security advisories. Never mark success from a successful SQL exit code alone. Rollback is owner-only and backup-aware, never automatic `down` against hosted.
+5. For execution, verify project reference, hostname/port/database, `rag` schema, migration SQL SHA and an evidence snapshot confirming a non-destructive migration **before** application. Take an immutable preflight evidence snapshot. A failed check is a hard stop.
+6. On approved application, re-read hosted ledger and verify catalog constraints/FKs, RLS, permissions, PgVector table, `disableInit:true`, and security advisories. Never mark success from a successful SQL exit code alone. Rollback is owner-only; **there is no database backup restore path for the MVP**. Do not execute automatic `down` or destructive rollback against hosted.
 
 **H5 status:** `REMOTE_HISTORY_RECONCILED_READ_ONLY / OPERATOR_APPLIER_AND_MIGRATION_FORMAT_PENDING_RATIFICATION`.
 
@@ -75,18 +77,9 @@ FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 WHERE n.nspname='rag' AND c.relkind IN ('r','m','p');
 ```
 
-### Recovery
+### Recovery — superseded for the MVP
 
-**Proposed (not approved RPO/RTO):** daily external logical exports; 7 separately restorable daily generations; example RPO **24 hours** and target RTO **4 hours**, only if repeated measured drills prove feasibility. No automated backup, external destination, storage credentials, retention or alerting is currently configured. An RTO is **not established** by a paper procedure.
-
-- Use documented, **version-verified** Supabase CLI export of **roles**, **schema** and **data** (with Supabase filtering), rather than raw full-cluster `pg_dump` against hosted Supabase. Read CLI v3 `db dump --help` first and use explicit source-target syntax. Operator approval and a secure hosted connection are prerequisites.
-- Retain a signed/checksummed manifest (project ref, timestamp, CLI/Postgres version, tool flags, source migration ledger SHA, row counts, masked schema summary, archive SHA-256 and expiry). Never store URI/credentials in manifests/logs.
-- Encrypt *before* off-site transfer using an approved, audited encryption mechanism and keys maintained outside the backup destination. Restrict backup/restore access, set expiration policy, and test decryptability without logging raw data. Avoid commit, artifact upload, issue attachment or chat of any real backup.
-- In an **isolated** restore environment, preinstall compatible extensions and necessary roles, restore in correct dependency order, verify migrations, metadata, table counts, RLS/grants and application read-only readiness. Supabase-managed internals need Supabase-compatible restore procedures; the local synthetic test below validates **only the private `rag` schema**, not those internals.
-- Schedule a fail-closed job with monitoring, alert if age exceeds 24 hours or checksum/backup fails, and conduct restoration drills periodically (proposed monthly) and on schema change. Document measured recovery elapsed time, data-loss window and owner acceptance.
-- On Free, a backup that only exists within the project or has never been successfully restored **does not satisfy H10**. Paid backup/PITR would be a separate spending decision if these requirements cannot be met.
-
-Documentation: [Supabase database backups](https://supabase.com/docs/guides/platform/backups), [Supabase backup/restore using CLI](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore), [Supabase CLI v3 changes](https://supabase.com/changelog/supabase-cli-v3).
+The earlier proposal of daily external backups, seven generations, 24h RPO, 4h RTO, real-database restore and external encrypted storage was **not ratified and has been withdrawn** by the owner's [2026-11-17 H10 decision](RAG-H10-mvp-no-backup.md). No database backup or real backup/restore operation is planned for the MVP. Loss of hosted catalog/vector state may be permanent; no recovery guarantees are offered. Synthetic local restoration below remains a **CI correctness test only**, not an operational backup requirement.
 
 ## 5. Isolated synthetic restore drill
 
@@ -98,12 +91,11 @@ The script creates a **different database** `rag_e1_restore` in the disposable s
 
 ## 6. Remaining human gates
 
-- [ ] Independent Codex review and exact-HEAD CI of the H5/H6/H10 preparation PR, including local restore drill and regressions.
+- [x] Independent Codex review and exact-HEAD CI of PR #13, including isolated synthetic restore; PR #13 merged as `248c0ba096c55e8e432ab0bfbfb3a49e2c2a8f28`.
 - [ ] Owner decides single migration applier/historian, CLI version/format and reviewed new migration identity.
 - [ ] Owner adjudicates `rag_app` operator-role procedure, explicit security advisor risk and eventual secrets/DSN rotation.
-- [ ] Owner approves actual corpus/storage ceiling and formal H10 RPO/RTO policy.
-- [ ] Operator selects and configures encrypted external backup destination/key/retention, under separate authorization.
-- [ ] Operator obtains **separate** authorization to export the real hosted database and proves a complete isolated restore, with evidence and access controls.
+- [x] Owner directed **no backups for the MVP**; see [later H10 decision](RAG-H10-mvp-no-backup.md). No RPO/RTO guarantee.
+- [ ] Owner approves actual corpus/storage ceiling, headroom and enforcement; no-backup decision does not approve size thresholds.
 - [ ] Owner separately authorizes any hosted DDL, role provisioning, space creation, credential changes, backup service or real ingestion.
 
-**Checkpoint state:** `RAG-E1 / H5_H6_H10_PREPARATION_OPEN / HOSTED_OPERATIONS_BLOCKED`.
+**Checkpoint state:** `RAG-E1 / PREPARATION_MERGED / H10_NO_BACKUP_MVP / H10_CAPACITY_PENDING / HOSTED_OPERATIONS_BLOCKED`.
