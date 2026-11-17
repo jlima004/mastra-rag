@@ -202,7 +202,7 @@ Because `chunk_id` includes `chunk_set_id`, the same ordinal in v1 and v2 yields
 
 - `base_chunk_set_id = chunkSetId(version_id, pipeline_profile_id)` (unchanged v1 function).
 - `header_metadata_sha256 = sha256(canonicalJson({sourceTitle: source.title}))`.
-- `rendered_chunk_set_id = sha256("rag:chunkset-rendered:v1\\n" + base_chunk_set_id + "\\n" + header_metadata_sha256)`.
+- `rendered_chunk_set_id = sha256("rag:chunkset-rendered:v1\n" + base_chunk_set_id + "\n" + header_metadata_sha256)`.
 - `chunk_id = chunkId(rendered_chunk_set_id, ordinal)`. Recursive-baseline chunks contain no title header and keep `base_chunk_set_id`.
 
 This avoids reusing the same vector ID for different rendered content when a reviewed manifest title changes without a raw-document revision. The normalized legal hierarchy/headings come from the hashed source bytes; `source.title` is the external header input. The *future persistent ingestion idempotency key must incorporate the effective rendered chunk-set ID or header metadata fingerprint*, otherwise title-only changes can be incorrectly skipped as duplicates. No Step B hash helper, existing golden fixture, migration, published vector ID, provider call or live index is changed by this R1. This versioned refinement needs explicit reconciliation in the future persistence design before H4/H5 approval. The offline renderer's `utf8-byte-proxy@1` remains an experimental byte budget, not the production tokenizer.
