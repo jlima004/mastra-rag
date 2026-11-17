@@ -12,7 +12,7 @@ network-capable fetcher, even if this code is later deployed.
 
 | Capability | Implementation | Evidence boundary |
 | --- | --- | --- |
-| HTTPS fetch | Built-in node:https; reviewed exact source ID; pinned public IPv4 on each hop; explicit `family: 4`, `autoSelectFamily: false`, plus correct scalar/all-address lookup callback contracts; TLS/SNI validation; 10 s socket/60 s total timeout; manual max-3 redirects and 5 MiB byte cap | **Mock DNS and HTTP only** in CI; native request options and both lookup callback shapes tested without live connections |
+| HTTPS fetch | Built-in node:https; reviewed exact source ID; pinned public IPv4 on each hop; explicit `family: 4` and correct scalar/all-address lookup callback contracts; TLS/SNI validation; 10 s socket/60 s total timeout; manual max-3 redirects and 5 MiB byte cap | **Mock DNS and HTTP only** in CI; native request options and both lookup callback shapes tested without live connections |
 | Charset | Declared header vs HTML meta reconciliation; UTF-8 and Windows-1252 | Synthetic fixtures, not vendor HTML integration |
 | Extraction | Restricted deterministic HTML text tokenizer; suppresses script/style/iframes/nav/footer/revoked s/strike/del; amendment text retained as metadata | NOT a full HTML5 parser; unsupported entities and malformed tags fail closed |
 | Legal units | Article, chapter/section, paragraph, Roman-numeral inciso and alínea; stable law locators | Tests with **fictional** articles and sections, not an official corpus |

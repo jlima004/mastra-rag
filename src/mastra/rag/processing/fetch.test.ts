@@ -34,7 +34,6 @@ test('native HTTPS options pin the approved IPv4 and honor both Node DNS callbac
   assert.equal(options.hostname, 'www.planalto.gov.br');
   assert.equal(options.servername, 'www.planalto.gov.br');
   assert.equal(options.family, 4);
-  assert.equal(options.autoSelectFamily, false);
   assert.equal(options.rejectUnauthorized, true);
   assert.equal(options.agent, false);
   assert.equal(typeof options.lookup, 'function');

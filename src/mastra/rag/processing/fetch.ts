@@ -67,7 +67,7 @@ export function pinnedHttpsRequestOptions(urlValue: string, address: string): Re
   return {
     hostname: url.hostname, servername: url.hostname, port: 443,
     method: 'GET', path: url.pathname, agent: false,
-    family: 4, autoSelectFamily: false,
+    family: 4,
     rejectUnauthorized: true, timeout: CONNECT_TIMEOUT_MS,
     headers: { accept: 'text/html,text/plain;q=0.9,*/*;q=0.1', 'user-agent': 'mastra-rag-source-validation/1.0' },
     lookup(_hostname, options, callback) {
