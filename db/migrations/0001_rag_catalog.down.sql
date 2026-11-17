@@ -1,8 +1,9 @@
 -- RAG-E1 LOCAL/EMERGENCY DOWN candidate. Requires explicit owner approval remotely.
 -- No CASCADE: refuse to destroy dependent data/objects by surprise.
 BEGIN;
+REVOKE SELECT ON rag.embedding_space FROM rag_app;
 REVOKE SELECT, INSERT, UPDATE, DELETE ON
-  rag.embedding_space, rag.source, rag.document, rag.document_version,
+  rag.source, rag.document, rag.document_version,
   rag.chunk_set, rag.chunk, rag.index_build, rag.document_publication,
   rag.ingestion_job FROM rag_app;
 DROP TABLE rag.ingestion_job;
