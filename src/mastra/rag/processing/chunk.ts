@@ -37,6 +37,10 @@ export type OfflineChunkSet = Readonly<{
   chunkSetId: string;
   renderingIdentityVersion: 'rag:chunkset-rendered:v2';
   normalizedSha256: string;
+  /** Exact charset used to render text, independent of the raw document version. */
+  effectiveCharset: string;
+  /** Exact canonical JSON string hashed for structural header metadata. */
+  headerMetadataCanonicalJson: string | null;
   /** Hash of the external metadata that affects rendered context headers. */
   headerMetadataSha256: string | null;
   tokenizer: 'utf8-byte-proxy@1';
@@ -173,9 +177,11 @@ export function makeOfflineChunkSet(
   // Step C rendering v1: keep the pipeline profile reusable across sources;
   // changing the manifest title must create a distinct chunk set and IDs.
   // Recursive baseline has no source-title header, so it keeps the base ID.
-  const headerMetadataSha256 = config.strategy === 'legal-structure'
-    ? sha256(canonicalJson({ sourceTitle: source.title }))
+  const headerMetadataCanonicalJson = config.strategy === 'legal-structure'
+    ? canonicalJson({ sourceTitle: source.title })
     : null;
+  const headerMetadataSha256 = headerMetadataCanonicalJson === null
+    ? null : sha256(headerMetadataCanonicalJson);
   const text = doc.normalizedText;
   // The same raw bytes decoded with different effective charsets can produce
   // different normalized text. Bind that actual output, not just raw bytes.
@@ -273,7 +279,9 @@ export function makeOfflineChunkSet(
   return Object.freeze({
     versionId, profileId, baseChunkSetId: baseSetId, chunkSetId: setId,
     renderingIdentityVersion: 'rag:chunkset-rendered:v2',
-    normalizedSha256: doc.normalizedSha256, headerMetadataSha256,
+    normalizedSha256: doc.normalizedSha256,
+    effectiveCharset: fetched.charset,
+    headerMetadataCanonicalJson, headerMetadataSha256,
     tokenizer: 'utf8-byte-proxy@1',
     strategy: config.strategy,
     chunks: Object.freeze(result),
