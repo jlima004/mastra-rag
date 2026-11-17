@@ -1,5 +1,7 @@
 # RAG — H10 decision: no backups in the MVP
 
+> **Capacity policy update (2026-11-17):** The owner subsequently ratified H10-C1/C2 storage ceilings and fail-closed admission *direction* in [the separate H5/H6/H10 ratification](RAG-E1-H5-H6-H10-owner-ratification.md). Historical references below to capacity being "pending" mean **implementation and measurement are still pending**, not that numeric thresholds are awaiting approval. **NO_BACKUP_MVP remains unchanged**.
+
 | Field | Value |
 | --- | --- |
 | Owner decision | **"H10 Não haverá backup no MVP."** |
