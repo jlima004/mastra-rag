@@ -1,5 +1,7 @@
 # SPEC: RAG document ingestion, indexing and retrieval
 
+> **H10 owner decision (2026-11-17):** [No backups in the MVP](../decisions/RAG-H10-mvp-no-backup.md). This supersedes the historical H10 backup and restore obligations in this SPEC, without changing the remaining storage-capacity, migration, least-privilege, paid-provider and live-ingestion gates. PR #13 completed the synthetic local restoration CI; it is not a hosted backup. Historic Stage A language below does not represent the current H10 policy.
+
 > **E1 decision update (2026-11-17):** [Owner ratified H4/H5/H6 directions and H10's conditional Free/backup policy](../decisions/RAG-E1-owner-ratification.md) **for local E1 development only**. The original Stage A table and candidate §10/§11 physical details below remain historical/unratified at the SQL level. The E1-P2-01/02/03 reconciliation still blocks freezing DDL. No remote migration, role/DSN change, hosted provisioning, paid calls or ingestion is authorized.
 
 | Field | Value |
@@ -833,7 +835,7 @@ No target value is promised before the first benchmark. A proposed acceptance ta
 | Network failures / timeouts | Bounded timeouts; `statement_timeout` and `idle_in_transaction_session_timeout` on `rag_app` *(H6)*; leases |
 | Duplicate ingestion | Idempotency key uniqueness, version uniqueness, advisory lock on publish |
 | Deletion / retention | §11.5; Mastra observability is not configured today; if enabled later, hide inputs/outputs of embedding and retrieval spans (the default sensitive-data filter matches keys, not free text) |
-| Backup / restore | Catalog is the source of truth; vectors are rebuildable; Supabase backup/PITR availability depends on plan *(H10)*; keep a dated logical dump of catalog tables before each migration; after restore, run a reconciler (publication ↔ build ↔ vector counts) |
+| Backup / restore (H10) | **No backups in MVP by owner decision.** Neither pre-migration dump nor restore/RPO/RTO guarantee is required. Derived vectors may be rebuilt only if sources and future tooling permit; catalog state may be permanently lost. Preserve non-destructive migration guards and capacity limits; revisit durability beyond MVP. |
 
 ### 14.1 Residency and latency
 
@@ -885,4 +887,4 @@ Consequences: every Supabase round trip from a US runtime crosses continents (es
 
 H1 and H2 are accepted for MVP. H3 is accepted **only as a model/evaluation baseline**; the provider account and any paid calls remain gated by H11. H9 is conditional permission to evaluate dependencies, **not** to install any specific package. The D4–D6 design **principles** are accepted, but not the final physical model, DDL, retention policy, production authorization or retrieval API. D2 chunking numbers remain calibration hypotheses. See [Stage A decision](../decisions/RAG07-stage-a-ratification.md) and ADR table.
 
-Offline Step B contracts can be prepared after this PR is merged with the normal CI/review/human gate. Step C follows Step B and per-dependency approval; offline mock-only Step D may be prepared without external calls. **Paid embeddings require H11.** Persistence and live ingestion (E–F) MUST NOT start before H4, H5, H6, H7, H10, H11 and H12 are ratified. H8 SHOULD be resolved before hosted retrieval benchmarking.
+Offline Step B contracts can be prepared after this PR is merged with the normal CI/review/human gate. Step C follows Step B and per-dependency approval; offline mock-only Step D may be prepared without external calls. **Paid embeddings require H11.** Persistence and live ingestion (E–F) MUST NOT start before the remaining H4, H5, H6, H7, **H10 capacity**, H11 and H12 gates are addressed. **H10 backup/restore is explicitly waived for the MVP**; hosted actions still require separate human authorization. H8 SHOULD be resolved before hosted retrieval benchmarking.
