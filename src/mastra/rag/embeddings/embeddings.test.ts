@@ -154,6 +154,22 @@ test('upstream provider errors are reduced to fixed codes without leaked text or
   assert.equal(bad.retryable,false);
 });
 
+test('AI SDK responseHeaders on 429/503 are honored and never retried early', async () => {
+  for(const status of [429,503]){
+    const sdkShape={statusCode:status,responseHeaders:{'retry-after':'60'}};
+    const failure=sanitizeProviderFailure(sdkShape,signal);
+    assert.equal(failure.retryable,true);
+    assert.equal(failure.retryAfterMs,60_000);
+    let calls=0;
+    const provider=fakeProvider(async()=>{calls++;throw failure;});
+    await assert.rejects(embedMissingDocumentChunks(args(fixtureChunks(1),provider),{
+      random:()=>0,
+      sleep:async()=>{assert.fail('must not ignore a 60s Retry-After');},
+    }), e=>code(e,'EMBED_RETRY_DELAY_EXCEEDED'));
+    assert.equal(calls,1);
+  }
+});
+
 test('Retry-After parser handles seconds and HTTP dates and refuses malicious/oversized values', () => {
   assert.equal(parseRetryAfter('3'),3000);
   assert.equal(parseRetryAfter('Wed, 21 Oct 2015 07:28:00 GMT',

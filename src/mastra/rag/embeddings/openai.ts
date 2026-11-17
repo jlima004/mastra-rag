@@ -42,8 +42,10 @@ function safeRetryAfter(error: unknown): string | null {
   try {
     if (!error || typeof error !== 'object') return null;
     const e = error as Record<string, unknown>;
-    const h = e.response && typeof e.response === 'object'
-      ? (e.response as Record<string, unknown>).headers : e.headers;
+    // AI SDK APICallError exposes responseHeaders (not response.headers).
+    // Keep fallback support for HTTP client and mock error shapes.
+    const h = e.responseHeaders ?? (e.response && typeof e.response === 'object'
+      ? (e.response as Record<string, unknown>).headers : e.headers);
     if (!h || typeof h !== 'object') return null;
     const get = (h as { get?: unknown }).get;
     const value = typeof get === 'function'
