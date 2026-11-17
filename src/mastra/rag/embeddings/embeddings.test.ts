@@ -142,6 +142,7 @@ test('upstream provider errors are reduced to fixed codes without leaked text or
   });
   await assert.rejects(adapter.embed(['sensitive text'],{signal,purpose:'document'}), e => {
     assert.ok(code(e,'EMBED_PROVIDER_TRANSIENT'));
+    assert.ok(e instanceof RagEmbeddingError);
     assert.equal(e.retryable,true);
     assert.equal(e.retryAfterMs,2000);
     assert.doesNotMatch(JSON.stringify(e),/KEY_SECRET_NOT_TO_EXPOSE_123/);
