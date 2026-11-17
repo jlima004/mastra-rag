@@ -14,8 +14,9 @@
 | H6 | `db/local/0004_e1_operator_privilege_proofs.sql` | RLS, ausência de privilégios de DDL/BYPASSRLS, grants de catálogos e espaço vetorial |
 | H6 | `scripts/test-e1-operator-local.sh` | Reprodução em banco descartável separado das permissões iniciais de `public.rls_auto_enable()` e regressão isolada de revogação `EXECUTE` |
 | H10 | `scripts/e1-capacity-policy.ts` + testes | Regra *pura* de admissão projetada, não integrada a runtime: faltas de métrica e limites bloqueiam; **não comprova enforcement em E2** |
+| H10 | `db/readonly/e1_h10_project_measurements.sql` | SELECT de uso do banco e relações `rag`, testado somente na instância descartável; **não fornece quota da organização nem disco/WAL** |
 
-A migração original só foi consultada de maneira **read-only** no projeto `lmocjhpajhxegzobydau`; foi registrado um único item, versão `20261113233720`, com quatro comandos SQL que instalam pgvector em `extensions`, criam `rag` e retiram acessos de `public`, `anon` e `authenticated`. O espelho no repositório é para reconciliação de histórico: **não é solicitação de reaplicação**. Não foi executado `migration repair` nem `db push`.
+A migração original só foi consultada de maneira **read-only** no projeto `lmocjhpajhxegzobydau`; foi registrado um único item, versão `20261113233720`, com quatro comandos SQL que instalam pgvector em `extensions`, criam `rag` e retiram acessos de `public`, `anon` e `authenticated`. O espelho no repositório é para reconciliação de histórico: **não é solicitação de reaplicação**. SHA-256 da instrução hospedada, obtido por consulta SQL **read-only**: `9c36f409c82917f523f6c034ab576409a0e3ee6711901c4b09bcc04e3b2e4e13` (**183 bytes, sem LF final**); o script de CLI compara esse valor com o arquivo local. Não foi executado `migration repair` nem `db push`.
 
 ## H5 — procedimento de confirmação antes de qualquer SQL hospedado
 
@@ -55,7 +56,9 @@ O avaliador `assessE1H10Capacity()` recebe medições e projeções explícitas;
 
 Os dados da organização Free são agregados entre projetos; os dois outros projetos da `Alquem.io` estavam inativos no último exame, e sua contribuição de quota segue desconhecida. `pg_database_size` mede o banco atual, não disco/WAL nem organização. Confirmar os três domínios de telemetria de forma independente, inclusive a origem da estimativa de crescimento em reconstrução/segundo espaço. Se forem desconhecidos, **fail closed**. Contrato de admissão/concurrency/GC será integrado somente após H7/H11/H12 e aprovação de E2.
 
-### Leituras SQL propostas para futuro operador (não foram executadas aqui)
+### Leituras SQL propostas para futuro operador (não executadas no hospedado)
+
+O arquivo [SQL somente-leitura](../../db/readonly/e1_h10_project_measurements.sql) integra o ensaio PostgreSQL descartável e só fornece métricas de **um projeto**. Não o tratar como evidência de cota organizacional ou disco/WAL.
 
 ```sql
 SELECT pg_database_size(current_database()) AS database_bytes;
