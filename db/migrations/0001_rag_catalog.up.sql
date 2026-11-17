@@ -186,7 +186,7 @@ ALTER TABLE rag.index_build ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rag.document_publication ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rag.ingestion_job ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY rag_app_space ON rag.embedding_space FOR ALL TO rag_app USING (true) WITH CHECK (true);
+CREATE POLICY rag_app_space_read ON rag.embedding_space FOR SELECT TO rag_app USING (true);
 CREATE POLICY rag_app_source ON rag.source FOR ALL TO rag_app
   USING (tenant_id = 'public') WITH CHECK (tenant_id = 'public');
 CREATE POLICY rag_app_document ON rag.document FOR ALL TO rag_app
@@ -200,8 +200,9 @@ CREATE POLICY rag_app_job ON rag.ingestion_job FOR ALL TO rag_app
   USING (tenant_id = 'public') WITH CHECK (tenant_id = 'public');
 
 GRANT USAGE ON SCHEMA rag TO rag_app;
+GRANT SELECT ON rag.embedding_space TO rag_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON
-  rag.embedding_space, rag.source, rag.document, rag.document_version,
+  rag.source, rag.document, rag.document_version,
   rag.chunk_set, rag.chunk, rag.index_build, rag.document_publication,
   rag.ingestion_job TO rag_app;
 -- Namespace enforcement in PgVector space tables is added separately by the
