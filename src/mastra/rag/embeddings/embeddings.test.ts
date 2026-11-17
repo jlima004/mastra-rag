@@ -200,7 +200,7 @@ test('preflight snapshots text: caller mutation between batches cannot alter bil
   let call=0;
   const provider=fakeProvider(async inputs => {
     call++;
-    if(call===1) originals[128].text='X'.repeat(5000);
+    if(call===1) (originals[128] as { text: string }).text='X'.repeat(5000);
     if(call===2) assert.equal(inputs[0],originalLast);
     return {vectors:inputs.map(()=>[...VALID_VECTOR]),usage:{tokens:inputs.length}};
   });
