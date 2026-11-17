@@ -4,7 +4,7 @@ Mastra TypeScript project for a future document-grounded RAG using [Supabase Pos
 
 ## Status
 
-**Current scope:** infrastructure and offline Step B contracts are merged. Step C implements experimental extraction, normalization and chunking **without registering a live ingestion pipeline**. There are no agents, embeddings, production document ingestion or vector indexes yet.
+**Current scope:** Step B source contracts and Step C offline extraction/chunking are merged. Step D adds an **offline embedding adapter and budgeted batch executor in PR #10 Draft**; no paid embedding calls, active document ingestion, vector indexes or RAG agents are enabled.
 
 - The existing Mastra Cloud project association is preserved.
 - The Supabase project is `lmocjhpajhxegzobydau` in São Paulo.
@@ -98,6 +98,26 @@ not an official document or evidence of current wording.
 
 See [Step C operator and evidence notes](docs/rag/step-c-offline.md).
 No authorized live fetching, DDL, Supabase/Turso changes, embeddings or deployment.
+
+### Step D — Offline embedding contracts (PR #10 Draft)
+
+The [embedding library](src/mastra/rag/embeddings/) defines a typed
+provider/space boundary, a lazy `ModelRouterEmbeddingModel` adapter for
+`openai/text-embedding-3-small` (1,536 dimensions), validated vectors,
+resumable batch planning and a global four-attempt retry budget. CI uses
+**injected fake models only** and cannot access real OpenAI endpoints.
+
+A live embedding call is blocked by default (`EMBED_PAID_NOT_AUTHORIZED`);
+the library is **not** wired into the Mastra server, agent, tool, scheduler
+or PgVector. No OpenAI key is needed at import, startup or build time.
+See [Step D evidence and authorization boundaries](docs/rag/step-d-offline.md).
+
+H11 billing authorization and provider-side hard spend limit are still
+pending; H9 exact tokenizer approval and an official snapshot are also
+pending. The preflight uses a **conservative UTF-8 byte-plus-eight proxy**
+for token reservation. This is not measured `cl100k_base` usage and
+must not be treated as a certified provider-side cost ceiling until H9/H11
+are explicitly satisfied. No migration, production API or live call.
 
 ## Production Readiness (intermediate PR before ingestion)
 

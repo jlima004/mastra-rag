@@ -50,18 +50,20 @@ Status legend: `[ ]` not done · `[x]` done. Stage A **partial ratification** re
 - [x] NFC normalizer + exact UTF-16 offsets reproduce all emitted body substrings in synthetic tests
 - [x] Structural + recursive byte-budget-proxy baseline implemented and tested for deterministic chunk IDs and overlap; **actual token-count calibration pending H9**
 - [ ] Official LGPD source snapshot, current text review, provenance and measured `cl100k_base` token statistics (blocked: verified source access and H9 tokenizer). Synthetic fixture committed; byte-proxy stats are not model token statistics.
-- [ ] RAG09 R1 (three Codex P2s: native lookup callback, minimum body budget, rendered metadata identity) — CI and Codex re-review required; no merge or deploy
-- [ ] CI green, review, human merge
+- [x] RAG09 R1–R3 remediations reviewed by Codex with no final findings; PR #9 merged into master and deploy confirmed
+- [x] RAG09 CI post-merge 85/85 tests; Codex final review without findings; human merge and deploy complete
 
-## Step D — Embeddings (expected #10)
+## Step D — Embeddings (PR #10 Draft; offline-only)
 
-- [ ] `EmbeddingProvider` interface and space registry type
-- [ ] `ModelRouterEmbeddingModel` adapter for `openai/text-embedding-3-small`
-- [ ] Batching, retries (max 4), backoff + jitter, `Retry-After`
-- [ ] Per-job token budget; worst-case paid-call bound tested
-- [ ] Dimension and finite-value assertions before upsert
-- [ ] Runtime starts without `OPENAI_API_KEY`
-- [ ] CI green, review, human merge
+- [x] `EmbeddingProvider` interface and immutable MVP space registry type
+- [x] Lazy `ModelRouterEmbeddingModel` adapter for `openai/text-embedding-3-small`; explicit paid-call gate, injection-only tests
+- [x] Batching ≤128, **global** job retries (≤4 attempts; at most 3 retries), backoff + jitter, `Retry-After`, signal abortion
+- [x] Per-job + supplied daily token budget, worst-case call/reservation bound; conservative **UTF-8 byte-plus-eight proxy**, not calibrated model-token counts
+- [x] Exact dimensions, finite values, reported usage and vector-count validation **before any future upsert**
+- [x] No OpenAI key at import, no server registration; missing-key startup requires CI smoke
+- [ ] H11: owner-ratified account, provider-side hard spend cap, daily/token budgets, paid authorization
+- [ ] H9: approved tokenizer for validated preflight accounting; no package installed in this PR
+- [ ] PR #10 CI full PASS, independent review, human merge. No deploy authorized by Step D.
 
 ## Step E1 — Migration and provisioning (expected #11a)
 

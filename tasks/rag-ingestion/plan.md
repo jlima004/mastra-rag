@@ -72,7 +72,20 @@ parser/tokenizer packages remain acceptance blockers. See
 - **Tests (offline):** revoked text never appears in chunks; every chunk ≤ hard cap; deterministic output (same input → same chunk IDs); locators for `Art. 5º, II`, `Art. 55-J`, `parágrafo único`; offsets reproduce the body substring; chunk statistics report (count, token distribution) for the LGPD snapshot.
 - **Approval criteria:** chunk statistics documented in the PR; no live fetch in CI; fetcher SSRF tests pass.
 
-## Step D — Embeddings (expected #10)
+## Step D — Embeddings (PR #10 Draft, offline-only implementation)
+
+**H11 is still PENDING.** The current PR implements and tests the
+interface, lazy OpenAI model-router adapter and budgeted fake-provider
+batch execution, without authorizing any paid embedding call. It requires
+an explicit paid-call opt-in at the adapter boundary, which must remain
+disabled until a separate owner decision on the billing account, hard
+provider spend cap and evaluation budget. The preflight token envelope
+uses UTF-8 bytes + 8 per input; it is NOT a verified cl100k_base count,
+so a real tokenizer approved under H9 is required before production
+billing. No new packages are installed. The project must still start
+without OPENAI_API_KEY. The [offline evidence note](../../docs/rag/step-d-offline.md)
+separates what is demonstrated from future runtime and DB integration.
+
 
 - **Scope:** `EmbeddingProvider` interface (SPEC §9.2); adapter over `ModelRouterEmbeddingModel` (`@mastra/core/llm`) for `openai/text-embedding-3-small`; batching, retries with backoff/jitter, `Retry-After`, per-job token budget, dimension/finite-value assertions; space registry type.
 - **Dependencies:** C merged; H3 (model/provider); H11 (spend cap, budget values).
