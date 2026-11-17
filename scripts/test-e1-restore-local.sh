@@ -44,7 +44,9 @@ fi
 # Step 2: Create a distinct empty database in the same disposable container.
 # The pgvector extension lives outside rag; create its prerequisite schema.
 pg postgres -c 'CREATE DATABASE rag_e1_restore;' >/dev/null
-pg rag_e1_restore -c 'CREATE SCHEMA extensions; CREATE EXTENSION vector WITH SCHEMA extensions;' >/dev/null
+# The rag-only dump excludes grants on the external extensions schema.
+# Recreate the runtime privilege prerequisite before restoring rag.
+pg rag_e1_restore -c 'CREATE SCHEMA extensions; CREATE EXTENSION vector WITH SCHEMA extensions; GRANT USAGE ON SCHEMA extensions TO rag_app;' >/dev/null
 
 # Step 3: Restore atomically; abort on any error (no partial imported schema).
 docker exec -i "${cid}" pg_restore -U postgres -d rag_e1_restore \
@@ -76,6 +78,7 @@ schema_check="SELECT (
        WHERE n.nspname='rag' AND c.relkind IN ('r','p') AND NOT c.relrowsecurity) = 0
   AND (SELECT count(*) FROM pg_policies WHERE schemaname='rag') >= 9
   AND has_schema_privilege('rag_app','rag','USAGE')
+  AND has_schema_privilege('rag_app','extensions','USAGE')
   AND NOT has_schema_privilege('anon','rag','USAGE')
   AND NOT has_schema_privilege('authenticated','rag','USAGE')
   AND NOT has_table_privilege('rag_app','rag.embedding_space','UPDATE')
@@ -92,6 +95,44 @@ if [[ "$(pg rag_e1_restore -c "SET ROLE rag_app; SELECT
   row_security_active('rag.source'::regclass)
   AND row_security_active('rag.chunks_te3s_1536_v1'::regclass);")" != 't' ]]; then
   echo "E1_SYNTHETIC_RESTORE_RLS_INACTIVE" >&2
+  exit 1
+fi
+
+# Step 6: Verify restored rag_app vector operations, not only postgres reads.
+# Real vector cast and ON CONFLICT UPDATE under the restored RLS policies.
+# Roll back the probe so the synthetic restored data stays unchanged.
+pg rag_e1_restore <<'SQL'
+BEGIN;
+SET LOCAL ROLE rag_app;
+INSERT INTO rag.chunks_te3s_1536_v1 (vector_id, embedding, metadata, namespace)
+VALUES (
+  'synthetic-vector-1',
+  ('[' || repeat('0.01,',1535) || '0.01]')::extensions.vector(1536),
+  '{"revision":"restore-role-upsert"}'::jsonb,
+  'public'
+)
+ON CONFLICT (namespace,vector_id)
+DO UPDATE SET embedding=EXCLUDED.embedding, metadata=EXCLUDED.metadata;
+DO $
+BEGIN
+  IF (SELECT count(*) FROM rag.chunks_te3s_1536_v1
+      WHERE namespace='public' AND vector_id='synthetic-vector-1'
+        AND metadata->>'revision'='restore-role-upsert') <> 1 THEN
+    RAISE EXCEPTION 'E1_RESTORED_ROLE_VECTOR_UPSERT_FAILED';
+  END IF;
+  IF (SELECT count(*) FROM rag.chunks_te3s_1536_v1
+      WHERE namespace='other') <> 0 THEN
+    RAISE EXCEPTION 'E1_RESTORED_ROLE_NAMESPACE_LEAK';
+  END IF;
+END;
+$;
+ROLLBACK;
+SQL
+
+# The rolled-back probe must not change any original restored vector rows.
+vector_fingerprint="SELECT count(*)::text || ':' || md5(COALESCE(string_agg(row_to_json(t)::text, '' ORDER BY row_to_json(t)::text), '')) FROM rag.chunks_te3s_1536_v1 t;"
+if [[ "$(pg rag_e1_restore -c "$vector_fingerprint")" != "$(pg rag_e1 -c "$vector_fingerprint")" ]]; then
+  echo 'E1_RESTORED_ROLE_PROBE_NOT_ROLLED_BACK' >&2
   exit 1
 fi
 
