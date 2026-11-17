@@ -95,7 +95,7 @@ Reference: [E1 decision proposal](../../docs/decisions/RAG-E1-adjudication-propo
 - [ ] Owner H10 decision: actual storage estimate and backup/isolated restore with RPO/RTO, or separately approved paid plan
 - [x] Owner explicitly authorized a separate **local-only E1 Draft PR**; remote DDL/upsert/secret changes remain withheld
 
-## Step E1 — Local-only candidate implementation (PR #12 Draft)
+## Step E1 — Local-only implementation (PR #12 MERGED; hosted execution still blocked)
 
 Evidence and boundaries: [Step E1 local note](../../docs/rag/step-e1-local.md). No hosted SQL, billing, deployment or credentials changed.
 
@@ -105,13 +105,13 @@ Evidence and boundaries: [Step E1 local note](../../docs/rag/step-e1-local.md). 
 - [x] Catalog up/down SQL candidate created with rendered identity, nullable measured tokens and guarded RLS
 - [x] Local-only `flat` PgVector operator script and disposable PostgreSQL 17 SQL fixtures authored
 - [x] Runtime vector-store factory configured with `disableInit: true`
-- [ ] Exact-head PostgreSQL 17 + pgvector up/down/up, role/RLS/upsert and negative tests PASS
-- [ ] Full exact-head baseline CI/tests/typecheck/build/auth smokes PASS
-- [ ] Independent Codex review of final HEAD; all P0/P1/P2 remediated
+- [x] Exact-head PostgreSQL 17 + pgvector up/down/up, role/RLS/upsert and negative tests PASS (PR #12)
+- [x] Full exact-head baseline CI/tests/typecheck/build/auth smokes PASS (117/117, run #44130166543)
+- [x] Independent Codex review of final HEAD; P1 DSN-remediation accepted, no material findings at `2f73b800`
 - [ ] H5 remote migration-history/owner-applier mapping independently approved
 - [ ] H6 existing security advisor finding resolved/accepted separately before hosted changes
 - [ ] H10 actual storage sizing and isolated backup/restore proof with owner-accepted RPO/RTO
-- [ ] Owner separately authorizes PR #12 merge
+- [x] Owner merged PR #12 @ `4547f6abe15a414b65a09d710888d8bbaa2f86a6`, post-merge CI #44136691725 SUCCESS
 - [ ] Owner separately authorizes any hosted catalog migration, role/DSN rotation, and space provisioning
 
 
@@ -124,6 +124,27 @@ Evidence and boundaries: [Step E1 local note](../../docs/rag/step-e1-local.md). 
 - [ ] Owner: migration applied
 - [ ] Owner: `rag_app` created, runtime DSN rotated, readiness probe green (`NOT rolsuper`)
 - [ ] Owner: space `chunks_te3s_1536_v1` provisioned
+
+## RAG-E1 — H5/H6/H10 operational readiness checkpoint (new Draft)
+
+Reference: [readiness proposal and read-only evidence](../../docs/decisions/RAG-E1-H5-H6-H10-operational-readiness.md).
+Scope is preparation and **synthetic local restore testing only**; no hosted SQL, backup export, secrets or provisioning has been authorized.
+
+- [x] Verified remote Supabase migration history: only foundation `20261113233720` present; `rag` empty, no `rag_app`
+- [x] Verified Free backup limitations, vector extension and current size via read-only project checks
+- [x] H5 single-ledger / owner-applier migration contract **proposed**, not yet operator-ratified
+- [x] H6 hosted role setup and password/DSN boundary **documented**, not executed
+- [x] H10 provisional capacity thresholds, daily logical off-site backup design and recovery targets **proposed**, not owner-accepted
+- [x] Disposable `pg_dump` → distinct local PostgreSQL 17 database `pg_restore` proof **implemented in CI**; actual result pending
+- [ ] CI on exact Draft HEAD: 117+ tests, build/auth smokes and isolated synthetic backup/restore PASS
+- [ ] Independent Codex review of the Draft HEAD, with P0/P1/P2 addressed
+- [ ] Human merge approval for this operational-preparation PR
+- [ ] Formal owner approval of **single** migration applier, CLI version/history contract
+- [ ] Separate owner approval of H6 role privileges and review of `rls_auto_enable()` advisor findings
+- [ ] Owner approval of actual corpus storage budget and backup RPO/RTO
+- [ ] Off-site encrypted backup destination/key/retention **configured** and monitored after separate approval
+- [ ] Real hosted backup obtained by a separately authorized owner operator and restored in isolated environment (synthetic drill is not this gate)
+- [ ] Hosted E1 DDL/role/DSN/space provisioning separately authorized and verified
 
 ## Step E2 — Ingestion orchestration (expected #11b)
 
