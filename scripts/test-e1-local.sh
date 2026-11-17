@@ -49,6 +49,7 @@ node --experimental-strip-types scripts/provision-e1-space-local.ts
 psql_local < db/local/0002_e1_space_role_policies.sql
 psql_local < db/local/0003_e1_positive_proofs.sql
 
+expect_denied 'rag_app cannot modify operator-only space pointer' "SET ROLE rag_app; UPDATE rag.embedding_space SET status='active' WHERE space_id='chunks_te3s_1536_v1';" "permission denied for table embedding_space"
 expect_denied 'rag_app cannot create DDL' "SET ROLE rag_app; CREATE TABLE rag.e1_forbidden(id integer);" "permission denied for schema rag"
 expect_denied 'anon cannot see private catalog' "SET ROLE anon; SELECT * FROM rag.source LIMIT 1;" "permission denied for schema rag"
 expect_denied 'rag_app cannot write another namespace' "SET ROLE rag_app; INSERT INTO rag.chunks_te3s_1536_v1 (vector_id,embedding,namespace,metadata) VALUES ('forbidden', ('[' || repeat('0.01,',1535) || '0.01]')::extensions.vector(1536), 'other','{}'::jsonb);" "row-level security policy"
