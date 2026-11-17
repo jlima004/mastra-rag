@@ -85,6 +85,13 @@ test('determinism across runs, byte cap and source revision', () => {
   const changed = Buffer.from(html.toString('utf8').replace('fictícia', 'imaginária'));
   const changedSet = processFetchedDocumentOffline(fixture(changed), source).chunkSet;
   assert.notEqual(changedSet.chunkSetId, first.chunkSet.chunkSetId);
+  assert.equal(first.chunkSet.renderingIdentityVersion, 'rag:chunkset-rendered:v2');
+  assert.equal(first.chunkSet.normalizedSha256, first.normalized.normalizedSha256);
+  assert.equal(first.chunkSet.chunkSetId, renderAwareChunkSetId(
+    first.chunkSet.baseChunkSetId, first.chunkSet.normalizedSha256,
+    first.chunkSet.headerMetadataSha256,
+  ));
+  assert.ok(Object.isFrozen(first.chunkSet));
   assert.equal(first.chunkSet.tokenizer, 'utf8-byte-proxy@1');
   assert.equal(first.chunkSet.totalByteBudget, first.chunkSet.chunks.reduce((a,c) => a+c.byteCount,0));
   console.log('RAG09_SYNTHETIC_BYTE_PROXY_STATS=' + JSON.stringify({
@@ -208,6 +215,8 @@ test('metadata-only title changes alter rendered chunk IDs, not source version o
   assert.equal(first.normalized.normalizedSha256, second.normalized.normalizedSha256);
   assert.equal(first.chunkSet.versionId, second.chunkSet.versionId);
   assert.equal(first.chunkSet.profileId, second.chunkSet.profileId);
+  assert.equal(first.chunkSet.baseChunkSetId, second.chunkSet.baseChunkSetId);
+  assert.equal(first.chunkSet.normalizedSha256, second.chunkSet.normalizedSha256);
   assert.notEqual(first.chunkSet.headerMetadataSha256, second.chunkSet.headerMetadataSha256);
   assert.notEqual(first.chunkSet.chunkSetId, second.chunkSet.chunkSetId);
   assert.notDeepEqual(first.chunkSet.chunks.map(c => c.content), second.chunkSet.chunks.map(c => c.content));
@@ -246,6 +255,9 @@ test('identical raw bytes decoded with different HTTP charsets cannot reuse chun
   assert.equal(a.chunkSet.profileId, b.chunkSet.profileId);
   assert.notEqual(a.normalized.normalizedText, b.normalized.normalizedText);
   assert.notEqual(a.normalized.normalizedSha256, b.normalized.normalizedSha256);
+  assert.equal(a.chunkSet.baseChunkSetId, b.chunkSet.baseChunkSetId);
+  assert.equal(a.chunkSet.normalizedSha256, a.normalized.normalizedSha256);
+  assert.equal(b.chunkSet.normalizedSha256, b.normalized.normalizedSha256);
   assert.notEqual(a.chunkSet.chunkSetId, b.chunkSet.chunkSetId);
   assert.notEqual(a.chunkSet.chunks[0].id, b.chunkSet.chunks[0].id);
   const recursiveA = makeOfflineChunkSet(a.normalized, utf8, source, RECURSIVE_PROXY_CONFIG);
