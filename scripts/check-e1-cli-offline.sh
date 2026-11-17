@@ -17,6 +17,18 @@ done
 baseline='supabase/migrations/20261113233720_enable_pgvector_create_private_rag_schema.sql'
 [[ -s "${baseline}" ]] || { echo 'E1_FOUNDATION_MISSING' >&2; exit 2; }
 expected_file_hash="$(sha256sum "${baseline}" | cut -d ' ' -f 1)"
+canonical='db/migrations/0001_rag_catalog.up.sql'
+generated='supabase/migrations/20261117213614_rag_catalog.sql'
+# The timestamp above was created by CLI v3.1.0 on CI run #44181461137
+# (E1_CLI_GENERATED_FILE evidence), never chosen by the operator.
+[[ -s "${canonical}" && -s "${generated}" ]] || {
+  echo 'E1_CATALOG_MIGRATION_MISSING' >&2; exit 2;
+}
+cmp -s "${canonical}" "${generated}" || {
+  echo 'E1_CATALOG_SQL_DRIFT' >&2; exit 1;
+}
+echo "E1_CATALOG_SQL_SHA256=$(sha256sum "${canonical}" | cut -d ' ' -f 1)"
+
 # These commands have no server connection; capture help for future manual operator.
 supabase migration new --help > /tmp/e1-migration-new-help.txt
 supabase migration fetch --help > /tmp/e1-migration-fetch-help.txt
