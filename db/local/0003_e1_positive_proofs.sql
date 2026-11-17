@@ -48,7 +48,7 @@ VALUES
   (repeat('d',64),repeat('e',64),'rag:chunkset-rendered:v2',
    repeat('b',64),repeat('a',64),repeat('f',64),'{}'::jsonb,'synthetic',repeat('1',64),
    repeat('2',64),1,80),
-  (repeat('g',64),repeat('e',64),'rag:chunkset-rendered:v2',
+  (repeat('6',64),repeat('e',64),'rag:chunkset-rendered:v2',
    repeat('b',64),repeat('a',64),repeat('f',64),'{}'::jsonb,'synthetic',repeat('1',64),
    repeat('3',64),1,80);
 
@@ -71,7 +71,7 @@ INSERT INTO rag.ingestion_job
   (idempotency_key,idempotency_version,kind,source_id,document_id,space_id,rendered_chunk_set_id)
 VALUES
   (repeat('8',64),2,'ingest','synthetic-lgpd',repeat('a',64),'chunks_te3s_1536_v1',repeat('d',64)),
-  (repeat('9',64),2,'ingest','synthetic-lgpd',repeat('a',64),'chunks_te3s_1536_v1',repeat('g',64));
+  (repeat('9',64),2,'ingest','synthetic-lgpd',repeat('a',64),'chunks_te3s_1536_v1',repeat('6',64));
 
 -- Real PgVector ON CONFLICT requires SELECT/UPDATE permissions + policies.
 INSERT INTO rag.chunks_te3s_1536_v1 (vector_id,embedding,metadata,namespace)
