@@ -27,7 +27,9 @@ function timestamp(value: string): number {
     throw new RagContractError('INVALID_HASH_COMPONENT');
   }
   const time = Date.parse(value);
-  if (!Number.isFinite(time)) {
+  if (!Number.isFinite(time) ||
+      new Date(time).toISOString().slice(0, 19) !== value.slice(0, 19)) {
+    // Date.parse can otherwise normalize nonexistent calendar dates.
     throw new RagContractError('INVALID_HASH_COMPONENT');
   }
   return time;
