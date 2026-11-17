@@ -2,6 +2,8 @@
 
 > **Current H10 policy (owner, 2026-11-17):** [No backups in the MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md). Historical H10 backup/restore conditions in older checkpoints below are superseded. Capacity sizing/enforcement and the independent hosted authorization gates remain required.
 
+> **Current operational checkpoint (2026-11-17):** [H5/H6/H10 hosted adjudication proposal](../../docs/decisions/RAG-E1-H5-H6-H10-hosted-adjudication.md), based on read-only live Supabase state and post-merge PR #14 `master` `9b62857a`. Single-ledger historian, role procedure, security advisor disposition and H10 capacity limits are **proposals awaiting human ratification**; none authorizes hosted writes. The [H10 no-backup MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md) decision remains settled.
+
 Status: **E1_LOCAL_IMPLEMENTATION_AUTHORIZED / HOSTED_OPERATIONS_GATED** (2026-11-17). Stage A historical baseline `15fe15cdffd51133be32c704eee0cc88f51b9d45`; E1 approved implementation base `8030b63e24aed4dab8d558b892846fc0b75d3278`.
 
 Normative design: [`docs/specs/SPEC-rag-ingestion.md`](../../docs/specs/SPEC-rag-ingestion.md). Decisions: [`docs/architecture/ADR-rag-ingestion.md`](../../docs/architecture/ADR-rag-ingestion.md). [Stage A partial ratification](../../docs/decisions/RAG07-stage-a-ratification.md). Checklist: [`todo.md`](todo.md).
