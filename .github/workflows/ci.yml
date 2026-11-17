@@ -165,3 +165,16 @@ jobs:
         env:
           E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/test-e1-restore-local.sh
+
+  e1-operator-cli:
+    name: E1 offline pinned Supabase CLI v3 migration rehearsal
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v3
+        with:
+          version: '3.1.0'
+      - name: Check local-only migration generation and CLI targeting flags
+        run: bash scripts/check-e1-cli-offline.sh
