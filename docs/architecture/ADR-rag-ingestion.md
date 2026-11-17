@@ -11,6 +11,19 @@
 
 The owner ratified a deliberately limited Stage A subset on 2026-11-16; the exact authority and prohibitions are in [RAG07 Stage A partial ratification](../decisions/RAG07-stage-a-ratification.md). Individual recommendations below remain **proposals beyond that accepted scope**. Offline contracts may begin after the documentation PR is approved/merged; live ingestion, migrations, dependencies and paid operations require their own remaining gates.
 
+
+## RAG-E1 checkpoint — pending physical adjudication (2026-11-17)
+
+The [E1 adjudication proposal](../decisions/RAG-E1-adjudication-proposal.md) records read-only GitHub/Supabase evidence and proposed H4/H5/H6/H10 contracts; **it is not owner ratification**. D4–D6 **principles only** remain accepted. The physical DDL in the SPEC is not implementation-ready until the following reconciliation:
+
+- E1-P2-01: base chunk-set identity versus rendered v2 ID; remove the conflicting `(version_id, pipeline_profile_id)` uniqueness and persist effective rendering provenance.
+- E1-P2-02: ingestion `rag:job:v2` must bind the rendered ID; durable job admission occurs after deterministic rendering but before paid/model/vector operations.
+- E1-P2-03: normalized-text equality across different raw versions cannot imply same rendered v2 identity or automatic embedding no-op. Defer cross-version embedding reuse.
+- H5: reconcile repo migration history with the preexisting Supabase migration `20261113233720` before any catalog DDL. Owner owns remote application; local disposable Postgres 17 tests first.
+- H6: role `rag_app` is not yet provisioned, and a separate review is required for security-advisor findings on the existing `public.rls_auto_enable()` event-trigger function; no privilege changes authorized.
+- H10: Free plan backup/PITR limitations require an owner-approved off-site logical backup + isolated restore strategy (or separately approved paid capability), real capacity estimate and explicit recovery risk acceptance before persistent ingestion.
+
+No hosted SQL, role/grant, credential, vector provisioning or paid operation is authorized. A separate human decision must first adjudicate H4/H5/H6/H10.
 ## Context
 
 The repository currently contains infrastructure only (PRs #1–#6):
