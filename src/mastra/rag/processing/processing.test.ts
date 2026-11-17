@@ -106,6 +106,45 @@ test('large single legal unit splits without byte overflow or surrogate corrupti
   assert.ok(result.chunkSet.chunks.every(c => c.legalUnitIds.includes('lgpd:art10')));
 });
 
+test('header selection reserves separator plus eight body bytes at 499/500/505 bytes', () => {
+  const sourceTitle = source.title;
+  const prefix = sourceTitle + ' › CAPÍTULO ';
+  const suffix = ' › lgpd:art42';
+  const fixedHeaderBytes = Buffer.byteLength(prefix + suffix, 'utf8');
+  for (const targetBytes of [499, 500, 505]) {
+    const heading = 'CAPÍTULO ' + 'X'.repeat(targetBytes - fixedHeaderBytes);
+    const normalized = normalizeLegalBlocks([
+      { kind: 'heading', text: heading },
+      { kind: 'text', text: 'Art. 42. Esta regra sintética contém um texto com várias frases. Uma nova frase.' },
+    ], source);
+    const set = makeOfflineChunkSet(normalized, fixture(), source);
+    assert.ok(set.chunks.length >= 1, String(targetBytes));
+    assert.ok(set.chunks.every(c => c.byteCount <= 512), String(targetBytes));
+    assert.ok(set.chunks.every(c => normalized.normalizedText.slice(c.charStart, c.charEnd) === c.body));
+    if (targetBytes >= 500) {
+      // Breadcrumb is too large, but the shorter locator-only header works.
+      assert.ok(set.chunks.every(c => c.content.startsWith('lgpd:art42\n---\n')), String(targetBytes));
+    }
+  }
+});
+
+test('metadata-only title changes alter rendered chunk IDs, not source version or reusable profile', () => {
+  const first = processFetchedDocumentOffline(fixture(), source);
+  const renamed = { ...source, title: source.title + ' — título atualizado' };
+  const second = processFetchedDocumentOffline(fixture(), renamed);
+  assert.equal(first.normalized.normalizedSha256, second.normalized.normalizedSha256);
+  assert.equal(first.chunkSet.versionId, second.chunkSet.versionId);
+  assert.equal(first.chunkSet.profileId, second.chunkSet.profileId);
+  assert.notEqual(first.chunkSet.headerMetadataSha256, second.chunkSet.headerMetadataSha256);
+  assert.notEqual(first.chunkSet.chunkSetId, second.chunkSet.chunkSetId);
+  assert.notDeepEqual(first.chunkSet.chunks.map(c => c.content), second.chunkSet.chunks.map(c => c.content));
+  assert.ok(first.chunkSet.chunks.every((c, i) => c.id !== second.chunkSet.chunks[i]?.id));
+  assert.deepEqual(first.chunkSet, processFetchedDocumentOffline(fixture(), source).chunkSet);
+  const recursiveFirst = makeOfflineChunkSet(first.normalized, fixture(), source, RECURSIVE_PROXY_CONFIG);
+  const recursiveRenamed = makeOfflineChunkSet(second.normalized, fixture(), renamed, RECURSIVE_PROXY_CONFIG);
+  assert.equal(recursiveFirst.chunkSetId, recursiveRenamed.chunkSetId);
+});
+
 test('recursive calibration baseline has deterministic overlapping byte-budget windows', () => {
   const { normalized } = processFetchedDocumentOffline(fixture(), source);
   const set = makeOfflineChunkSet(normalized, fixture(), source, RECURSIVE_PROXY_CONFIG);

@@ -4,7 +4,7 @@ import { SOURCE_MANIFEST } from '../contracts/manifest.ts';
 import { RagProcessingError } from './errors.ts';
 import {
   isPublicIPv4, selectPinnedAddress, fetchApprovedSourceById, fetchManifestSource,
-  type PinnedFetcher, type PinnedHttpResponse,
+  pinnedHttpsRequestOptions, type PinnedFetcher, type PinnedHttpResponse,
 } from './fetch.ts';
 
 const source = SOURCE_MANIFEST[0];
@@ -26,6 +26,35 @@ test('public IPv4 only; deny private, CGNAT, link-local, reserved and every IPv6
   }
   assert.equal(selectPinnedAddress(['8.8.8.8','1.1.1.1']),'8.8.8.8');
   assert.throws(() => selectPinnedAddress(['8.8.8.8','127.0.0.1']), /FETCH_UNSAFE_ADDRESS/);
+});
+
+test('native HTTPS options pin the approved IPv4 and honor both Node DNS callback contracts offline', async () => {
+  const ip = '8.8.8.8';
+  const options = pinnedHttpsRequestOptions(source.canonicalUri, ip);
+  assert.equal(options.hostname, 'www.planalto.gov.br');
+  assert.equal(options.servername, 'www.planalto.gov.br');
+  assert.equal(options.family, 4);
+  assert.equal(options.autoSelectFamily, false);
+  assert.equal(options.rejectUnauthorized, true);
+  assert.equal(options.agent, false);
+  assert.equal(typeof options.lookup, 'function');
+  const lookup = options.lookup!;
+  const single = await new Promise<unknown>((resolve, reject) => {
+    lookup('www.planalto.gov.br', { all: false }, (error, address, family) => {
+      if (error) return reject(error);
+      assert.equal(family, 4);
+      resolve(address);
+    });
+  });
+  assert.equal(single, ip);
+  const multiple = await new Promise<unknown>((resolve, reject) => {
+    lookup('www.planalto.gov.br', { all: true }, (error, addresses) => {
+      if (error) return reject(error);
+      resolve(addresses);
+    });
+  });
+  assert.deepEqual(multiple, [{ address: ip, family: 4 }]);
+  assert.throws(() => pinnedHttpsRequestOptions(source.canonicalUri, '127.0.0.1'), /FETCH_UNSAFE_ADDRESS/);
 });
 
 test('mock transport fetches fixed reviewed source only with DNS-pinned address', async () => {

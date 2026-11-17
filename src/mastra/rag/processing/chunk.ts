@@ -1,4 +1,4 @@
-import { chunkId, chunkSetId, documentVersionId, pipelineProfileId } from '../contracts/ids.ts';
+import { canonicalJson, chunkId, chunkSetId, documentVersionId, pipelineProfileId, sha256 } from '../contracts/ids.ts';
 import { RAG_LIMITS, type FetchedDocument, type SourceManifestEntry } from '../contracts/types.ts';
 import { RagProcessingError } from './errors.ts';
 import type { LegalBlock, NormalizedLegalDocument } from './legal.ts';
@@ -32,6 +32,8 @@ export type OfflineChunkSet = Readonly<{
   versionId: string;
   profileId: string;
   chunkSetId: string;
+  /** Hash of the external metadata that affects rendered context headers. */
+  headerMetadataSha256: string | null;
   tokenizer: 'utf8-byte-proxy@1';
   strategy: ChunkStrategy;
   chunks: readonly OfflineChunk[];
@@ -103,14 +105,19 @@ function contextHeader(source: SourceManifestEntry, block: LegalBlock, caput?: s
   return caput ? crumb + '\n' + caput : crumb;
 }
 
+const HEADER_SEPARATOR_BYTES = Buffer.byteLength('\n---\n', 'utf8');
+const MIN_SPLIT_BODY_BYTES = 8;
+
 function chooseHeader(source: SourceManifestEntry, block: LegalBlock, caput: string, maxBytes: number): string {
+  const hasBodyRoom = (header: string): boolean =>
+    size(header) + HEADER_SEPARATOR_BYTES + MIN_SPLIT_BODY_BYTES <= maxBytes;
   const detailed = contextHeader(source, block, caput);
-  if (size(detailed) + 6 < maxBytes) return detailed;
+  if (hasBodyRoom(detailed)) return detailed;
   const simple = contextHeader(source, block);
-  if (size(simple) + 6 < maxBytes) return simple;
+  if (hasBodyRoom(simple)) return simple;
   // Title/path may be huge even if body is short. Keep only the locator.
   const minimal = block.articleLocator ?? source.sourceId;
-  if (size(minimal) + 6 >= maxBytes) throw new RagProcessingError('CHUNK_HEADER_TOO_LARGE');
+  if (!hasBodyRoom(minimal)) throw new RagProcessingError('CHUNK_HEADER_TOO_LARGE');
   return minimal;
 }
 
@@ -137,7 +144,16 @@ export function makeOfflineChunkSet(
     extractor: source.extractor, normalizer: 'legal-text@1',
   });
   const versionId = documentVersionId(fetched.documentId, fetched.contentSha256);
-  const setId = chunkSetId(versionId, profileId);
+  const baseSetId = chunkSetId(versionId, profileId);
+  // Step C rendering v1: keep the pipeline profile reusable across sources;
+  // changing the manifest title must create a distinct chunk set and IDs.
+  // Recursive baseline has no source-title header, so it keeps the base ID.
+  const headerMetadataSha256 = config.strategy === 'legal-structure'
+    ? sha256(canonicalJson({ sourceTitle: source.title }))
+    : null;
+  const setId = headerMetadataSha256 === null
+    ? baseSetId
+    : sha256(['rag:chunkset-rendered:v1', baseSetId, headerMetadataSha256].join('\n'));
   const text = doc.normalizedText;
   const result: OfflineChunk[] = [];
   let totalByteBudget = 0;
@@ -204,7 +220,7 @@ export function makeOfflineChunkSet(
   }
   if (!result.length) throw new RagProcessingError('CHUNK_EMPTY');
   return Object.freeze({
-    versionId, profileId, chunkSetId: setId,
+    versionId, profileId, chunkSetId: setId, headerMetadataSha256,
     tokenizer: 'utf8-byte-proxy@1',
     strategy: config.strategy,
     chunks: Object.freeze(result),

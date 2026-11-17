@@ -1,5 +1,5 @@
 import { lookup } from 'node:dns/promises';
-import { request } from 'node:https';
+import { request, type RequestOptions } from 'node:https';
 import { isIP } from 'node:net';
 import { sha256, documentId } from '../contracts/ids.ts';
 import { SOURCE_MANIFEST } from '../contracts/manifest.ts';
@@ -56,10 +56,30 @@ export function selectPinnedAddress(addresses: readonly string[]): string {
   return addresses[0];
 }
 
-/** Native HTTPS client: the verified DNS address is pinned by lookup(). */
-export async function requestPinnedHttps(urlValue: string, address: string): Promise<PinnedHttpResponse> {
+/**
+ * Pure options builder used by the real native transport and offline tests.
+ * Disable auto family selection AND honor all:true if Node asks for it,
+ * while keeping TLS hostname verification and the verified IPv4 pinned.
+ */
+export function pinnedHttpsRequestOptions(urlValue: string, address: string): RequestOptions {
   if (!isPublicIPv4(address)) throw new RagProcessingError('FETCH_UNSAFE_ADDRESS');
   const url = new URL(validateCanonicalSourceUrl(urlValue));
+  return {
+    hostname: url.hostname, servername: url.hostname, port: 443,
+    method: 'GET', path: url.pathname, agent: false,
+    family: 4, autoSelectFamily: false,
+    rejectUnauthorized: true, timeout: CONNECT_TIMEOUT_MS,
+    headers: { accept: 'text/html,text/plain;q=0.9,*/*;q=0.1', 'user-agent': 'mastra-rag-source-validation/1.0' },
+    lookup(_hostname, options, callback) {
+      if (options.all) callback(null, [{ address, family: 4 }]);
+      else callback(null, address, 4);
+    },
+  };
+}
+
+/** Native HTTPS client: the verified DNS address is pinned by lookup(). */
+export async function requestPinnedHttps(urlValue: string, address: string): Promise<PinnedHttpResponse> {
+  const options = pinnedHttpsRequestOptions(urlValue, address);
   return new Promise<PinnedHttpResponse>((resolve, reject) => {
     let finished = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -70,13 +90,7 @@ export async function requestPinnedHttps(urlValue: string, address: string): Pro
       if (error) reject(error);
       else if (value) resolve(value);
     };
-    const req = request({
-      hostname: url.hostname, servername: url.hostname, port: 443,
-      method: 'GET', path: url.pathname, agent: false,
-      rejectUnauthorized: true, timeout: CONNECT_TIMEOUT_MS,
-      headers: { accept: 'text/html,text/plain;q=0.9,*/*;q=0.1', 'user-agent': 'mastra-rag-source-validation/1.0' },
-      lookup(_hostname, _options, cb) { cb(null, address, 4); },
-    }, res => {
+    const req = request(options, res => {
       const contentLength = Number(res.headers['content-length']);
       if (Number.isFinite(contentLength) && contentLength > RAG_LIMITS.MAX_RAW_BYTES) {
         req.destroy(new RagProcessingError('FETCH_BYTES_EXCEEDED'));
