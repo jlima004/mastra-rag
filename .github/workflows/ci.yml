@@ -165,6 +165,10 @@ jobs:
         env:
           E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/test-e1-restore-local.sh
+      - name: Verify operator role contract and isolated security advisor reproduction
+        env:
+          E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/test-e1-operator-local.sh
 
   e1-operator-cli:
     name: E1 offline pinned Supabase CLI v3 migration rehearsal
