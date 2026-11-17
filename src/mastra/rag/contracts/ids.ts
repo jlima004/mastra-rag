@@ -122,3 +122,19 @@ export function ingestionIdempotencyKey(
 ): string {
   return fingerprint('rag:job:v1', 'ingest', id, contentSha256, profileId, spaceId);
 }
+
+/**
+ * E1-pending durable ingestion identity. Unlike historical rag:job:v1, v2
+ * binds the ACTUAL rendered chunk-set identity produced by Step C.
+ * Compute only after deterministic rendering, then persist job ownership
+ * before any provider call/upsert. This function has no side effects.
+ */
+export function renderedIngestionIdempotencyKey(
+  id: string, renderedChunkSetId: string, spaceId: string,
+): string {
+  if (!/^[0-9a-f]{64}$/.test(id) || !/^[0-9a-f]{64}$/.test(renderedChunkSetId) ||
+      !/^chunks_[a-z0-9_]{1,33}$/.test(spaceId)) {
+    throw new RagContractError('INVALID_HASH_COMPONENT');
+  }
+  return fingerprint('rag:job:v2', 'ingest', id, renderedChunkSetId, spaceId);
+}
