@@ -9,7 +9,7 @@ import { RagProcessingError } from './errors.ts';
 import { extractHtmlBlocks, extractTextBlocks } from './html.ts';
 import { parseArticleLocator, normalizeLegalBlocks } from './legal.ts';
 import {
-  makeOfflineChunkSet, RECURSIVE_PROXY_CONFIG, STRUCTURAL_PROXY_CONFIG,
+  makeOfflineChunkSet, renderAwareChunkSetId, RECURSIVE_PROXY_CONFIG, STRUCTURAL_PROXY_CONFIG,
 } from './chunk.ts';
 import { processFetchedDocumentOffline } from './index.ts';
 
@@ -143,6 +143,42 @@ test('metadata-only title changes alter rendered chunk IDs, not source version o
   const recursiveFirst = makeOfflineChunkSet(first.normalized, fixture(), source, RECURSIVE_PROXY_CONFIG);
   const recursiveRenamed = makeOfflineChunkSet(second.normalized, fixture(), renamed, RECURSIVE_PROXY_CONFIG);
   assert.equal(recursiveFirst.chunkSetId, recursiveRenamed.chunkSetId);
+});
+
+test('render-aware v2 IDs have an independent exact SHA-256 golden fixture', () => {
+  const base = 'b4a9270040ae6fa2c209abd8708420f6b5013128c7fc524b69dd38d5fffaed9a';
+  const normalized = '5cf495ae102baa58b889e5756c4a505d26dd83e95533bdba1dfb8057b6549ce5';
+  const header = 'fede69a06288c13d06a2e12e4f69ad3b762a81774516fdab98174ba539e8e890';
+  assert.equal(
+    renderAwareChunkSetId(base, normalized, header),
+    'dbdafcf3d02e284af0c99446784338ae3b268c5f1c9aadc00a25487250f8f894',
+  );
+  assert.equal(
+    renderAwareChunkSetId(base, normalized, null),
+    '6f3b965b39cc698395ed4cbd730e27758042ba8e63a332589b6a6625108b97b1',
+  );
+});
+
+test('identical raw bytes decoded with different HTTP charsets cannot reuse chunk IDs', () => {
+  const raw = Buffer.from(
+    '<!doctype html><html><body><p>Art. 7º A proteção de dados é sintética.</p></body></html>',
+    'utf8',
+  );
+  const base = fixture(raw);
+  const utf8 = { ...base, declaredMediaType: 'text/html; charset=utf-8', charset: 'utf-8' };
+  const cp1252 = { ...base, declaredMediaType: 'text/html; charset=windows-1252', charset: 'windows-1252' };
+  const a = processFetchedDocumentOffline(utf8, source);
+  const b = processFetchedDocumentOffline(cp1252, source);
+  assert.equal(a.chunkSet.versionId, b.chunkSet.versionId);
+  assert.equal(a.chunkSet.profileId, b.chunkSet.profileId);
+  assert.notEqual(a.normalized.normalizedText, b.normalized.normalizedText);
+  assert.notEqual(a.normalized.normalizedSha256, b.normalized.normalizedSha256);
+  assert.notEqual(a.chunkSet.chunkSetId, b.chunkSet.chunkSetId);
+  assert.notEqual(a.chunkSet.chunks[0].id, b.chunkSet.chunks[0].id);
+  const recursiveA = makeOfflineChunkSet(a.normalized, utf8, source, RECURSIVE_PROXY_CONFIG);
+  const recursiveB = makeOfflineChunkSet(b.normalized, cp1252, source, RECURSIVE_PROXY_CONFIG);
+  assert.notEqual(recursiveA.chunkSetId, recursiveB.chunkSetId);
+  assert.notEqual(recursiveA.chunks[0].id, recursiveB.chunks[0].id);
 });
 
 test('recursive calibration baseline has deterministic overlapping byte-budget windows', () => {

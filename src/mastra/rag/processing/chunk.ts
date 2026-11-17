@@ -121,6 +121,20 @@ function chooseHeader(source: SourceManifestEntry, block: LegalBlock, caput: str
   return minimal;
 }
 
+/**
+ * Offline rendered identity v2 binds normalized text for BOTH strategies.
+ * The optional title hash affects only structure-aware context headers.
+ * Baseline documentVersionId, pipelineProfileId and chunkSetId remain stable.
+ */
+export function renderAwareChunkSetId(
+  baseSetId: string, normalizedSha256: string, headerMetadataSha256: string | null,
+): string {
+  return sha256([
+    'rag:chunkset-rendered:v2', baseSetId, normalizedSha256,
+    headerMetadataSha256 ?? '-',
+  ].join('\n'));
+}
+
 export function makeOfflineChunkSet(
   doc: NormalizedLegalDocument,
   fetched: FetchedDocument,
@@ -151,10 +165,11 @@ export function makeOfflineChunkSet(
   const headerMetadataSha256 = config.strategy === 'legal-structure'
     ? sha256(canonicalJson({ sourceTitle: source.title }))
     : null;
-  const setId = headerMetadataSha256 === null
-    ? baseSetId
-    : sha256(['rag:chunkset-rendered:v1', baseSetId, headerMetadataSha256].join('\n'));
   const text = doc.normalizedText;
+  // The same raw bytes decoded with different effective charsets can produce
+  // different normalized text. Bind that actual output, not just raw bytes.
+  if (sha256(text) !== doc.normalizedSha256) throw new RagProcessingError('INVALID_DOCUMENT');
+  const setId = renderAwareChunkSetId(baseSetId, doc.normalizedSha256, headerMetadataSha256);
   const result: OfflineChunk[] = [];
   let totalByteBudget = 0;
 
