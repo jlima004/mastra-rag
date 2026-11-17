@@ -104,7 +104,15 @@ export function normalizeLegalBlocks(
     let kind: LegalBlockKind = 'preamble';
     let locator = prefix + ':preambulo';
     const article = parseArticleLocator(text, prefix);
-    if (entry.kind === 'heading' || isHeading(text)) {
+    // Normative article syntax takes precedence over its HTML presentation
+    // (<h1>–<h6> or markdown heading). Never discard an article caput.
+    if (article) {
+      currentArticle = article;
+      currentParagraph = null;
+      currentInciso = null;
+      kind = 'article';
+      locator = article;
+    } else if (entry.kind === 'heading' || isHeading(text)) {
       kind = 'heading';
       if (/^CAP[IÍ]TULO\b/i.test(text)) {
         chapter = text;
@@ -116,12 +124,6 @@ export function normalizeLegalBlocks(
       currentInciso = null;
       currentParagraph = null;
       locator = prefix + ':heading';
-    } else if (article) {
-      currentArticle = article;
-      currentParagraph = null;
-      currentInciso = null;
-      kind = 'article';
-      locator = article;
     } else if (currentArticle) {
       const paragraph = /^§\s*(\d+)\s*[º°o]?(?=\s|[.,:;]|$)/iu.exec(text);
       if (/^Par[aá]grafo\s+[uú]nico\b/iu.test(text)) {

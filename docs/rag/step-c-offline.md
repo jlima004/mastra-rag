@@ -45,6 +45,13 @@ investigated before considering live ingestion.
 
 Step D/E must reconcile ingestion job idempotency with the *effective rendered chunk-set* identity before persistence. No Step B golden ID was modified; no migration, new package, provider call, remote fetch or deploy is authorized.
 
+## R3 Codex remediation — article headings and greedy structural packing
+
+- Recognized `Art.` syntax overrides HTML heading presentation: an article in `h1`–`h6` stays normative, establishes the article locator and retains its caput and subsequent incisos.
+- For oversized articles, the structural byte-proxy renderer greedily packs adjacent legal children under a shared context header, including the intervening normalized separators in the byte count. A single oversized child is split only when it cannot fit by itself. Group boundaries remain article-local; body offsets always reconstruct by `String.slice`.
+- **Algorithm-version gate:** the structural profile now declares `algorithmVersion: 'legal-structure-greedy@2'`, distinguishing grouped R3 chunks from pre-R3 singleton chunks. The Step B hash helpers, rendered-identity v2 formula and its golden assertions are unchanged. The recursive baseline profile is unchanged.
+- Only synthetic fixtures are evaluated; the byte proxy is **not** model-token calibration. No production corpus, fetch or vector mutation is authorized.
+
 ## Deliberately unfulfilled Step C gates
 
 1. **Official LGPD snapshot:** no fake or synthetic file may be represented as

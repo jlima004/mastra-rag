@@ -96,6 +96,79 @@ test('determinism across runs, byte cap and source revision', () => {
   }));
 });
 
+test('normative article presented as h2 remains an article and preserves caput and inciso', () => {
+  const synthetic = '<!doctype html><html><body>' +
+    '<h2>CAPÍTULO TESTE</h2>' +
+    '<h2>Art. 7º O tratamento só é permitido com consentimento.</h2>' +
+    '<p>I - A primeira condição sintética.</p>' +
+    '<p>II - A segunda condição sintética.</p>' +
+    '</body></html>';
+  const { normalized, chunkSet } = processFetchedDocumentOffline(fixture(Buffer.from(synthetic)), source);
+  const article = normalized.blocks.find(b => b.locator === 'lgpd:art7');
+  assert.equal(article?.kind, 'article');
+  assert.equal(article?.articleLocator, 'lgpd:art7');
+  assert.deepEqual(normalized.blocks.filter(b => b.kind === 'inciso').map(b => b.locator),
+    ['lgpd:art7:inc1', 'lgpd:art7:inc2']);
+  assert.ok(chunkSet.chunks.some(c => c.body.includes('Art. 7º O tratamento só é permitido')));
+  assert.ok(chunkSet.chunks.some(c => c.legalUnitIds.includes('lgpd:art7:inc1')));
+  assert.ok(chunkSet.chunks.some(c => c.legalUnitIds.includes('lgpd:art7:inc2')));
+  assert.ok(chunkSet.chunks.every(c => !c.legalUnitIds.includes('lgpd:preambulo')));
+  for (const b of normalized.blocks.filter(b => b.articleLocator === 'lgpd:art7')) {
+    assert.ok(chunkSet.chunks.some(c => c.charStart <= b.start && c.charEnd >= b.end),
+      'normative unit omitted: ' + b.locator);
+  }
+});
+
+test('30 short legal children pack greedily without mixing articles or losing offsets', () => {
+  const children = Array.from({ length: 30 }, (_, i) =>
+    '<p>§ ' + (i + 1) + 'º A condição sintética número ' + (i + 1) + ' permanece válida.</p>');
+  const html = '<!doctype html><html><body>' +
+    '<p>Art. 10. Caput sintético para o teste de agrupamento.</p>' +
+    children.join('') +
+    '<p>Art. 11. Outro artigo, não misturar os grupos.</p>' +
+    '<p>I - Inciso pertencente ao artigo 11.</p></body></html>';
+  const fetched = fixture(Buffer.from(html));
+  const { normalized, chunkSet } = processFetchedDocumentOffline(fetched, source);
+  const firstArticle = chunkSet.chunks.filter(c => c.articleLocator === 'lgpd:art10');
+  const secondArticle = chunkSet.chunks.filter(c => c.articleLocator === 'lgpd:art11');
+  assert.ok(firstArticle.length >= 2 && firstArticle.length < 16,
+    '30 short paragraphs must be greedily packed, not emitted individually');
+  assert.ok(secondArticle.length >= 1);
+  assert.equal(firstArticle.some(c => c.body.includes('Art. 11.')), false);
+  assert.equal(secondArticle.some(c => c.body.includes('Art. 10.')), false);
+  assert.ok(firstArticle.some(c => c.legalUnitIds.length >= 3),
+    'one packed chunk must contain multiple consecutive legal units');
+  for (const c of chunkSet.chunks) {
+    assert.equal(normalized.normalizedText.slice(c.charStart, c.charEnd), c.body);
+    assert.ok(c.byteCount <= STRUCTURAL_PROXY_CONFIG.maxBytes);
+    assert.ok(!c.legalUnitIds.some(id => id.startsWith('lgpd:art10')) ||
+      !c.legalUnitIds.some(id => id.startsWith('lgpd:art11')));
+  }
+  for (const block of normalized.blocks.filter(b => b.articleLocator)) {
+    assert.ok(chunkSet.chunks.some(c => c.charStart <= block.start && c.charEnd >= block.end),
+      'unit omitted or split unnecessarily: ' + block.locator);
+  }
+  assert.deepEqual(chunkSet, processFetchedDocumentOffline(fetched, source).chunkSet);
+});
+
+test('oversized single child is split, while neighboring short children remain grouped', () => {
+  const html = '<!doctype html><html><body>' +
+    '<p>Art. 12. Caput sintético.</p>' +
+    '<p>§ 1º Primeiro parágrafo curto.</p>' +
+    '<p>§ 2º ' + 'Texto jurídico sintético longo com unicode é á ç. '.repeat(50) + '</p>' +
+    '<p>§ 3º Terceiro parágrafo curto.</p>' +
+    '<p>§ 4º Quarto parágrafo curto.</p>' +
+    '</body></html>';
+  const { normalized, chunkSet } = processFetchedDocumentOffline(fixture(Buffer.from(html)), source);
+  assert.ok(chunkSet.chunks.length > 2);
+  assert.ok(chunkSet.chunks.every(c => c.byteCount <= STRUCTURAL_PROXY_CONFIG.maxBytes));
+  assert.ok(chunkSet.chunks.some(c => c.body.includes('§ 3º') && c.body.includes('§ 4º')),
+    'neighboring short children should be packed after a split');
+  assert.ok(chunkSet.chunks.every(c =>
+    normalized.normalizedText.slice(c.charStart, c.charEnd) === c.body));
+  assert.ok(chunkSet.chunks.every(c => c.legalUnitIds.includes('lgpd:art12')));
+});
+
 test('large single legal unit splits without byte overflow or surrogate corruption', () => {
   const longHtml = '<!doctype html><html><body><p>Art. 10. ' +
     ('A proteção às informações sintéticas permanece necessária. '.repeat(180)) +

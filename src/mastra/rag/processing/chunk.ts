@@ -155,6 +155,12 @@ export function makeOfflineChunkSet(
       contextHeader: config.strategy === 'legal-structure' ? 'breadcrumb+caput' : 'none',
       tokenizer: 'utf8-byte-proxy@1',
     },
+    // R3 changes structural grouping semantics (previously one chunk per
+    // child). Version the structural algorithm in the reusable profile so an
+    // old singleton-rendered set cannot collide with a greedy-rendered set.
+    ...(config.strategy === 'legal-structure'
+      ? { algorithmVersion: 'legal-structure-greedy@2' }
+      : {}),
     extractor: source.extractor, normalizer: 'legal-text@1',
   });
   const versionId = documentVersionId(fetched.documentId, fetched.contentSha256);
@@ -224,13 +230,38 @@ export function makeOfflineChunkSet(
         continue;
       }
       const caput = first.text;
+      // After the complete article fails the budget, pack consecutive legal
+      // children greedily. The body's String.slice range includes exactly the
+      // normalized '\n\n' separators between adjacent legal blocks. Only
+      // split a child when that child alone cannot fit with its header.
+      let pending: { start: number; end: number; header: string } | null = null;
+      const flushPending = (): void => {
+        if (!pending) return;
+        emit(pending.start, pending.end, pending.header);
+        pending = null;
+      };
       for (const unit of group) {
         const unitHeader = chooseHeader(source, unit, unit === first ? '' : caput, config.maxBytes);
-        const maxBody = config.maxBytes - size(unitHeader) - 5;
+        const maxBody = config.maxBytes - size(unitHeader) - HEADER_SEPARATOR_BYTES;
+        if (pending) {
+          // A new header (e.g. caput vs child context) cannot reuse the prior
+          // body/header pair. Include intervening separators in the byte cap.
+          if (pending.header === unitHeader &&
+              size(text.slice(pending.start, unit.end)) <= maxBody) {
+            pending.end = unit.end;
+            continue;
+          }
+          flushPending();
+        }
+        if (size(text.slice(unit.start, unit.end)) <= maxBody) {
+          pending = { start: unit.start, end: unit.end, header: unitHeader };
+          continue;
+        }
         for (const piece of splitWithinBudget(text.slice(unit.start, unit.end), unit.start, maxBody)) {
           emit(piece.start, piece.end, unitHeader);
         }
       }
+      flushPending();
     }
   }
   if (!result.length) throw new RagProcessingError('CHUNK_EMPTY');
