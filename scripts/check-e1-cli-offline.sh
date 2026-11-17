@@ -17,6 +17,12 @@ done
 baseline='supabase/migrations/20261113233720_enable_pgvector_create_private_rag_schema.sql'
 [[ -s "${baseline}" ]] || { echo 'E1_FOUNDATION_MISSING' >&2; exit 2; }
 expected_file_hash="$(sha256sum "${baseline}" | cut -d ' ' -f 1)"
+# Confirmed by read-only Supabase SQL at foundation migration 20261113233720:
+# encode(extensions.digest(statements[1],'sha256'),'hex') => exact value below.
+[[ "${expected_file_hash}" = '9c36f409c82917f523f6c034ab576409a0e3ee6711901c4b09bcc04e3b2e4e13' ]] || {
+  echo 'E1_FOUNDATION_SQL_MISMATCH_WITH_HOSTED_LEDGER' >&2
+  exit 1
+}
 canonical='db/migrations/0001_rag_catalog.up.sql'
 generated='supabase/migrations/20261117213614_rag_catalog.sql'
 # The timestamp above was created by CLI v3.1.0 on CI run #44181461137
