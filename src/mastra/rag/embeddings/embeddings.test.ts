@@ -194,6 +194,23 @@ test('batch executor validates vectors, preserves order, and resumes only missin
   assert.equal(result.reportedUsageTokens,250);
 });
 
+test('preflight snapshots text: caller mutation between batches cannot alter billed inputs', async () => {
+  const originals=fixtureChunks(129);
+  const originalLast=originals[128].text;
+  let call=0;
+  const provider=fakeProvider(async inputs => {
+    call++;
+    if(call===1) originals[128].text='X'.repeat(5000);
+    if(call===2) assert.equal(inputs[0],originalLast);
+    return {vectors:inputs.map(()=>[...VALID_VECTOR]),usage:{tokens:inputs.length}};
+  });
+  const result=await embedMissingDocumentChunks(args(originals,provider));
+  assert.equal(call,2);
+  assert.equal(result.providerCalls,2);
+  assert.equal(result.embedded.length,129);
+  assert.ok(result.reservedTokenUpperBound<=result.plan.worstCaseTokenReservation);
+});
+
 test('resume all-existing makes zero provider calls and reserves zero tokens', async () => {
   const input=fixtureChunks(5);
   const provider=fakeProvider(async () => { throw new Error('SHOULD_NOT_CALL'); });

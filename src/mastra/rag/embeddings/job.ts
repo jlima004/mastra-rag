@@ -103,16 +103,22 @@ function prepare(args: EmbeddingJobArguments): PreparedPlan {
   }
   const batchSize = Math.min(args.provider.maxInputsPerCall, MAX_BATCH_SIZE);
   const seen = new Set<string>();
+  const stableChunks: DocumentEmbeddingInput[] = [];
   for (const c of args.chunks) {
     if (!c || typeof c.chunkId !== 'string' || !HASH_ID.test(c.chunkId) ||
         seen.has(c.chunkId)) {
       throw new RagEmbeddingError('EMBED_INVALID_INPUT');
     }
-    seen.add(c.chunkId);
-    const upper = conservativeInputTokenUpperBound(c.text);
+    const id = c.chunkId;
+    const value = c.text;
+    seen.add(id);
+    const upper = conservativeInputTokenUpperBound(value);
     if (upper > RAG_LIMITS.HARD_MAX_CHUNK_TOKENS || upper > args.provider.maxInputTokens) {
       throw new RagEmbeddingError('EMBED_INVALID_INPUT');
     }
+    // Snapshot the string during preflight. Source objects may be mutated by
+    // the caller after an await; provider inputs must match billed bytes.
+    stableChunks.push(Object.freeze({ chunkId: id, text: value }));
   }
   const existing = args.existingChunkIds ?? [];
   if (!Array.isArray(existing) || new Set(existing).size !== existing.length ||
@@ -120,7 +126,7 @@ function prepare(args: EmbeddingJobArguments): PreparedPlan {
     throw new RagEmbeddingError('EMBED_INVALID_INPUT');
   }
   const present = new Set(existing);
-  const missing = args.chunks.filter(chunk => !present.has(chunk.chunkId));
+  const missing = stableChunks.filter(chunk => !present.has(chunk.chunkId));
   const batches: Batch[] = [];
   let estimatedTokenUpperBound = 0;
   for (let i = 0; i < missing.length; i += batchSize) {
