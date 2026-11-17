@@ -1,5 +1,7 @@
 # RAG ingestion — incremental implementation plan
 
+> **Current H10 policy (owner, 2026-11-17):** [No backups in the MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md). Historical H10 backup/restore conditions in older checkpoints below are superseded. Capacity sizing/enforcement and the independent hosted authorization gates remain required.
+
 Status: **E1_LOCAL_IMPLEMENTATION_AUTHORIZED / HOSTED_OPERATIONS_GATED** (2026-11-17). Stage A historical baseline `15fe15cdffd51133be32c704eee0cc88f51b9d45`; E1 approved implementation base `8030b63e24aed4dab8d558b892846fc0b75d3278`.
 
 Normative design: [`docs/specs/SPEC-rag-ingestion.md`](../../docs/specs/SPEC-rag-ingestion.md). Decisions: [`docs/architecture/ADR-rag-ingestion.md`](../../docs/architecture/ADR-rag-ingestion.md). [Stage A partial ratification](../../docs/decisions/RAG07-stage-a-ratification.md). Checklist: [`todo.md`](todo.md).
@@ -18,9 +20,17 @@ This Draft PR is documentation only. **No DDL, Supabase/Turso writes, credential
 
 After PR #11 merged into `master` @ `8030b63e24aed4dab8d558b892846fc0b75d3278` (post-merge CI SUCCESS), the owner **ratified directions** H4/H5/H6 and H10's conditional operational policy. Authority: [owner ratification](../../docs/decisions/RAG-E1-owner-ratification.md). Detailed local implementation plan: [E1 work order](step-e1-local-work-order.md).
 
-**Allowed now:** separate Draft PR for locally tested catalog SQL, role/RLS, operator provisioning and E1-P2-01/02/03 reconciliation, plus backup/capacity plan. **Not allowed:** applying remote DDL, creating/rotating remote credentials/roles, hosted vector provisioning, paid embeddings, ingestion, merging/deploying the implementation without separate approval. H10 operational acceptance remains pending until backup and isolated restore evidence exist. H7/H8/H9/H11/H12 remain gated.
+**Historical E1-local authorization:** a separate Draft PR was allowed for locally tested catalog SQL, role/RLS, operator provisioning and reconciliation. No hosted DDL, remote role/DSN changes or paid embeddings were authorized by that decision. The previous H10 backup prerequisite is superseded by [H10 no-backup MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md); storage capacity and H7/H11/H12 gates remain open.
 
 The preceding adjudication checkpoint section is historical: its directions were subsequently ratified **for local E1 implementation only**, not for hosted operations.
+
+## Owner H10 MVP no-backup override (2026-11-17)
+
+- **Decided:** no backups (hosted, external, scheduled or pre-migration) for the MVP; no real restore test or RPO/RTO guarantee required as an H10 gate.
+- **Risks:** permanent loss of catalog, pointer/history and vector data is possible; rebuild from official sources is not yet demonstrated or guaranteed.
+- **Still pending:** actual corpus capacity budget and enforcement, H5 single migration historian/applier, H6 hosted runtime role and security review, H7/H11/H12 and separate authorization for remote writes and live ingestion.
+- **Evidence:** PR #13 merged as `248c0ba096c55e8e432ab0bfbfb3a49e2c2a8f28` with CI SUCCESS; its synthetic local restore drill remains a fixture test, not a production backup.
+- **Authority:** [H10 MVP decision](../../docs/decisions/RAG-H10-mvp-no-backup.md). Supersedes older backup-related gate language below, not other decisions.
 
 ## Rules that apply to every step
 
