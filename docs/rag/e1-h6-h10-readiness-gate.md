@@ -1,5 +1,7 @@
 # E1 — H6/H10 evidence readiness (read-only; Draft preparation)
 
+> **HISTORICAL READINESS SNAPSHOT — NOT AN ACTIVE H10 GATE (2026-11-18).** Owner canceled all H10 organization, physical disk/WAL and internal capacity-measurement requirements for this Free-tier MVP. H6-S1 was subsequently executed and verified; its earlier WARNs/ACL baseline are no longer current. [Latest decision and evidence](../decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md).
+
 **Date:** 2026-11-18. **Baseline:** `master` `b3b7cfd0650af4fe9b370b2520d2be78bd28917a` (PR #19 merged; exact-head CI passed; deployment and `/health` confirmed by owner).
 
 **Decision authority:** [H5/H6/H10 ratification](../decisions/RAG-E1-H5-H6-H10-owner-ratification.md), [H10 NO_BACKUP_MVP](../decisions/RAG-H10-mvp-no-backup.md). **Scope:** read-only observations, local/offline evidence-envelope tests, and human review preparation. No Supabase hosted DDL, role/grant/secret change, backup, paid call, provider-side command or E2 ingestion.

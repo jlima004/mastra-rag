@@ -1,4 +1,7 @@
 /**
+ * HISTORICAL ONLY (2026-11-18): owner canceled H10 telemetry as an MVP gate.
+ * This prior H6/H10 evidence envelope targets the pre-H6-S1 state and may not
+ * be used as a present-day security or E2 admission gate. Pure offline history.
  * E1 H6/H10 evidence-envelope gate. Pure, offline and advisory-only.
  * Never reads provider credentials, executes SQL, calls Supabase, or authorizes writes.
  * A syntactically complete envelope is NOT proof of independent verification.

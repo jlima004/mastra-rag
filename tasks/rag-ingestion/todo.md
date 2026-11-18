@@ -308,3 +308,15 @@ Authority: [Security adjudication](../../docs/decisions/RAG-E1-H6-security-adjud
 - [ ] **Pending distinct second authorization** for target-confirmed hosted `REVOKE` and independent postcondition/advisor recheck; no silent rollback or execution by CI.
 - [ ] If S2: owner rationale/review trigger/decision record and explicit acceptance of unresolved WARNs.
 - [ ] H6 rag_app, H5 catalog, H10 org/disk/WAL, H7/H11/H12, E2 all remain blocked pending separate decisions.
+
+## E1 — Owner overrides and hosted H6-S1 completion (2026-11-18)
+
+Authority: [Free-tier MVP H10 cancellation and H6-S1 execution record](../../docs/decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md). This section **supersedes older unchecked H10 and H6-S1 operations** in this historical checklist; retain older entries as dated evidence, not active TODOs.
+
+- [x] Owner **canceled H10 for the MVP**; organization-wide and physical disk/WAL measurements, projected capacity requirements, and old H10 threshold/admission constraints are **NOT CURRENT GATES**. Do not ask for their completion before E2.
+- [x] Supabase organization `Alquem.io` confirmed **Free**. No subscription upgrade, project restoration, paid monitoring or new provider spending authorized.
+- [x] Owner separately authorized hosted H6-S1 `REVOKE EXECUTE` from `PUBLIC`, `anon`, `authenticated`; preflight matched pinned function checksum and all expected ACL/trigger properties.
+- [x] Hosted H6-S1 scoped REVOKE executed transactionally. Independent catalog postflight: only `postgres`/`service_role` retain EXECUTE; function hash and `ensure_rls` unchanged; security advisor returned **0 findings**.
+- [x] H10 `NO_BACKUP_MVP` continues independently; no backups/restore or new paid plan.
+- [ ] This documentation/evidence PR: exact-HEAD CI, independent review and separate human merge approval. No hosted operations in CI.
+- [ ] `rag_app`, catalog/space migrations, DSN, H7/H11/H12, live embeddings and E2 remain subject to their independent gates; **none is H10 telemetry**.

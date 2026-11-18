@@ -1,5 +1,7 @@
 # RAG-E1 / H6-D2 — Security Adjudication (owner decision required)
 
+> **EXECUTION UPDATE (2026-11-18):** The owner subsequently authorized and the assistant executed the targeted H6-S1 hosted `REVOKE` on `lmocjhpajhxegzobydau`. Independent catalog read confirmed `anon/authenticated` no `EXECUTE`, `postgres/service_role` retained, unchanged function hash and active `ensure_rls`. Supabase Security Advisor returned zero findings. The sections below retain the **pre-execution historical evidence** and must not be mistaken for the current state. See [execution and H10 cancellation](RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md).
+
 **Prepared and owner-ratified:** 2026-11-18. **Git baseline:** `master` `adf0cd8a1b360e240f5c20315aa687a73b2fa965` (PR #21 merged, exact-head CI SUCCESS, user-confirmed Railway health). **Status:** `H6_S1_DIRECTION_RATIFIED / PR22_DOCUMENTARY_MERGE_AUTHORIZED / HOSTED_WRITES_BLOCKED`.
 
 This document reconciles the evidence and records the owner's **H6-S1 directional ratification and approval of the documentary merge for PR #22**, expressed as **“Ratifico tudo.”** in direct response to the proposal to ratify H6-S1 **without authorizing execution on Supabase**. This is **not** authorization for production SQL and does not claim either Security Advisor WARN is resolved. No hosted privilege modification has been performed.

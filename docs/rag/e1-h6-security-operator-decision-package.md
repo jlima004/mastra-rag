@@ -1,5 +1,7 @@
 # E1/H6 — Restricted EXECUTE operator decision package (not executable authority)
 
+> **EXECUTED AND VERIFIED (2026-11-18):** Owner specifically authorized the scoped H6-S1 revocation, which was executed once on the confirmed hosted project. A postflight catalog read found only `postgres` and `service_role` EXECUTE grants; zero Supabase security advisor findings. The proposed SQL and preconditions below are **historical and MUST NOT be rerun** as part of this documentation gate. See [execution record](../decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md).
+
 **Date:** 2026-11-18. **Owner decision:** PENDING (proposed H6-S1). **Scope:** exact-target, operator-owned, future gated SQL only. This page is NOT a runbook authorizing the current assistant or CI to mutate Supabase.
 
 ## Target and read-only preflight

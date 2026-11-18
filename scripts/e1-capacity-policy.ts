@@ -1,4 +1,7 @@
 /**
+ * HISTORICAL ONLY (2026-11-18): The owner canceled H10 capacity/telemetry gating
+ * for the Free-tier MVP. Do not import or wire this helper as an E2 admission
+ * prerequisite. Retained as an inert, pure offline historical test fixture.
  * E1 H10: pure, offline capacity-admission candidate. Never queries Supabase,
  * executes SQL, calls a model or grants runtime permission to ingest.
  *
