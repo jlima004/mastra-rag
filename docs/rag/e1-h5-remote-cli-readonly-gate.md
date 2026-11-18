@@ -16,6 +16,25 @@
 
 This is the independent *historian read-only* checkpoint after [PR #18 Hosted Execution Readiness](e1-hosted-execution-readiness.md). It is **not** the later permission to run a catalog migration or provision `rag_app`.
 
+## R2 — Safe operator credential loading and fixed CLI workdir (2026-11-18)
+
+**Status: implementation/test-only; no new authenticated remote invocation.** Independent Codex R1 found a material P1: `SUPABASE_WORKDIR` can redirect the CLI to a different checkout while earlier Bash guards inspect this one. This could cause a DB password to be withheld and Supabase CLI 3.1.0 to request `POST /cli/login-role` again.
+
+**Remediation:** [operator script](../../scripts/e1-h5-remote-history-readonly.sh) now rejects **any** nonempty `SUPABASE_WORKDIR` and pins `supabase --workdir "$repo_root" migration list --remote=lmocjhpajhxegzobydau` to the already-validated repository. The legacy `supabase/.temp/project-ref` is rejected if it disagrees with the target. Unreviewed CLI stack-mode `supabase/.link.json` is rejected rather than guessed; future stack-mode support requires a separate review. `SUPABASE_PROJECT_ID` overrides must match exactly. No `--yes`/`SUPABASE_YES` accepted, no remote SQL applied.
+
+**Credential source:** the root ignored `.env` file may contain `SUPABASE_DB_PASSWORD` as the **original PostgreSQL password** (not URL-encoded). It does **not** automatically become a Bash variable. [`scripts/e1-h5-operator-from-env.mjs`](../../scripts/e1-h5-operator-from-env.mjs) uses Node's native `util.parseEnv` to parse that file **as data without `source`** and passes only the selected password from it to its Bash child process, via environment. It does not copy other `.env` variables to its child; however, the Supabase CLI itself may independently inspect project config and `.env*` files, so the workdir and target guards remain mandatory. An already-exported password is also supported; a conflicting value between shell and `.env` is **rejected**. No password appears in CLI arguments, logs, commits, CI artifacts or generated files.
+
+**Local safety checks before any future, separately authorized execution:** `.env` must be a regular **non-symlink** file, mode `0600` on Linux/WSL, and must not be tracked by Git. `supabase/.temp/` and `supabase/.link.json` are ignored by Git; this **does not delete** the existing CLI cache. The unit/CLI fake test uses a synthetic password and a disposable fake CLI, never real credentials, and rejects foreign workdirs, wrong target, missing password, conflicting env, unsafe file permissions, and tracked `.env`.
+
+**Future-only example (NOT an instruction to run now):**
+
+```bash
+chmod 600 .env
+node scripts/e1-h5-operator-from-env.mjs --read-only
+```
+
+The caller must still have independently approved an actual remote operation. H5 history has **already been verified**, so this command must **not** be repeated for H5. No secret value should be shared in chat, PR comments or CI. On CLI changes or any unexpected login-role/network-ban prompt: STOP. Even with these guards, the higher-level claim of *zero possible provider-side effects* is **not proven**.
+
 ## 0. Authenticated owner result and CLI authentication side effect (2026-11-18)
 
 The owner ran Supabase CLI **3.1.0** in Ubuntu/WSL against explicit project `lmocjhpajhxegzobydau`; the real output matched the independent Supabase MCP read:
