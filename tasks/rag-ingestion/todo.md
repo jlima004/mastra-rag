@@ -267,3 +267,16 @@ Evidence: [hosted readiness runbook](../../docs/rag/e1-hosted-execution-readines
 - [ ] Latency p50/p95 measured from the deployed environment
 - [ ] Recall@5 target ratified or adjusted by the owner
 - [ ] CI green, review, human merge
+
+## E1 — H6/H10 read-only evidence preparation (PR Draft after #19, 2026-11-18)
+
+Reference: [H6/H10 evidence-readiness note](../../docs/rag/e1-h6-h10-readiness-gate.md). The actual H5 CLI historian result is **VERIFIED**, and PR #19 was merged/deployed. Historical unchecked H5 items above are superseded by the verified PR #19 outcome; they are not new authorization requests.
+
+- [x] Read-only recheck: foundation present, catalog absent, `rag_app` absent, no `rag` tables, project DB 11,228,851 bytes; two existing H6 security WARNs persist
+- [x] Free organization project inventory reconfirmed: 3 projects, 2 inactive; aggregate organization bytes **NOT AVAILABLE**
+- [x] Created offline H6/H10 evidence-envelope validator, with synthetic negative tests, no provider calls and explicit `hostedWritesAuthorized:false`
+- [ ] Exact-HEAD CI PASS and independent Codex review on this Draft; human merge authorization
+- [ ] H6 equivalent isolated PostgREST/security review and separate human revoke-or-accept decision; no hosted security changes
+- [ ] H10 provider organization usage including inactive projects, physical disk/WAL and representative corpus measured; transactional concurrent admission proven before E2
+- [ ] H7/H11/H12; all individual remote role/DDL/space/DSN/embedding/E2 gates **remain blocked**
+- [x] H10 `NO_BACKUP_MVP` remains in force; no new backups or recovery commitments
