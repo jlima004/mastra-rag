@@ -280,3 +280,17 @@ Reference: [H6/H10 evidence-readiness note](../../docs/rag/e1-h6-h10-readiness-g
 - [ ] H10 provider organization usage including inactive projects, physical disk/WAL and representative corpus measured; transactional concurrent admission proven before E2
 - [ ] H7/H11/H12; all individual remote role/DDL/space/DSN/embedding/E2 gates **remain blocked**
 - [x] H10 `NO_BACKUP_MVP` remains in force; no new backups or recovery commitments
+
+## E1 — H6 isolated PostgREST and H10 official telemetry mapping (PR Draft after #20, 2026-11-18)
+
+Authority: [H6 isolated assay](../../docs/rag/e1-h6-postgrest-isolated-assay.md), [H6 unratified disposition proposal](../../docs/decisions/RAG-E1-H6-security-disposition-proposal.md), [H10 official source map](../../docs/rag/e1-h10-telemetry-source-map.md). Baseline master bcdab1c3fa05c09ba3f74739ee16723e82621e3a (PR #20 merged/deployed).
+
+- [x] Read-only hosted function definition and event trigger examined, exact function pg_get_functiondef SHA-256 recorded; no hosted privilege changes
+- [x] New isolated PostgREST HTTP/RPC assay staged for disposable PG17 with synthetic auth controls and before/after **local-only** REVOKE regression
+- [x] Identified official organization Usage, Database Settings/Infrastructure, Reports and Metrics API evidence sources; 2 inactive projects remain untouched
+- [ ] New Draft exact-HEAD CI (real PostgREST synthetic HTTP), P0/P1/P2 independent Codex review and human merge authorization
+- [ ] Reconcile isolated HTTP results and PostgREST version/config parity before human H6 security choice
+- [ ] Separate owner H6-S1 targeted hosted privilege remediation OR H6-S2 explicit residual risk acceptance; neither is now ratified
+- [ ] H10 owner-produced org-period aggregate, physical used/total/WAL and representative corpus; concurrency reservation enforcement before live E2
+- [ ] Explicit human approval for every future hosted role/grant/DDL/space/DSN/ingest; H7/H11/H12 remain open
+- [x] H10 NO_BACKUP_MVP unchanged; no real backup/restore or provider spending introduced
