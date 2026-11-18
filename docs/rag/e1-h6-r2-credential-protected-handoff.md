@@ -6,6 +6,36 @@
 
 This note **does not attest** completed credential provisioning. The Supabase connector can issue SQL, but this ChatGPT session cannot read the operator's protected terminal, open an interactive `psql` prompt on their WSL host, or securely collect a new password. **No secret, SCRAM verifier, connection URI with password, or role-password mutation was sent via connector or GitHub.** Credentials must not be pasted into chat.
 
+## 0. Final H6-R2 outcome — 2026-11-18
+
+**CURRENT STATUS: `E1_H6_R2_CREDENTIAL_PROVISIONED_AUTH_VERIFIED`.** The original sections below are retained as the **pre-execution handoff and safeguards**. Their claims that no password was set, no login was tested and an operator step was outstanding describe the **earlier state** and are superseded by this verified closure. No additional `\\password` execution or password rotation is required by this PR.
+
+**Authority:** the owner's explicit `Execute E1_H6_R2_CREDENTIAL_PROVISIONING` instruction was carried out by the owner in a separate protected WSL `psql` PostgreSQL 17.10 session against Supabase PostgreSQL 17.11. This receipt is based on **redacted operator-provided terminal results**, plus a fresh independent Supabase project-scoped, SELECT-only catalog postflight. Do not include password, SCRAM verifier, secret environment values, or credential-bearing connection strings in GitHub.
+
+**Operator-provided protected-session evidence:**
+
+- Admin session verified `current_user=postgres`, `session_user=postgres`, SSL `TLSv1.3`, `sslmode=verify-full`; local copy of `db/readonly/e1_h6_rag_app_postflight.sql` had no reported worktree modifications. That postflight initially passed every role flag, membership, ownership, extension/rag/public privilege and zero-catalog condition.
+- Started an explicit `BEGIN`; five `SET LOCAL` commands each returned `SET`. Current values: `log_statement=none`, `log_min_error_statement=panic`, `log_min_messages=fatal`, `pg_stat_statements.track=none`, `pgaudit.log=none`.
+- In that same protected transaction, invoked **interactive `\\password rag_app`**, completed both hidden prompts with no reported error, received `H6_R2_TRANSACTION_HEALTHY`, and committed with successful `COMMIT`.
+- Post-commit server settings returned to `log_statement=ddl` and `log_min_messages=warning`; the five `SET LOCAL` settings were not persisted beyond their transaction.
+- Independently disconnected and authenticated to the same verified Supabase project through the TLS-verified **session pooler**, using the new `rag_app` password supplied locally to `psql -W`, not to chat or CI. The password-authenticated SQL returned **`H6_R2_AUTH_PASS`**, checking `current_user=session_user=rag_app`, `extensions USAGE=true/CREATE=false`, `rag USAGE=false/CREATE=false`, and `public CREATE=false`. This is a real authenticated connection, not a synthetic SQL role simulation.
+- Neither the password nor a SCRAM verifier appeared in the terminal output shared for the receipt. This does **not** assert that every possible provider log/trace has been audited. Operator remains responsible for confidential custody of the secret; this work does not store or transmit it.
+
+**Independent post-auth hosted verification by the provider-scoped Supabase connector:** target `mastra-rag` / `lmocjhpajhxegzobydau` remained `ACTIVE_HEALTHY` (PostgreSQL 17.11), Security Advisor `lints=[]`; exact unchanged SQL `db/readonly/e1_h6_rag_app_postflight.sql` from `master` returned:
+
+| Postflight field | Observed |
+| --- | --- |
+| `role_count` | `1` |
+| `flags_minimal` | `true` |
+| `membership_count`, `owns_schema`, `owns_rag_relations` | `0`, `0`, `0` |
+| `extensions_usage` | `true` |
+| `extensions_create`, `rag_usage_before_catalog`, `rag_create`, `public_create` | all `false` |
+| `catalog_table_count` | `0` |
+
+**Closure:** The authorized **credential setting and independent login verification are complete**. This documentation PR does not itself change credentials or authorize a second credential operation. **H5 catalog, vector space, runtime DSN, H7/H11/H12 and E2 remain separately blocked**. Supabase **Free**, H10 **canceled** and `NO_BACKUP_MVP` remain unchanged. This PR's CI, Codex review and human merge/deploy are **separate documentation publication gates**.
+
+---
+
 ## 1. Hosted preflight and current limits
 
 On 2026-11-18, provider-scoped SELECT-only SQL confirmed:

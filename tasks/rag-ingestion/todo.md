@@ -357,3 +357,16 @@ Authority: [H6-R2 preflight and operator handoff](../../docs/rag/e1-h6-r2-creden
 - [ ] **Human operator must finish the authorized interactive credential operation** in a trusted WSL session; collect only sanitized success or failure, never the secret itself.
 - [ ] **Independent login-as-rag_app test** with protected secret prompt `H6_R2_AUTH_PASS`. Do not claim H6-R2 COMPLETE before both steps.
 - [ ] Separate H5 catalog, vector space, DSN, H7/H11/H12 and E2 gates; H10 canceled for Free MVP, `NO_BACKUP_MVP` unchanged.
+
+
+## E1 — H6-R2 credential provisioning closed and independently authenticated (2026-11-18)
+
+Authority and evidence: [H6-R2 protected operator handoff, final closure §0](../../docs/rag/e1-h6-r2-credential-protected-handoff.md). This section **supersedes the earlier pending credential/auth steps** while preserving the original runbook and security guard.
+
+- [x] Owner used a protected interactive `psql 17.10` terminal with TLS verification to PostgreSQL 17.11, rechecked administrator identity and the complete minimal role contract.
+- [x] Validated 5 transaction-local logging mitigations, entered `\\password rag_app` into protected prompts only, `H6_R2_TRANSACTION_HEALTHY` passed, then `COMMIT` succeeded; post-commit defaults `ddl` and `warning` restored.
+- [x] New **independent TLS-verified password-authenticated connection** as `rag_app` returned `H6_R2_AUTH_PASS`; no secret/verifier was shared in chat, repository, SQL literal or CI.
+- [x] Provider-scoped post-auth SELECT-only postflight unchanged: minimal role flags/privileges intact, no memberships/ownership/extra CREATE, catalog still absent; Security Advisor `lints=[]`; project `ACTIVE_HEALTHY`.
+- [x] **H6-R2 credential and authentication operational gate COMPLETE / VERIFIED.** No additional password change is needed to close this gate. Do not re-run role creation or `\\password` as part of documentation publication.
+- [ ] Evidence-only PR #26 updated to this final operational status: exact-HEAD CI, Codex independent review (including prior P2 reconciliations), and separate owner merge/deploy gate.
+- [ ] **Separate authorization required:** H5 catalog migration, vector space, application DSN, H7/H11/H12 and E2 ingestion. H10 remains canceled for Supabase Free MVP and `NO_BACKUP_MVP` remains unchanged.
