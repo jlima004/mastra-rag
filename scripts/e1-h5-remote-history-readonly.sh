@@ -32,6 +32,13 @@ if [[ ! -f scripts/e1-h5-remote-history-readonly.sh ]]; then
   exit 2
 fi
 
+# CLI v3 honors SUPABASE_WORKDIR independently of Bash cwd. Refuse all
+# overrides: the validated migrations, linked ref and CLI workdir must match.
+if [[ -n "${SUPABASE_WORKDIR:-}" ]]; then
+  echo 'E1_H5_SUPABASE_WORKDIR_OVERRIDE_PROHIBITED' >&2
+  exit 2
+fi
+
 # Never turn on shell tracing. Do not echo secrets, tokens, DSNs or CLI debug.
 # The CLI may use existing login/session in the human operator's environment.
 # Explicit --remote=<ref> is mandatory in Supabase CLI v3.
@@ -107,7 +114,7 @@ printf '%s\n'   'E1_H5_READONLY_TARGET=lmocjhpajhxegzobydau (mastra-rag, sa-east
 # Explicit project-ref equality syntax matters in v3: --remote <ref> is WRONG.
 # This is the only hosted command executed by this file. Login/database
 # authentication must be handled privately and interactively by the owner.
-supabase migration list "--remote=${E1_PROJECT_REF}"
+supabase --workdir "${repo_root}" migration list "--remote=${E1_PROJECT_REF}"
 
 # A successful CLI exit code means a listing ran, NOT that either migration
 # was applied or that the history reconciled. Human must inspect both columns
