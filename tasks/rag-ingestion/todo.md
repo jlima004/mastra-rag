@@ -320,3 +320,15 @@ Authority: [Free-tier MVP H10 cancellation and H6-S1 execution record](../../doc
 - [x] H10 `NO_BACKUP_MVP` continues independently; no backups/restore or new paid plan.
 - [ ] This documentation/evidence PR: exact-HEAD CI, independent review and separate human merge approval. No hosted operations in CI.
 - [ ] `rag_app`, catalog/space migrations, DSN, H7/H11/H12, live embeddings and E2 remain subject to their independent gates; **none is H10 telemetry**.
+
+## E1 — H6 rag_app pre-catalog provisioning preparation (2026-11-18)
+
+Authority: [role operator runbook](../../docs/rag/e1-h6-rag-app-provisioning.md) and [Free MVP H10 cancellation](../../docs/decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md). Scope: new Draft preparation only; remote role creation, password and DSN are separate human gates.
+
+- [x] Fresh project-specific read-only Supabase preflight: `rag_app` absent, `postgres` can create roles, SCRAM-SHA-256, `rag`/extensions/vector present, foundation applied, catalog absent, H6-S1 in force, plan Free.
+- [x] Operator-only transactional candidate `CREATE ROLE rag_app LOGIN NOINHERIT ... PASSWORD NULL` plus `USAGE ON SCHEMA extensions`, with preconditions, postconditions and no secret.
+- [x] New SELECT-only preflight/postflight queries, dedicated disposable PG17 test, fail-closed replay and denied private DDL.
+- [ ] Exact-head CI, independent Codex review, human merge approval for preparation PR.
+- [ ] **Separate owner authorization H6-R1** for actual hosted role creation and minimum extension USAGE only; **not granted by this request**.
+- [ ] **Separate owner authorization H6-R2** for protected interactive `\password rag_app`, successful authentication probe, and secure secret custody. Never paste credentials into chat/PR/SQL/CI.
+- [ ] **Separate** H5 catalog migration, vector space, app DSN, H7/H11/H12/E2 gates. **H10 canceled** for MVP Free; NO_BACKUP_MVP preserved.
