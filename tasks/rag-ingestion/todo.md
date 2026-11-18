@@ -228,6 +228,19 @@ Evidence: [hosted readiness runbook](../../docs/rag/e1-hosted-execution-readines
 - [ ] Independent human approvals for remote role/secret, catalog SQL, vector space, DSN; H7/H11/H12 and E2 ingestion remain blocked
 - [x] H10 `NO_BACKUP_MVP` remains in force
 
+## E1 — H5 authenticated CLI historian gate (read-only authorization, 2026-11-17)
+
+[Read-only CLI gate and operator script](../../docs/rag/e1-h5-remote-cli-readonly-gate.md), based on `master` `20a1fb7c2487665c4d9749094d4fadd4ddba6b7a`. **Only authenticated remote migration-list read is authorized, not remote writes.**
+
+- [x] Supabase project-specific OAuth/MCP read-only `list_migrations` confirms only applied foundation `20261113233720`, catalog `20261117213614` not applied
+- [x] Supabase CLI v3 `--remote=<project-ref>` syntax checked in official v3 docs; exact CLI 3.1.0 already exercised offline in E1 CI
+- [x] Operator-only `scripts/e1-h5-remote-history-readonly.sh --read-only` prepared with explicit ref, expected migration/hash guards and no write commands
+- [x] Fake-CLI offline regression added to CI (no actual hosted credentials in GitHub Actions)
+- [ ] Exact-HEAD CI and Codex review of this PR; owner authorization for document/script merge
+- [ ] **CLI remote execution in owner's authenticated local terminal**; check Local/Remote columns manually against MCP evidence; not performed by plugin/MCP/CI
+- [ ] H5 final human reconciliation of CLI output, unexpected versions and pre-execution identity; no `migration repair`, `db push` or role creation authorized
+- [ ] H6 role/security, H10 physical/org metrics, H7/H11/H12/E2 remain independently gated
+
 ## Step E2 — Ingestion orchestration (expected #11b)
 
 - [ ] Runtime PgVector with constructor `disableInit: true`; PgVector not registered in `new Mastra({ vectors })`
