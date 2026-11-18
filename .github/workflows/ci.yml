@@ -182,3 +182,5 @@ jobs:
           version: '3.1.0'
       - name: Check local-only migration generation and CLI targeting flags
         run: bash scripts/check-e1-cli-offline.sh
+      - name: Prove H5 operator-only remote history script is read-only (fake CLI, no secrets)
+        run: bash scripts/test-e1-h5-remote-history-offline.sh
