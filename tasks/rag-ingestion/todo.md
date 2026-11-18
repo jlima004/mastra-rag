@@ -241,7 +241,9 @@ Evidence: [hosted readiness runbook](../../docs/rag/e1-hosted-execution-readines
 - [x] H5 migration-version columns independently reconciled (`CLI_REMOTE_HISTORY_VERIFIED`); neither migration push nor ledger repair performed
 - [ ] H5 **auth side-effect deviation:** CLI v3.1.0 can POST `/cli/login-role` with `read_only:false`; short-lived `cli_login_postgres` role observed post-run. R1 guards/re-review pending; no repeat CLI or role cleanup authorized
 - [x] H5 R2 local remediation: reject `SUPABASE_WORKDIR` override; pin exact CLI `--workdir`, reject unreviewed stack-mode link, parse ONLY `SUPABASE_DB_PASSWORD` from ignored `.env` with Node (no shell sourcing), require mode 0600/untracked, ignore `supabase/.temp/`
-- [ ] H5 R2 exact HEAD CI, independent Codex review and human merge approval; P1 thread to remain unresolved until verified, **no remote CLI rerun**
+- [x] H5 R2 exact-HEAD CI PASS and Codex P1 on profile-resolution identified; original `SUPABASE_WORKDIR` P1 thread **resolved** after user authorization
+- [x] H5 R3 implement explicit builtin `--profile supabase`, reject ambient foreign `SUPABASE_PROFILE` and add simulated persisted `SUPABASE_HOME/profile` + environment adversarial regressions
+- [ ] H5 R3 exact-HEAD CI, independent Codex review and remaining profile P1 thread disposition, separate human merge approval; **no remote CLI rerun**
 - [ ] H6 role/security, H10 physical/org metrics, H7/H11/H12/E2 remain independently gated
 
 ## Step E2 — Ingestion orchestration (expected #11b)
