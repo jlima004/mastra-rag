@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Human-operated E1/H5. ONLY remote command: migration LIST.
+# This script must never run in CI; GitHub Actions exercises it with a fake CLI.
+# It cannot apply migrations, repair ledgers, provision roles, or rotate secrets.
+
+readonly E1_PROJECT_REF='lmocjhpajhxegzobydau'
+readonly E1_FOUNDATION_VERSION='20261113233720'
+readonly E1_CATALOG_VERSION='20261117213614'
+readonly E1_FOUNDATION_SHA256='9c36f409c82917f523f6c034ab576409a0e3ee6711901c4b09bcc04e3b2e4e13'
+readonly E1_CATALOG_SHA256='19a6cc2b841e5670db4da7aad11f8c2fa8a886bd1f4dae5d65c72cc4dbe3d070'
+
+if [[ "${1:-}" != '--read-only' || "${#}" != 1 ]]; then
+  echo 'Usage: bash scripts/e1-h5-remote-history-readonly.sh --read-only' >&2
+  exit 2
+fi
+if ! command -v supabase >/dev/null 2>&1; then
+  echo 'E1_H5_CLI_NOT_INSTALLED' >&2
+  exit 2
+fi
+if ! command -v git >/dev/null 2>&1; then
+  echo 'E1_H5_GIT_UNAVAILABLE' >&2
+  exit 2
+fi
+repo_root="$(git rev-parse --show-toplevel)"
+cd -- "${repo_root}"
+if [[ ! -f scripts/e1-h5-remote-history-readonly.sh ]]; then
+  echo 'E1_H5_WRONG_REPOSITORY' >&2
+  exit 2
+fi
+
+# Never turn on shell tracing. Do not echo secrets, tokens, DSNs or CLI debug.
+# The CLI may use existing login/session in the human operator's environment.
+# Explicit --remote=<ref> is mandatory in Supabase CLI v3.
+if [[ -n "${SUPABASE_DB_URL:-}" || -n "${DATABASE_URL:-}" || -n "${DIRECT_URL:-}" ]]; then
+  echo 'E1_H5_AMBIGUOUS_DATABASE_URL_ENVIRONMENT' >&2
+  exit 2
+fi
+if [[ "$(supabase --version)" != '3.1.0' ]]; then
+  echo 'E1_H5_EXACT_CLI_3_1_0_REQUIRED' >&2
+  exit 2
+fi
+if ! supabase migration list --help | grep -q -- '--remote'; then
+  echo 'E1_H5_REMOTE_TARGET_FLAG_NOT_VERIFIED' >&2
+  exit 2
+fi
+
+foundation="supabase/migrations/${E1_FOUNDATION_VERSION}_enable_pgvector_create_private_rag_schema.sql"
+catalog="supabase/migrations/${E1_CATALOG_VERSION}_rag_catalog.sql"
+original='db/migrations/0001_rag_catalog.up.sql'
+for file in "${foundation}" "${catalog}" "${original}"; do
+  if [[ ! -s "${file}" ]]; then
+    echo 'E1_H5_EXPECTED_MIGRATION_MISSING' >&2
+    exit 2
+  fi
+done
+mapfile -t migration_files < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | LC_ALL=C sort)
+if [[ "${#migration_files[@]}" -ne 2 ||
+      "${migration_files[0]}" != "${E1_FOUNDATION_VERSION}_enable_pgvector_create_private_rag_schema.sql" ||
+      "${migration_files[1]}" != "${E1_CATALOG_VERSION}_rag_catalog.sql" ]]; then
+  echo 'E1_H5_UNEXPECTED_LOCAL_MIGRATION_VERSION' >&2
+  exit 2
+fi
+foundation_sha="$(sha256sum "${foundation}")"
+foundation_sha="${foundation_sha%% *}"
+catalog_sha="$(sha256sum "${catalog}")"
+catalog_sha="${catalog_sha%% *}"
+if [[ "${foundation_sha}" != "${E1_FOUNDATION_SHA256}" ||
+      "${catalog_sha}" != "${E1_CATALOG_SHA256}" ]] ||
+   ! cmp -s "${catalog}" "${original}"; then
+  echo 'E1_H5_LOCAL_MIGRATION_SQL_DRIFT' >&2
+  exit 2
+fi
+
+printf '%s\n'   'E1_H5_READONLY_TARGET=lmocjhpajhxegzobydau (mastra-rag, sa-east-1)'   'E1_H5_CLI_VERSION=3.1.0'   'E1_H5_EXPECTED_APPLIED=20261113233720'   'E1_H5_EXPECTED_LOCAL_PENDING=20261117213614'   'E1_H5_RUNNING_REMOTE_MIGRATION_LIST_ONLY'
+
+# Explicit project-ref equality syntax matters in v3: --remote <ref> is WRONG.
+# This is the only hosted command executed by this file. Login/database
+# authentication must be handled privately and interactively by the owner.
+supabase migration list "--remote=${E1_PROJECT_REF}"
+
+# A successful CLI exit code means a listing ran, NOT that either migration
+# was applied or that the history reconciled. Human must inspect both columns
+# and compare with independently obtained Supabase read-only ledger data.
+echo 'E1_H5_CLI_LIST_EXECUTED__HUMAN_COLUMN_COMPARISON_REQUIRED'
+echo 'E1_H5_NO_REMOTE_WRITE_AUTHORIZED'
