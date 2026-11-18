@@ -332,3 +332,15 @@ Authority: [role operator runbook](../../docs/rag/e1-h6-rag-app-provisioning.md)
 - [ ] **Separate owner authorization H6-R1** for actual hosted role creation and minimum extension USAGE only; **not granted by this request**.
 - [ ] **Separate owner authorization H6-R2** for protected interactive `\password rag_app`, successful authentication probe, and secure secret custody. Never paste credentials into chat/PR/SQL/CI.
 - [ ] **Separate** H5 catalog migration, vector space, app DSN, H7/H11/H12/E2 gates. **H10 canceled** for MVP Free; NO_BACKUP_MVP preserved.
+
+## E1 — H6-R1 hosted rag_app creation and independent verification (2026-11-18)
+
+Authority: [hosted execution receipt](../../docs/rag/e1-h6-r1-hosted-execution-receipt.md), original candidate reviewed in PR #24. This section supersedes older unchecked pre-H6-R1 actions; **do not replay role creation**.
+
+- [x] Owner specifically authorized `E1_H6_R1_HOSTED_ROLE_CREATION` for target `lmocjhpajhxegzobydau` (Free).
+- [x] Fresh hosted read-only preflight passed: `rag_app` absent, PG17, SCRAM, foundation present, catalog absent, H6-S1 active; `PUBLIC` CREATE grants absent in `public`, `rag`, `extensions`.
+- [x] Executed the **exact SQL from merged PR #24** once, transactionally creating `rag_app` with minimal flags, `PASSWORD NULL` and only `USAGE ON SCHEMA extensions`.
+- [x] Independent read-only postflight: `role_count=1`, flags minimal, no memberships/ownership, `extensions_usage=true`; `extensions_create=false`, `rag_usage_before_catalog=false`, `rag_create=false`, `public_create=false`, `catalog_table_count=0`. Supabase Security Advisor `lints=[]`.
+- [ ] Evidence-only documentation PR: exact-HEAD CI, Codex review, human merge/deploy approval. No additional hosted mutations.
+- [ ] **Separate H6-R2 human authorization** to set password interactively and perform authentication-only proof; never surface secrets.
+- [ ] **Separate H5 catalog, space, DSN, H7/H11/H12 and E2 approvals**. H10 remains canceled for the Free MVP; `NO_BACKUP_MVP` unchanged.
