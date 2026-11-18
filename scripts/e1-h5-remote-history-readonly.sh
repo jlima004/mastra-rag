@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Human-operated E1/H5. ONLY remote command: migration LIST.
-# This script must never run in CI; GitHub Actions exercises it with a fake CLI.
-# It cannot apply migrations, repair ledgers, provision roles, or rotate secrets.
+# Human-operated E1/H5. The only EXPLICIT remote CLI command is
+# migration LIST. Supabase CLI 3.1.0 can nevertheless POST /cli/login-role
+# (read_only:false) when DB password is absent, so fail closed up front.
+# GitHub Actions exercises this with a fake CLI and synthetic fake password.
+# No unattended production use or permission for ANY hosted mutation.
 
 readonly E1_PROJECT_REF='lmocjhpajhxegzobydau'
 readonly E1_FOUNDATION_VERSION='20261113233720'
@@ -35,6 +37,33 @@ fi
 # Explicit --remote=<ref> is mandatory in Supabase CLI v3.
 if [[ -n "${SUPABASE_DB_URL:-}" || -n "${DATABASE_URL:-}" || -n "${DIRECT_URL:-}" ]]; then
   echo 'E1_H5_AMBIGUOUS_DATABASE_URL_ENVIRONMENT' >&2
+  exit 2
+fi
+# CLI 3.1.0's migration-list SIDE_EFFECTS.md documents POST
+# /v1/projects/{ref}/cli/login-role {read_only:false} without a DB password.
+# Requiring a nonempty password in the *operator's private process environment*
+# avoids that implicit provider-side role creation path. The script NEVER logs
+# the secret or sets it itself. Do NOT rerun for H5 once evidence is captured.
+if [[ -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
+  echo 'E1_H5_DB_PASSWORD_REQUIRED_TO_AVOID_CLI_TEMP_LOGIN_ROLE' >&2
+  exit 2
+fi
+# The v3 CLI can remove remote network bans on failed temp-role connects if
+# automatic confirmation is enabled. It is never appropriate at this gate.
+if [[ -n "${SUPABASE_YES:-}" ]]; then
+  echo 'E1_H5_AUTOMATIC_REMOTE_CONFIRMATION_PROHIBITED' >&2
+  exit 2
+fi
+# CLI v3 can deliberately withhold a shell database password from an ad-hoc
+# remote ref different from the worktree's linked project, then mint a role.
+# Fail closed rather than relying on a misleading password environment.
+linked_ref='supabase/.temp/project-ref'
+if [[ -f "${linked_ref}" && "$(tr -d '\r\n' < "${linked_ref}")" != "${E1_PROJECT_REF}" ]]; then
+  echo 'E1_H5_LINKED_PROJECT_REF_MISMATCH__PASSWORD_COULD_BE_WITHHELD' >&2
+  exit 2
+fi
+if [[ -n "${SUPABASE_PROJECT_ID:-}" && "${SUPABASE_PROJECT_ID}" != "${E1_PROJECT_REF}" ]]; then
+  echo 'E1_H5_AMBIGUOUS_PROJECT_REF_ENVIRONMENT' >&2
   exit 2
 fi
 if [[ "$(supabase --version)" != '3.1.0' ]]; then
@@ -84,4 +113,4 @@ supabase migration list "--remote=${E1_PROJECT_REF}"
 # was applied or that the history reconciled. Human must inspect both columns
 # and compare with independently obtained Supabase read-only ledger data.
 echo 'E1_H5_CLI_LIST_EXECUTED__HUMAN_COLUMN_COMPARISON_REQUIRED'
-echo 'E1_H5_NO_REMOTE_WRITE_AUTHORIZED'
+echo 'E1_H5_EXPLICIT_MIGRATION_COMMAND_READ_ONLY__PROVIDER_SIDE_EFFECTS_NOT_INDEPENDENTLY_PROVEN'
