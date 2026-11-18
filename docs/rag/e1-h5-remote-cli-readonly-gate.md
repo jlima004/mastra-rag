@@ -16,6 +16,24 @@
 
 This is the independent *historian read-only* checkpoint after [PR #18 Hosted Execution Readiness](e1-hosted-execution-readiness.md). It is **not** the later permission to run a catalog migration or provision `rag_app`.
 
+## R3 — Pin the official Supabase CLI profile before credential forwarding (2026-11-18)
+
+**Scope:** exact [Codex P1](https://github.com/jlima004/mastra-rag/pull/19#discussion_r4614959149), local-only hardening, no hosted CLI rerun and no production password access.
+
+The CLI v3.1.0 profile resolver in [`command-settings.layer.ts`](https://github.com/supabase/cli/blob/v3.1.0/apps/cli/src/config/command-settings.layer.ts) resolves **explicit `--profile` before `SUPABASE_PROFILE` and the persisted profile in `SUPABASE_HOME/profile`**. Its [profile loader](https://github.com/supabase/cli/blob/v3.1.0/apps/cli/src/command-internal/profile-load.ts) permits custom YAML profile files with alternate `project_host` and `pooler_host`, so an exact project ref alone cannot protect the database password's network destination.
+
+The operator script now checks that any nonempty `SUPABASE_PROFILE` equals the builtin name `supabase`, and invokes the only permitted command as:
+
+```bash
+supabase --profile supabase --workdir "${repo_root}" migration list "--remote=${E1_PROJECT_REF}"
+```
+
+The name `supabase` is a **builtin profile** with official service endpoints; the explicit `--profile` takes precedence over any persisted custom profile or altered `SUPABASE_HOME`. The script still blocks passwordless implicit login-role provisioning, foreign `SUPABASE_WORKDIR`, mismatched project link, ambiguous URLs, and `SUPABASE_YES`. `SUPABASE_DB_PASSWORD` remains local-only, passed via the environment from a private, ignored, mode-0600 `.env` by the existing Node launcher; it is never passed in CLI arguments.
+
+The [offline fake CLI tests](../../scripts/test-e1-h5-remote-history-offline.sh) verify the pinned `--profile supabase` for the exact migration-list invocation, reject an ambient custom `SUPABASE_PROFILE` before any CLI call, and exercise an adversarial persisted `SUPABASE_HOME/profile` while the explicit builtin selector remains in place. These are **contract tests**, not an authenticated remote transport test. The user already supplied the historical H5 CLI ledger output and no rerun is needed.
+
+**Security boundary:** pinning the official endpoint prevents this profile-resolution redirection under the reviewed CLI v3.1.0 behavior; it is not proof of zero possible provider-side effects. Independent Codex exact-HEAD review, CI success, P1 disposition and separate human merge decision remain mandatory; **remote database mutations are still forbidden**.
+
 ## R2 — Safe operator credential loading and fixed CLI workdir (2026-11-18)
 
 **Status: implementation/test-only; no new authenticated remote invocation.** Independent Codex R1 found a material P1: `SUPABASE_WORKDIR` can redirect the CLI to a different checkout while earlier Bash guards inspect this one. This could cause a DB password to be withheld and Supabase CLI 3.1.0 to request `POST /cli/login-role` again.
