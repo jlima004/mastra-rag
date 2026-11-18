@@ -64,6 +64,13 @@ fi
 # CLI v3 can deliberately withhold a shell database password from an ad-hoc
 # remote ref different from the worktree's linked project, then mint a role.
 # Fail closed rather than relying on a misleading password environment.
+# v3 also supports stack-mode links in supabase/.link.json. The operator
+# guard below validates only legacy .temp/project-ref; reject stack-mode
+# rather than assume its linked identity agrees with the target.
+if [[ -e supabase/.link.json ]]; then
+  echo 'E1_H5_STACK_MODE_LINK_REQUIRES_SEPARATE_IDENTITY_REVIEW' >&2
+  exit 2
+fi
 linked_ref='supabase/.temp/project-ref'
 if [[ -f "${linked_ref}" && "$(tr -d '\r\n' < "${linked_ref}")" != "${E1_PROJECT_REF}" ]]; then
   echo 'E1_H5_LINKED_PROJECT_REF_MISMATCH__PASSWORD_COULD_BE_WITHHELD' >&2
