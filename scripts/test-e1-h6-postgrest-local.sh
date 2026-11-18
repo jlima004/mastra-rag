@@ -154,10 +154,19 @@ probe_rpc() {
   node -e '
     const fs=require("node:fs"); const [file,code,phase,role]=process.argv.slice(1);
     let body; try {body=JSON.parse(fs.readFileSync(file,"utf8"));} catch {}
-    const understood=["400","404","405","406","422"].includes(code)
-      && typeof body?.code==="string"
-      && (/^PGRST/.test(body.code) || ["0A000","42809"].includes(body.code));
-    if (!understood) {console.error("E1_H6_RPC_OUTCOME_UNKNOWN");process.exit(1);}
+    // This is deliberately phase-sensitive: a pre-revocation event-trigger
+    // RPC fails at invocation (0A000), while explicit revocation fails earlier
+    // at PostgreSQL privilege enforcement (42501). PostgREST maps SQLSTATE
+    // 42501 to 401 for anon and 403 for authenticated.
+    const understood=phase==="BASELINE"
+      ? code==="400" && body?.code==="0A000"
+      : role==="anon"
+        ? code==="401" && body?.code==="42501"
+        : code==="403" && body?.code==="42501";
+    if (!understood) {
+      console.error("E1_H6_RPC_UNEXPECTED_HTTP_"+code+"_CODE_"+String(body?.code??"UNKNOWN"));
+      process.exit(1);
+    }
     console.log("E1_H6_"+phase+"_"+role.toUpperCase()+"_RPC_REJECTED_HTTP_"+code+"_CODE_"+body.code);
   ' "$tmp/rpc.json" "$status" "$phase" "$role"
 }
