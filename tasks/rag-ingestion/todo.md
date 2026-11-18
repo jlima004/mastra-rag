@@ -237,8 +237,9 @@ Evidence: [hosted readiness runbook](../../docs/rag/e1-hosted-execution-readines
 - [x] Operator-only `scripts/e1-h5-remote-history-readonly.sh --read-only` prepared with explicit ref, expected migration/hash guards and no write commands
 - [x] Fake-CLI offline regression added to CI (no actual hosted credentials in GitHub Actions)
 - [ ] Exact-HEAD CI and Codex review of this PR; owner authorization for document/script merge
-- [ ] **CLI remote execution in owner's authenticated local terminal**; check Local/Remote columns manually against MCP evidence; not performed by plugin/MCP/CI
-- [ ] H5 final human reconciliation of CLI output, unexpected versions and pre-execution identity; no `migration repair`, `db push` or role creation authorized
+- [x] **CLI remote execution in owner's Ubuntu/WSL (2026-11-18)** using Supabase CLI 3.1.0; Local/Remote columns match foundation applied + catalog pending, independently cross-checked via MCP
+- [x] H5 migration-version columns independently reconciled (`CLI_REMOTE_HISTORY_VERIFIED`); neither migration push nor ledger repair performed
+- [ ] H5 **auth side-effect deviation:** CLI v3.1.0 can POST `/cli/login-role` with `read_only:false`; short-lived `cli_login_postgres` role observed post-run. R1 guards/re-review pending; no repeat CLI or role cleanup authorized
 - [ ] H6 role/security, H10 physical/org metrics, H7/H11/H12/E2 remain independently gated
 
 ## Step E2 — Ingestion orchestration (expected #11b)
