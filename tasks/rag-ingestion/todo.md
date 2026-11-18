@@ -294,3 +294,17 @@ Authority: [H6 isolated assay](../../docs/rag/e1-h6-postgrest-isolated-assay.md)
 - [ ] H10 owner-produced org-period aggregate, physical used/total/WAL and representative corpus; concurrency reservation enforcement before live E2
 - [ ] Explicit human approval for every future hosted role/grant/DDL/space/DSN/ingest; H7/H11/H12 remain open
 - [x] H10 NO_BACKUP_MVP unchanged; no real backup/restore or provider spending introduced
+
+## E1 — H6 Security Adjudication (after PR #21 merged/deployed, 2026-11-18)
+
+Authority: [Security adjudication](../../docs/decisions/RAG-E1-H6-security-adjudication.md) and [restricted operator decision package](../../docs/rag/e1-h6-security-operator-decision-package.md). **Recommendation is H6-S1; no human ratification yet.**
+
+- [x] PR #21 isolated PostgREST assay merged into master, post-merge CI 153/153 PASS, user-confirmed deploy health.
+- [x] Hosted read-only ACL/catalog re-observed: public.rls_auto_enable() SHA unchanged; postgres owner; enabled ensure_rls; explicit EXECUTE to PUBLIC/anon/authenticated/postgres/service_role; both WARNs persist.
+- [x] Decision matrix H6-S1 narrowly revoke PUBLIC/anon/authenticated vs H6-S2 documented risk acceptance; PM recommendation H6-S1.
+- [x] Drafted SELECT-only metadata preflight and separately gated future operator procedure; no hosted SQL writes.
+- [ ] Exact-head CI, independent Codex review, human approval to merge/deploy adjudication artifacts.
+- [ ] **Distinct human H6-S1 or H6-S2 ratification**; no presumption based on approval to prepare documentation.
+- [ ] If S1: second explicit human authorization for target-confirmed hosted REVOKE, then audited postconditions/advisor recheck; no silent rollback.
+- [ ] If S2: owner rationale/review trigger/decision record and explicit acceptance of unresolved WARNs.
+- [ ] H6 rag_app, H5 catalog, H10 org/disk/WAL, H7/H11/H12, E2 all remain blocked pending separate decisions.
