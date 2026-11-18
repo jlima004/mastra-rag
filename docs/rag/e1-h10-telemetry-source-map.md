@@ -1,5 +1,7 @@
 # E1 H10 — Supabase official telemetry source map (read-only preparation)
 
+> **H10 CANCELLED (2026-11-18).** This source map is preserved as historical research only. Do not collect its metrics or make them an E2 gate for the Free-tier MVP. See [owner override](../decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md).
+
 **Date:** 2026-11-18. **State:** SOURCES_IDENTIFIED / ORG_AND_PHYSICAL_VALUES_UNMEASURED / E2_ADMISSION_BLOCKED.
 
 **Target:** Alquem.io Free organization bciquteonwtxyyerveik; mastra-rag project lmocjhpajhxegzobydau. As of the read-only project listing on 2026-11-18, 3 projects existed in the organization; 2 were INACTIVE. This inventory is **not** aggregate size evidence.

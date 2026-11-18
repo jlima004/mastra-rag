@@ -1,5 +1,7 @@
 # RAG-E1 — Owner ratification: hosted H5/H6 and H10 capacity (MVP)
 
+> **SUPERSEDED IN PART (2026-11-18):** H10-C1/C2 telemetry, budgets and capacity gates were **canceled by the owner for the Free-tier MVP**. H6-S1's previously pending hosted revocation has since been executed and independently verified. All H5/H6 principles not specifically changed stay in force. See [latest overriding owner decision](RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md). Preserve the historical text below as dated evidence only.
+
 | Field | Value |
 | --- | --- |
 | Decision date | 2026-11-17 |

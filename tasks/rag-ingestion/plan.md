@@ -1,5 +1,7 @@
 # RAG ingestion — incremental implementation plan
 
+> **CURRENT OWNER OVERRIDE (2026-11-18):** H10 capacity telemetry/measurements and internally imposed H10 thresholds **canceled for this Free-tier MVP**. Supabase plan verified Free; no paid upgrade authorized. H6-S1 hosted REVOKE executed and verified; `NO_BACKUP_MVP` unchanged. Historical H10/H6 requirements below are not current execution gates. [Latest owner decision](../../docs/decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md).
+
 > **Latest owner authority (2026-11-17):** [H5/H6/H10 hosted operational ratification](../../docs/decisions/RAG-E1-H5-H6-H10-owner-ratification.md) supersedes the pending decision status in earlier historical sections. **Single Supabase migration ledger, minimal server-only `rag_app`, independent security review, and numeric H10 capacity caps are RATIFIED DIRECTIONS**, not hosted execution approval. Pinned CLI version, role/SQL operator package, security disposition, organization/disk measurements and capacity enforcement remain open. H10 [NO_BACKUP_MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md) remains in force.
 
 > **Current H10 policy (owner, 2026-11-17):** [No backups in the MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md). Historical H10 backup/restore conditions in older checkpoints below are superseded. Capacity sizing/enforcement and the independent hosted authorization gates remain required.
