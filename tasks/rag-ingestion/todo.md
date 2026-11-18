@@ -344,3 +344,29 @@ Authority: [hosted execution receipt](../../docs/rag/e1-h6-r1-hosted-execution-r
 - [ ] Evidence-only documentation PR: exact-HEAD CI, Codex review, human merge/deploy approval. No additional hosted mutations.
 - [ ] **Separate H6-R2 human authorization** to set password interactively and perform authentication-only proof; never surface secrets.
 - [ ] **Separate H5 catalog, space, DSN, H7/H11/H12 and E2 approvals**. H10 remains canceled for the Free MVP; `NO_BACKUP_MVP` unchanged.
+
+## E1 — H6-R2 authorization and protected credential handoff (2026-11-18)
+
+Authority: [H6-R2 preflight and operator handoff](../../docs/rag/e1-h6-r2-credential-protected-handoff.md). Owner explicitly authorized `E1_H6_R2_CREDENTIAL_PROVISIONING`. This authorization **does not** mean the remote role password has been set.
+
+- [x] Verified provider project `lmocjhpajhxegzobydau` on Alquem.io **Free**, `rag_app` exists with minimal role flags and only `extensions` USAGE; no H5 catalog, no `rag` grants; Security Advisor `lints=[]`.
+- [x] Read-only hosted logging parameters (defaults `ddl/error/warning/top/none`) and verified reversible, transaction-local settings `none/panic/fatal/none/none` via real `BEGIN; SET LOCAL ... ROLLBACK;` **without a password**; independently confirmed defaults restored.
+- [x] Identified documented provider log exposure for SQL-literal and failed password statements; **no password, verifier or role-password operation submitted to remote SQL tools**.
+- [x] Documented TLS-verified interactive `psql \password rag_app` transaction procedure, per-session log safety checks, secret handling and fresh custom-role authentication proof.
+- [ ] Exact-HEAD CI, independent Codex review and human merge approval for this **documentation-only handoff**.
+- [ ] **Human operator must finish the authorized interactive credential operation** in a trusted WSL session; collect only sanitized success or failure, never the secret itself.
+- [ ] **Independent login-as-rag_app test** with protected secret prompt `H6_R2_AUTH_PASS`. Do not claim H6-R2 COMPLETE before both steps.
+- [ ] Separate H5 catalog, vector space, DSN, H7/H11/H12 and E2 gates; H10 canceled for Free MVP, `NO_BACKUP_MVP` unchanged.
+
+
+## E1 — H6-R2 credential provisioning closed and independently authenticated (2026-11-18)
+
+Authority and evidence: [H6-R2 protected operator handoff, final closure §0](../../docs/rag/e1-h6-r2-credential-protected-handoff.md). This section **supersedes the earlier pending credential/auth steps** while preserving the original runbook and security guard.
+
+- [x] Owner used a protected interactive `psql 17.10` terminal with TLS verification to PostgreSQL 17.11, rechecked administrator identity and the complete minimal role contract.
+- [x] Validated 5 transaction-local logging mitigations, entered `\\password rag_app` into protected prompts only, `H6_R2_TRANSACTION_HEALTHY` passed, then `COMMIT` succeeded; post-commit defaults `ddl` and `warning` restored.
+- [x] New **independent TLS-verified password-authenticated connection** as `rag_app` returned `H6_R2_AUTH_PASS`; no secret/verifier was shared in chat, repository, SQL literal or CI.
+- [x] Provider-scoped post-auth SELECT-only postflight unchanged: minimal role flags/privileges intact, no memberships/ownership/extra CREATE, catalog still absent; Security Advisor `lints=[]`; project `ACTIVE_HEALTHY`.
+- [x] **H6-R2 credential and authentication operational gate COMPLETE / VERIFIED.** No additional password change is needed to close this gate. Do not re-run role creation or `\\password` as part of documentation publication.
+- [ ] Evidence-only PR #26 updated to this final operational status: exact-HEAD CI, Codex independent review (including prior P2 reconciliations), and separate owner merge/deploy gate.
+- [ ] **Separate authorization required:** H5 catalog migration, vector space, application DSN, H7/H11/H12 and E2 ingestion. H10 remains canceled for Supabase Free MVP and `NO_BACKUP_MVP` remains unchanged.
