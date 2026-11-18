@@ -1,5 +1,7 @@
 # E1 H6 — `rag_app` provisioning (operator gate preparation)
 
+> **CURRENT EXECUTION STATE (2026-11-18):** H6-R1 was specifically authorized by the owner and **executed successfully in hosted Supabase**. `rag_app` now exists with the minimal flags, `PASSWORD NULL` specified by the reviewed SQL, and only `USAGE` on `extensions`. Independent SELECT-only postflight and Security Advisor passed. The earlier `ROLE_ABSENT / HOSTED_ROLE_CREATION_NOT_AUTHORIZED` status below is **historical**, not current. See [H6-R1 execution receipt](e1-h6-r1-hosted-execution-receipt.md). H6-R2 password, H5 catalog, DSN and E2 remain separately blocked. H10 canceled for MVP Free.
+
 **Date:** 2026-11-18. **Baseline:** `master` `daacf964cd53b701b918e5a37d3805eb72e709b6` (PR #23 merged/deployed, H6-S1 complete). **Target:** Supabase project `mastra-rag` / `lmocjhpajhxegzobydau` in organization `Alquem.io` (**Free**).
 
 **Authority:** H6-D1 [minimal application role contract](../decisions/RAG-E1-H5-H6-H10-owner-ratification.md) and [current MVP overrides](../decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md). This PR is **operator preparation only**. The previous PM recommendation explicitly proposed a Draft PR **without immediate hosted provisioning**. Neither opening nor merging this PR authorizes hosting `CREATE ROLE`, `GRANT`, `\password`, database connection configuration, migration push or ingest.
