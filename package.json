@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "mastra dev",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/mastra/storage/*.test.ts src/mastra/security/*.test.ts src/mastra/readiness/*.test.ts src/mastra/durability/*.test.ts src/mastra/rag/contracts/*.test.ts src/mastra/rag/processing/*.test.ts src/mastra/rag/embeddings/*.test.ts scripts/e1-local-dsn.test.ts scripts/e1-capacity-policy.test.ts",
+    "test": "node --experimental-strip-types --test src/mastra/storage/*.test.ts src/mastra/security/*.test.ts src/mastra/readiness/*.test.ts src/mastra/durability/*.test.ts src/mastra/rag/contracts/*.test.ts src/mastra/rag/processing/*.test.ts src/mastra/rag/embeddings/*.test.ts scripts/e1-local-dsn.test.ts scripts/e1-capacity-policy.test.ts scripts/e1-hosted-preflight.test.ts",
     "db:check": "node --env-file=.env --experimental-strip-types scripts/check-supabase.ts",
     "build": "mastra build",
     "start": "mastra start"

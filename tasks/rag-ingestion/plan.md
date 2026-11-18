@@ -40,6 +40,10 @@ The preceding adjudication checkpoint section is historical: its directions were
 
 The [operator package work order](../../docs/rag/e1-operator-package.md) stages the CLI-generated H5 migration and foundation-history mapping, H6 local privilege and event-trigger regressions, and H10 pure projected capacity checks. **All work is local/CI only.** Actual hosted role, migration, space, DSN or ingest execution is not approved. The H10 [no-backup MVP decision](../../docs/decisions/RAG-H10-mvp-no-backup.md) remains in force. Numeric H10 limits are ratified but live enforcement and organization/disk measurements remain open.
 
+## E1 hosted-execution preparation (2026-11-17)
+
+[Current operator readiness and execution stop/go](../../docs/rag/e1-hosted-execution-readiness.md) reconciles the **hosted read-only** H5 migration history and foundation SHA, H6 absent `rag_app` and unchanged security WARNs, and H10 unknown Free organization/disk/WAL metrics. It includes a read-only preflight SQL and a local-only evidence validator. **This checkpoint does not approve** remote CLI authenticated rehearsal, `db push`, `migration repair`, role/grant/credential changes, paid calls or ingestion. Future privileged operations must be independently approved. H10 **NO_BACKUP_MVP** is unchanged.
+
 ## Rules that apply to every step
 
 - No step starts before the decisions it depends on are ratified (column "Gate").
