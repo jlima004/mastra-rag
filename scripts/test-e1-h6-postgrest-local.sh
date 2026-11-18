@@ -104,7 +104,7 @@ docker run --rm --detach --name "$pgrst_name" --network host \
   -e PGRST_JWT_SECRET='e1-h6-isolated-test-only-jwt-secret-0123456789' \
   -e PGRST_SERVER_PORT='3105' \
   -e PGRST_SERVER_HOST='127.0.0.1' \
-  postgrest/postgrest:v16.6 >/dev/null
+  postgrest/postgrest:v16.6@sha256:5ce030c153500fe90ba157da4da8ba99ab51d3bc7b95e071bd0b544b67a632f7 >/dev/null
 ready=0
 for attempt in $(seq 1 60); do
   status="$(curl -s --max-time 3 --output "$tmp/ready.json" --write-out '%{http_code}' \
