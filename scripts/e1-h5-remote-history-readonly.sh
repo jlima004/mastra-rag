@@ -39,6 +39,15 @@ if [[ -n "${SUPABASE_WORKDIR:-}" ]]; then
   exit 2
 fi
 
+# CLI v3 resolves --profile > SUPABASE_PROFILE > persisted profile under
+# SUPABASE_HOME. A custom YAML profile may redirect the privileged database
+# password to a foreign PostgreSQL host, despite the pinned project ref.
+# Reject ambient profile overrides and pin the built-in production profile.
+if [[ -n "${SUPABASE_PROFILE:-}" && "${SUPABASE_PROFILE}" != 'supabase' ]]; then
+  echo 'E1_H5_NON_PRODUCTION_PROFILE_OVERRIDE_PROHIBITED' >&2
+  exit 2
+fi
+
 # Never turn on shell tracing. Do not echo secrets, tokens, DSNs or CLI debug.
 # The CLI may use existing login/session in the human operator's environment.
 # Explicit --remote=<ref> is mandatory in Supabase CLI v3.
@@ -118,10 +127,12 @@ fi
 
 printf '%s\n'   'E1_H5_READONLY_TARGET=lmocjhpajhxegzobydau (mastra-rag, sa-east-1)'   'E1_H5_CLI_VERSION=3.1.0'   'E1_H5_EXPECTED_APPLIED=20261113233720'   'E1_H5_EXPECTED_LOCAL_PENDING=20261117213614'   'E1_H5_RUNNING_REMOTE_MIGRATION_LIST_ONLY'
 
-# Explicit project-ref equality syntax matters in v3: --remote <ref> is WRONG.
-# This is the only hosted command executed by this file. Login/database
-# authentication must be handled privately and interactively by the owner.
-supabase --workdir "${repo_root}" migration list "--remote=${E1_PROJECT_REF}"
+# Supabase CLI v3.1.0 profile resolver accepts custom YAML destinations.
+# --profile supabase is the official builtin production endpoint set and
+# overrides both SUPABASE_PROFILE and persisted SUPABASE_HOME/profile.
+# Explicit project-ref equality syntax matters: --remote <ref> is WRONG.
+# This is the only hosted command; no additional hosted actions are authorized.
+supabase --profile supabase --workdir "${repo_root}" migration list "--remote=${E1_PROJECT_REF}"
 
 # A successful CLI exit code means a listing ran, NOT that either migration
 # was applied or that the history reconciled. Human must inspect both columns
