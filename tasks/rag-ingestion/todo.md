@@ -344,3 +344,16 @@ Authority: [hosted execution receipt](../../docs/rag/e1-h6-r1-hosted-execution-r
 - [ ] Evidence-only documentation PR: exact-HEAD CI, Codex review, human merge/deploy approval. No additional hosted mutations.
 - [ ] **Separate H6-R2 human authorization** to set password interactively and perform authentication-only proof; never surface secrets.
 - [ ] **Separate H5 catalog, space, DSN, H7/H11/H12 and E2 approvals**. H10 remains canceled for the Free MVP; `NO_BACKUP_MVP` unchanged.
+
+## E1 — H6-R2 authorization and protected credential handoff (2026-11-18)
+
+Authority: [H6-R2 preflight and operator handoff](../../docs/rag/e1-h6-r2-credential-protected-handoff.md). Owner explicitly authorized `E1_H6_R2_CREDENTIAL_PROVISIONING`. This authorization **does not** mean the remote role password has been set.
+
+- [x] Verified provider project `lmocjhpajhxegzobydau` on Alquem.io **Free**, `rag_app` exists with minimal role flags and only `extensions` USAGE; no H5 catalog, no `rag` grants; Security Advisor `lints=[]`.
+- [x] Read-only hosted logging parameters (defaults `ddl/error/warning/top/none`) and verified reversible, transaction-local settings `none/panic/fatal/none/none` via real `BEGIN; SET LOCAL ... ROLLBACK;` **without a password**; independently confirmed defaults restored.
+- [x] Identified documented provider log exposure for SQL-literal and failed password statements; **no password, verifier or role-password operation submitted to remote SQL tools**.
+- [x] Documented TLS-verified interactive `psql \password rag_app` transaction procedure, per-session log safety checks, secret handling and fresh custom-role authentication proof.
+- [ ] Exact-HEAD CI, independent Codex review and human merge approval for this **documentation-only handoff**.
+- [ ] **Human operator must finish the authorized interactive credential operation** in a trusted WSL session; collect only sanitized success or failure, never the secret itself.
+- [ ] **Independent login-as-rag_app test** with protected secret prompt `H6_R2_AUTH_PASS`. Do not claim H6-R2 COMPLETE before both steps.
+- [ ] Separate H5 catalog, vector space, DSN, H7/H11/H12 and E2 gates; H10 canceled for Free MVP, `NO_BACKUP_MVP` unchanged.
