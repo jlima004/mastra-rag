@@ -1,5 +1,8 @@
 # E1 — H5 authenticated Supabase CLI remote-history gate (read-only)
 
+> **Update — 2026-11-18:** The owner has **executed and reconciled** the authenticated CLI migration history. **Do not rerun the old unguarded procedure.** CLI 3.1.0 may provision an implicit temporary login role even for `migration list`; see the execution evidence below. All hosted schema/privilege changes remain blocked.
+
+
 | Property | State |
 | --- | --- |
 | Requested by owner | 2026-11-17: authorization to advance **only the read-only H5 migration-list gate** |
@@ -8,12 +11,32 @@
 | CLI | **Exactly 3.1.0**, pinned in previous E1 CI; operator binary/session not available inside the connected agent tools |
 | Read-only MCP status | `MCP_REMOTE_LEDGER_MATCH`: foundation version `20261113233720` only |
 | Required proof | `CLI_REMOTE_MIGRATION_LIST` executed through owner's own authenticated CLI v3.1.0 session, with human comparison of both columns |
-| Present gate status | **`CLI_REMOTE_HISTORY_PENDING`** until that independent CLI output is reviewed |
+| Present gate status | **`CLI_REMOTE_HISTORY_VERIFIED`**; provider-authentication role provisioning requires separate security handling |
 | Prohibitions | `db push`, `db reset`, `migration up`, `migration repair`, `migration fetch`, `link`, privilege/role writes, backups, secrets, vector creation, paid calls, ingest |
 
 This is the independent *historian read-only* checkpoint after [PR #18 Hosted Execution Readiness](e1-hosted-execution-readiness.md). It is **not** the later permission to run a catalog migration or provision `rag_app`.
 
-## 1. Known remote state — authenticated MCP, NOT CLI
+## 0. Authenticated owner result and CLI authentication side effect (2026-11-18)
+
+The owner ran Supabase CLI **3.1.0** in Ubuntu/WSL against explicit project `lmocjhpajhxegzobydau`; the real output matched the independent Supabase MCP read:
+
+```text
+Target: project lmocjhpajhxegzobydau
+Initialising login role...
+Local            | Remote
+20261113233720   | 20261113233720
+20261117213614   |
+E1_H5_CLI_LIST_EXECUTED__HUMAN_COLUMN_COMPARISON_REQUIRED
+```
+
+**H5 ledger reconciliation PASS:** only the foundation migration is applied. The catalog candidate remains unapplied. A further connected Supabase **read-only** `list_migrations` also returned the foundation alone. No application `rag_app` role creation, catalog DDL or migration repair was authorized or observed.
+
+**Material limitation of the original script:** the exact [Supabase CLI v3.1.0 migration-list side-effects specification](https://github.com/supabase/cli/blob/v3.1.0/apps/cli/src/commands/migration/list/SIDE_EFFECTS.md) documents `POST /v1/projects/{ref}/cli/login-role` with `{read_only:false}` when no DB password is available. Its [implementation](https://github.com/supabase/cli/blob/v3.1.0/apps/cli/src/command-internal/db-config.layer.ts) prints `Initialising login role...` before calling `createLoginRole`. A subsequent read-only SQL inspection found role `cli_login_postgres` with login enabled and expiration `2026-11-18 12:35:01.862579+00` (not a privileged superuser or `BYPASSRLS` principal). PostgreSQL's `pg_roles` does not prove that this invocation first created the role, but the observed message and short-lived role are consistent with that CLI authentication behavior.
+
+**Decision boundary:** migration history is independently verified; **the stronger requirement that the whole CLI authentication path had no hosted side effects is not demonstrated**. The old fake-CLI test did not model this API call. Do **not** rerun the command for H5. The revised operator script now refuses passwordless execution and ambient `SUPABASE_YES`, linked-project mismatches or conflicting project overrides, and tests these guards offline with a synthetic non-secret credential. This is a mitigation, **not formal proof that every CLI/provider API call is read-only**. A separate security/operator decision is required before any future authenticated CLI rerun. No production cleanup, grant, `DROP ROLE` or `REVOKE` is authorized by this observation.
+
+## 1. Known remote state — authenticated MCP and human CLI
+
 
 Revalidated using the connected Supabase project-specific read-only migration list after PR #18 merge:
 
@@ -24,9 +47,11 @@ Revalidated using the connected Supabase project-specific read-only migration li
 
 Foundation SQL SHA-256 was previously verified via a read-only query of `supabase_migrations.schema_migrations.statements[1]`: `9c36f409c82917f523f6c034ab576409a0e3ee6711901c4b09bcc04e3b2e4e13`. Candidate catalog SQL SHA-256: `19a6cc2b841e5670db4da7aad11f8c2fa8a886bd1f4dae5d65c72cc4dbe3d070`, bytewise identical to `db/migrations/0001_rag_catalog.up.sql` in the prior local operator CI.
 
-**IMPORTANT:** the MCP OAuth session is **not the user's authenticated Supabase CLI session**. The GitHub Action runs the CLI only **offline**, with no remotely provisioned tokens. Neither is proof that `supabase migration list --remote=lmocjhpajhxegzobydau` has executed.
+**Superseded:** the owner has now executed the CLI 3.1.0 remote history query successfully. Earlier MCP and CI evidence were insufficient on their own; the observed CLI authentication role side effect must be considered separately.
 
-## 2. Human operator command — narrow, explicitly read-only
+## 2. Historical operator command — already executed; do not rerun
+
+> **Historical instructions below are superseded by the 2026-11-18 evidence and safeguards in §0.** The owner does not need to repeat this command. Any future re-run requires distinct security approval and private, explicitly supplied database credentials to avoid CLI 3.1.0's implicit login-role provisioning.
 
 The owner must execute this with the CLI 3.1.0 installed and authenticated in a **private terminal** within a current checkout of this branch:
 
@@ -58,7 +83,7 @@ No extra local or remote migration versions. A successful exit status from `migr
 
 **STOP conditions:** wrong version, wrong target/project, any extra/absent version, a mismatch in the applied/pending columns, SQL/hash drift, unexpected CLI prompt requesting schema updates/repair, or refusal to authenticate. Never run `migration repair` or try `db push` to resolve mismatched versions.
 
-Once the owner has reviewed the output, they can report only the **migration-version table with Local/Remote columns** (redact all other session/connection metadata). The resulting evidence is separately reconciled with the existing Supabase MCP read-only state. Only then can this gate be marked `CLI_REMOTE_HISTORY_VERIFIED`.
+The owner supplied the Local/Remote table and it matches the MCP ledger. **The history gate is `CLI_REMOTE_HISTORY_VERIFIED`.** The temporary-role authentication side-effect finding remains distinct and prevents claiming an entirely write-free CLI session.
 
 ## 3. Test and review evidence
 
@@ -73,4 +98,4 @@ The owner authorized **this read-only H5 reconciliation**, not any write. H6 sec
 
 **NO_BACKUP_MVP** is unchanged. No remote database backup, PITR, real restore or RPO/RTO is introduced.
 
-**State:** `E1_H5 / MCP_LEDGER_MATCH / CLI_3_1_0_OFFLINE_PROVEN / CLI_AUTH_REMOTE_LIST_PENDING / REMOTE_WRITES_BLOCKED`.
+**State:** `E1_H5 / CLI_REMOTE_HISTORY_VERIFIED / TEMP_LOGIN_ROLE_SIDE_EFFECT_DOCUMENTED / SCRIPT_SECURITY_REVIEW_PENDING / HOSTED_SCHEMA_WRITES_BLOCKED`.
