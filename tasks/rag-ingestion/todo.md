@@ -228,6 +228,24 @@ Evidence: [hosted readiness runbook](../../docs/rag/e1-hosted-execution-readines
 - [ ] Independent human approvals for remote role/secret, catalog SQL, vector space, DSN; H7/H11/H12 and E2 ingestion remain blocked
 - [x] H10 `NO_BACKUP_MVP` remains in force
 
+## E1 — H5 authenticated CLI historian gate (read-only authorization, 2026-11-17)
+
+[Read-only CLI gate and operator script](../../docs/rag/e1-h5-remote-cli-readonly-gate.md), based on `master` `20a1fb7c2487665c4d9749094d4fadd4ddba6b7a`. **Only authenticated remote migration-list read is authorized, not remote writes.**
+
+- [x] Supabase project-specific OAuth/MCP read-only `list_migrations` confirms only applied foundation `20261113233720`, catalog `20261117213614` not applied
+- [x] Supabase CLI v3 `--remote=<project-ref>` syntax checked in official v3 docs; exact CLI 3.1.0 already exercised offline in E1 CI
+- [x] Operator-only `scripts/e1-h5-remote-history-readonly.sh --read-only` prepared with explicit ref, expected migration/hash guards and no write commands
+- [x] Fake-CLI offline regression added to CI (no actual hosted credentials in GitHub Actions)
+- [ ] Exact-HEAD CI and Codex review of this PR; owner authorization for document/script merge
+- [x] **CLI remote execution in owner's Ubuntu/WSL (2026-11-18)** using Supabase CLI 3.1.0; Local/Remote columns match foundation applied + catalog pending, independently cross-checked via MCP
+- [x] H5 migration-version columns independently reconciled (`CLI_REMOTE_HISTORY_VERIFIED`); neither migration push nor ledger repair performed
+- [ ] H5 **auth side-effect deviation:** CLI v3.1.0 can POST `/cli/login-role` with `read_only:false`; short-lived `cli_login_postgres` role observed post-run. R1 guards/re-review pending; no repeat CLI or role cleanup authorized
+- [x] H5 R2 local remediation: reject `SUPABASE_WORKDIR` override; pin exact CLI `--workdir`, reject unreviewed stack-mode link, parse ONLY `SUPABASE_DB_PASSWORD` from ignored `.env` with Node (no shell sourcing), require mode 0600/untracked, ignore `supabase/.temp/`
+- [x] H5 R2 exact-HEAD CI PASS and Codex P1 on profile-resolution identified; original `SUPABASE_WORKDIR` P1 thread **resolved** after user authorization
+- [x] H5 R3 implement explicit builtin `--profile supabase`, reject ambient foreign `SUPABASE_PROFILE` and add simulated persisted `SUPABASE_HOME/profile` + environment adversarial regressions
+- [ ] H5 R3 exact-HEAD CI, independent Codex review and remaining profile P1 thread disposition, separate human merge approval; **no remote CLI rerun**
+- [ ] H6 role/security, H10 physical/org metrics, H7/H11/H12/E2 remain independently gated
+
 ## Step E2 — Ingestion orchestration (expected #11b)
 
 - [ ] Runtime PgVector with constructor `disableInit: true`; PgVector not registered in `new Mastra({ vectors })`

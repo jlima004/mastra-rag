@@ -44,6 +44,10 @@ The [operator package work order](../../docs/rag/e1-operator-package.md) stages 
 
 [Current operator readiness and execution stop/go](../../docs/rag/e1-hosted-execution-readiness.md) reconciles the **hosted read-only** H5 migration history and foundation SHA, H6 absent `rag_app` and unchanged security WARNs, and H10 unknown Free organization/disk/WAL metrics. It includes a read-only preflight SQL and a local-only evidence validator. **This checkpoint does not approve** remote CLI authenticated rehearsal, `db push`, `migration repair`, role/grant/credential changes, paid calls or ingestion. Future privileged operations must be independently approved. H10 **NO_BACKUP_MVP** is unchanged.
 
+## E1 H5 — authenticated remote migration history (read-only gate)
+
+[Current CLI historian operator runbook](../../docs/rag/e1-h5-remote-cli-readonly-gate.md) records owner authorization for `supabase migration list --remote=lmocjhpajhxegzobydau` using CLI **3.1.0** only. The connected Supabase **MCP** read verified foundation `20261113233720`; the owner subsequently executed the **actual authenticated CLI 3.1.0** remote listing on 2026-11-18 and the Local/Remote columns independently matched. However CLI 3.1.0 prints `Initialising login role...` and its tagged source may POST for a short-lived login role with `read_only:false` when no database password is supplied; the authenticated history proof is complete, while the stronger no-provider-side-effect claim is not established. Operator script and offline CI mock enforce target/hash and no-write scope. This gate authorizes no `db push`, `migration repair`, roles, credentials, vector provisioning, H6 security modification or E2 ingestion. **NO_BACKUP_MVP** remains binding.
+
 ## Rules that apply to every step
 
 - No step starts before the decisions it depends on are ratified (column "Gate").
