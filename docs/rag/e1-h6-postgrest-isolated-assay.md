@@ -25,6 +25,16 @@ Run **only** bash scripts/test-e1-h6-postgrest-local.sh inside the disposable Po
 
 **Assay limit:** version v16.6 is pinned for reproducibility but is **not demonstrated to match the deployed Supabase PostgREST version/config**. The fixture omits other hosted extensions, settings, API gateway and exposure controls. A denied isolated RPC does not establish universal exploit impossibility; a passing local REVOKE regression does not authorize production REVOKE. CI SUCCESS is only evidence for **this** fixture and transport. Independent security review must reconcile the HTTP result, production-version parity, function ownership and actual role/trigger dependencies.
 
+## Initial CI failure and phase-specific reconciliation (R1)
+
+- [Initial CI #44342998665](https://github.com/jlima004/mastra-rag/actions/runs/44342998665) failed **only in the new isolated PostgREST step**; existing Node/build/auth, pinned CLI and earlier PG17 role/RLS tests passed.
+- Before the local-only REVOKE, anonymous and synthetic-authenticated HTTP POST both returned **HTTP 400 / SQLSTATE 0A000**: the event-trigger function was reached but PostgreSQL rejected an ordinary function invocation.
+- After local-only REVOKE, the original test rejected the observed permission-denial response as "unexpected" because it erroneously assumed all negative HTTP outcomes had the same shape. Disposable PG logs showed **permission denied for function rls_auto_enable** (SQLSTATE expected 42501), while CREATE TABLE still enabled RLS. This is a test expectation issue, **not** a verified production outcome.
+- The updated test is **phase-specific**: baseline requires HTTP 400 / 0A000; after REVOKE it requires anon HTTP 401 / 42501 and authenticated HTTP 403 / 42501. These exact post-REVOKE expectations remain **unproven until the new exact-HEAD CI passes**; any other response fails closed with redacted HTTP status and error code.
+- The image was pinned to the digest actually pulled by the initial CI: **postgrest/postgrest:v16.6@sha256:5ce030c153500fe90ba157da4da8ba99ab51d3bc7b95e071bd0b544b67a632f7** (amd64 GitHub runner). This records executable test identity, not the unknown hosted Supabase build.
+
+No live provider calls or hosted changes occurred. Neither an HTTP 400/0A000 nor a subsequent 42501 permits an automatic H6 security decision.
+
 ## Mandatory independent review and owner decision
 
 - [ ] Exact-HEAD CI reports local HTTP observations for both roles before/after local REVOKE, with auth control PASS.
