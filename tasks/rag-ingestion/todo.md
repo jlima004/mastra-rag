@@ -297,14 +297,14 @@ Authority: [H6 isolated assay](../../docs/rag/e1-h6-postgrest-isolated-assay.md)
 
 ## E1 — H6 Security Adjudication (after PR #21 merged/deployed, 2026-11-18)
 
-Authority: [Security adjudication](../../docs/decisions/RAG-E1-H6-security-adjudication.md) and [restricted operator decision package](../../docs/rag/e1-h6-security-operator-decision-package.md). **Recommendation is H6-S1; no human ratification yet.**
+Authority: [Security adjudication](../../docs/decisions/RAG-E1-H6-security-adjudication.md) and [restricted operator decision package](../../docs/rag/e1-h6-security-operator-decision-package.md). **Owner ratified H6-S1 directional scope and explicitly authorized documentary PR #22 merge on 2026-11-18; no hosted execution approved.**
 
 - [x] PR #21 isolated PostgREST assay merged into master, post-merge CI 153/153 PASS, user-confirmed deploy health.
 - [x] Hosted read-only ACL/catalog re-observed: public.rls_auto_enable() SHA unchanged; postgres owner; enabled ensure_rls; explicit EXECUTE to PUBLIC/anon/authenticated/postgres/service_role; both WARNs persist.
 - [x] Decision matrix H6-S1 narrowly revoke PUBLIC/anon/authenticated vs H6-S2 documented risk acceptance; PM recommendation H6-S1.
 - [x] Drafted SELECT-only metadata preflight and separately gated future operator procedure; no hosted SQL writes.
-- [ ] Exact-head CI, independent Codex review, human approval to merge/deploy adjudication artifacts.
-- [ ] **Distinct human H6-S1 or H6-S2 ratification**; no presumption based on approval to prepare documentation.
-- [ ] If S1: second explicit human authorization for target-confirmed hosted REVOKE, then audited postconditions/advisor recheck; no silent rollback.
+- [x] Original exact-head CI and independent Codex code review PASS at `b21715d2dc2a95f843138d579ea1529f82d2c9fd`; owner authorized documentary merge. **Updated ratification HEAD requires fresh exact-HEAD CI and review before merge.**
+- [x] **Distinct human H6-S1 directional ratification** (owner: “Ratifico tudo.”, 2026-11-18); S2 was not selected, and hosted SQL remains independently blocked.
+- [ ] **Pending distinct second authorization** for target-confirmed hosted `REVOKE` and independent postcondition/advisor recheck; no silent rollback or execution by CI.
 - [ ] If S2: owner rationale/review trigger/decision record and explicit acceptance of unresolved WARNs.
 - [ ] H6 rag_app, H5 catalog, H10 org/disk/WAL, H7/H11/H12, E2 all remain blocked pending separate decisions.
