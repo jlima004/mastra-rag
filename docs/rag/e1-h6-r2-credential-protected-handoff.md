@@ -37,7 +37,7 @@ Inside the **same interactive psql session**:
 ```sql
 \conninfo
 SELECT current_user, session_user, current_database();
-SELECT count(*) AS rag_app_count FROM pg_catalog.pg_roles WHERE rolname = 'rag_app';
+\i db/readonly/e1_h6_rag_app_postflight.sql
 BEGIN;
 SET LOCAL log_statement = 'none';
 SET LOCAL log_min_error_statement = 'panic';
@@ -51,7 +51,20 @@ SELECT current_setting('log_statement'),
        current_setting('pgaudit.log');
 ```
 
-**STOP + `ROLLBACK;`** unless the connected server is the verified project, current/session user is `postgres`, role count is 1, **each** `SET LOCAL` succeeds and the SELECT displays `none, panic, fatal, none, none`. This is not a blanket grant of authority to change database-wide settings. The changes are scoped to the open transaction, and the actual remote `psql` session must be checked even though the tool-based rehearsal passed.
+**Role-contract gate (mandatory BEFORE `BEGIN` and BEFORE entering a password):** the `\\i` above invokes **the already-reviewed** `db/readonly/e1_h6_rag_app_postflight.sql` from merged PR #24. Run the terminal from the correct, trusted repository root and ensure that file matches the merged baseline; do not `\\i` an unverified local edit. Stop immediately if the file cannot be read or any one of these **fresh** values differs:
+
+| Postflight field | Required |
+| --- | --- |
+| `role_count` | `1` |
+| `flags_minimal` | `true` (LOGIN, NOINHERIT; not superuser, CREATEDB, CREATEROLE, REPLICATION or BYPASSRLS) |
+| `membership_count`, `owns_schema`, `owns_rag_relations` | all `0` |
+| `extensions_usage` | `true` |
+| `extensions_create`, `rag_usage_before_catalog`, `rag_create`, `public_create` | all `false` |
+| `catalog_table_count` | `0` |
+
+These checks are **required even if an earlier read-only tool preflight passed**, because privileged role flags, memberships and grants could drift in between. A `role_count=1` check alone is **not sufficient**. The later `H6_R2_AUTH_PASS` probe is **an authentication proof**, not a substitute for the full privileged-role guard.
+
+**Transaction/log gate:** if the connected server is not the provider-verified project, current/session user is not `postgres`, any role-contract field differs, **any** `SET LOCAL` fails, or the logging SELECT does not display `none, panic, fatal, none, none`, **STOP**. If a transaction has begun, issue `ROLLBACK;` and do not enter a password. This is not a blanket grant of authority to change database-wide settings. The changes are scoped to the open transaction, and the actual remote `psql` session must be checked even though the tool-based rehearsal passed.
 
 **Only when all above conditions hold**, enter this **psql meta-command interactively in the same transaction**:
 
@@ -59,7 +72,21 @@ SELECT current_setting('log_statement'),
 \password rag_app
 ```
 
-Enter the new password twice only at the protected, non-echoing prompts. `psql` computes a verifier client-side. Verify that the command reports **successful ALTER ROLE** before issuing `COMMIT;`. If an error occurs, issue `ROLLBACK;`, stop and investigate **without retrying or revealing the verifier**. Do not run `\password` again just to test. After commit, `SHOW log_statement;` and `SHOW log_min_messages;` should show `ddl` and `warning` as before. Exit `psql` after recording only a generic non-secret success/failure label.
+Enter the new password twice only at the protected, non-echoing prompts. `psql` computes a verifier client-side. **PostgreSQL 17's interactive `\\password` returns to the prompt silently on success; it does NOT print an `ALTER ROLE` success tag.** Do not wait for such a message. After the password was entered and confirmed in both prompts, with no cancellation or error reported, run a non-secret check **in the same open transaction**:
+
+```sql
+SELECT 'H6_R2_TRANSACTION_HEALTHY' AS status;
+```
+
+Require the exact `H6_R2_TRANSACTION_HEALTHY` row and no `current transaction is aborted` error. This proves the transaction is still usable, **not** by itself that the password change occurred. **If either password prompt was canceled, any `\\password` error occurred, or the check fails: `ROLLBACK;` and STOP**, without retrying or revealing the verifier. Only after a clean two-prompt change and healthy transaction may the operator enter:
+
+```sql
+COMMIT;
+SHOW log_statement;
+SHOW log_min_messages;
+```
+
+Require a successful `COMMIT` completion and restoration of `ddl` and `warning`. A committed change must still pass the **fresh password-authenticated H6_R2_AUTH_PASS** test in section 3; transaction health alone is not a credential proof. Do not run `\\password` again just to test. Exit `psql` after recording only a generic non-secret success/failure label.
 
 **Important:** Avoid SQL Editor, `psql -c`, shell `echo`, heredocs containing passwords, dollar-quoted password SQL, log exports, `.env` or chat with plaintext or verifier. Do not enter a personal password in a session recorder or streaming/AI terminal.
 
@@ -71,7 +98,7 @@ After successfully committing and verifying the password manager entry, establis
 psql -X -W "host=<HOST_FROM_SUPABASE_CONNECT> port=5432 dbname=postgres user=rag_app.lmocjhpajhxegzobydau sslmode=verify-full sslrootcert=<CERT_PATH>" -v ON_ERROR_STOP=1 -Atc "SELECT CASE WHEN current_user='rag_app' AND NOT has_schema_privilege(current_user,'rag','USAGE') AND has_schema_privilege(current_user,'extensions','USAGE') AND NOT has_schema_privilege(current_user,'public','CREATE') THEN 'H6_R2_AUTH_PASS' ELSE 'H6_R2_AUTH_FAIL' END"
 ```
 
-Expected result: **`H6_R2_AUTH_PASS`**. If the session pooler reports authentication failure immediately after rotation, do **not** assume the password was lost: Supabase documents short-lived pooler credential caching. One bounded retry after provider instructions, or a separately configured direct IPv6 probe, may be needed. Avoid repeated guesses/lockouts; do not share error output containing connection URIs.
+Expected result: **`H6_R2_AUTH_PASS`**. This role-scoped authentication probe verifies only login and its listed effective schema privileges. **It does not revalidate memberships, ownership, CREATEROLE, CREATEDB, REPLICATION or BYPASSRLS**; that full privileged-role check is the **mandatory fresh `db/readonly/e1_h6_rag_app_postflight.sql` gate above**. If needed, rerun that same read-only postflight after successful authentication from the separately authenticated administrator connection before closing H6-R2. If the session pooler reports authentication failure immediately after rotation, do **not** assume the password was lost: Supabase documents short-lived pooler credential caching. One bounded retry after provider instructions, or a separately configured direct IPv6 probe, may be needed. Avoid repeated guesses/lockouts; do not share error output containing connection URIs.
 
 The operator may share **only** these sanitized facts in the chat: "password set/transaction COMMIT confirmed", "H6_R2_AUTH_PASS", date, and confirmation no secret was logged or copied. No password, verifier, DSN or log dump. Only then can H6-R2 be independently closed and recorded as `VERIFIED`. If either stage fails, keep the gate `BLOCKED` without claiming the role is ready.
 
