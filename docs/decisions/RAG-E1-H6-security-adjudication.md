@@ -1,8 +1,8 @@
 # RAG-E1 / H6-D2 — Security Adjudication (owner decision required)
 
-**Prepared:** 2026-11-18. **Git baseline:** `master` `adf0cd8a1b360e240f5c20315aa687a73b2fa965` (PR #21 merged, exact-head CI SUCCESS, user-confirmed Railway health). **Status:** `H6_S1_RECOMMENDED / OWNER_RATIFICATION_PENDING / HOSTED_WRITES_BLOCKED`.
+**Prepared and owner-ratified:** 2026-11-18. **Git baseline:** `master` `adf0cd8a1b360e240f5c20315aa687a73b2fa965` (PR #21 merged, exact-head CI SUCCESS, user-confirmed Railway health). **Status:** `H6_S1_DIRECTION_RATIFIED / PR22_DOCUMENTARY_MERGE_AUTHORIZED / HOSTED_WRITES_BLOCKED`.
 
-This document **reconciles** the evidence and presents an actionable choice. It does **not** ratify a human decision, grant permission for production SQL or claim that either Security Advisor warning is resolved. It implements the separately requested security adjudication *preparation*, not any hosted privilege modification.
+This document reconciles the evidence and records the owner's **H6-S1 directional ratification and approval of the documentary merge for PR #22**, expressed as **“Ratifico tudo.”** in direct response to the proposal to ratify H6-S1 **without authorizing execution on Supabase**. This is **not** authorization for production SQL and does not claim either Security Advisor WARN is resolved. No hosted privilege modification has been performed.
 
 ## 1. Authority and invariants
 
@@ -49,14 +49,16 @@ Advisors: [anon WARN](https://supabase.com/docs/guides/observability/advisors?qu
 
 **PM recommendation:** **H6-S1**, with **no automatic production execution**. The recommended scope is the three named grantees only; removing `service_role` requires a separate assessment and is not bundled here.
 
-## 5. Formal human adjudication
+## 5. Formal human adjudication — decision recorded
 
-The owner must explicitly select exactly one:
+**Owner decision, 2026-11-18:** **H6-S1 RATIFIED (direction only)** and **PR #22 documentary merge AUTHORIZED**. The owner replied **“Ratifico tudo.”** to a prompt explicitly limiting approval to H6-S1 and documentary merge, **without authorizing execution in Supabase**. The literal reply does not authorize the distinct SQL execution gate.
 
-- `RATIFY H6-S1` — ratify the *direction* of narrowly restricting `EXECUTE` after exact-target preflight. **This does not authorize running SQL.**
-- `RATIFY H6-S2` — accept residual risk *only* with written justification, owner, review date and re-evaluation triggers.
-- `H6-HOLD` — maintain existing state and all hosted-operation blocks.
+- **Selected:** `RATIFY H6-S1` — restrict function `EXECUTE` from `PUBLIC`, `anon` and `authenticated` while preserving the function definition, `ensure_rls`, `postgres` and `service_role` grants, conditional on separate preflight and operator review.
+- **Not selected:** `RATIFY H6-S2` — no residual-risk acceptance; both advisor WARNs remain unresolved until independently validated after a later authorized action.
+- **Not selected:** `H6-HOLD` as the architectural direction, but **all hosted writes remain blocked**.
+- **Merge approval:** PR #22 only, after exact-final-HEAD CI and review reconciliation. It does not approve any other PR, runtime change or deployment of privileged SQL.
+- **Next independent approval:** explicit authorization for the exact hosted `REVOKE`; in its absence, no user or agent may run it.
 
-Following **H6-S1** ratification, a *second, distinct* authorization is required for the precise hosted `REVOKE`, then independently verify postconditions. Until then `H6_SECURITY_DECISION_PENDING`; in particular, `rag_app`, catalog migrations, vector space, DSN, H7/H10/H11/H12 and E2 remain independently gated.
+The **H6-S1 directional decision is closed**. A *second, distinct* authorization is still required for the precise hosted `REVOKE`, followed by independently verified postconditions; until then `H6_HOSTED_EXECUTION_NOT_AUTHORIZED`. In particular, `rag_app`, catalog migrations, vector space, DSN, H7/H10/H11/H12 and E2 remain independently gated.
 
-**No owner choice has yet been recorded in this document.**
+**No hosted privilege revocation, migration or production verification is claimed by this document.**
