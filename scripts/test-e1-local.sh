@@ -49,6 +49,11 @@ node --experimental-strip-types scripts/provision-e1-space-local.ts
 psql_local < db/local/0002_e1_space_role_policies.sql
 psql_local < db/local/0003_e1_positive_proofs.sql
 
+# R1 P1/P2: the exact production SQL predicates are exercised against
+# real PostgreSQL 17 catalogs in a disposable Docker service. Transactional
+# ALTER POLICY mutations are rolled back before continuing normal checks.
+node --experimental-strip-types scripts/test-e1-runtime-probe-r1-local.ts | psql_local
+
 expect_denied 'rag_app cannot modify operator-only space pointer' "SET ROLE rag_app; UPDATE rag.embedding_space SET status='active' WHERE space_id='chunks_te3s_1536_v1';" "permission denied for table embedding_space"
 expect_denied 'rag_app cannot create DDL' "SET ROLE rag_app; CREATE TABLE rag.e1_forbidden(id integer);" "permission denied for schema rag"
 expect_denied 'anon cannot see private catalog' "SET ROLE anon; SELECT * FROM rag.source LIMIT 1;" "permission denied for schema rag"

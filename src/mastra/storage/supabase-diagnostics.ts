@@ -78,7 +78,7 @@ export function describeDatabaseCheckFailure(error: unknown): DatabaseCheckDiagn
   }
 
   if (
-    /Supabase pgvector extension or private rag schema is unavailable|The rag schema grants access to a public API role/.test(combinedMessage)
+    /Supabase pgvector extension or private rag schema is unavailable|The rag schema grants access to a public API role|Supabase runtime role, vector schema or RLS contract is unavailable/.test(combinedMessage)
   ) {
     return {
       category: 'FOUNDATION',

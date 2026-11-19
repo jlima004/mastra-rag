@@ -6,6 +6,8 @@ export type DatabaseEnvironment = Readonly<{
   POSTGRES_CONNECTION_STRING?: string;
   /** Optional private server-side base64-encoded Supabase root CA PEM. */
   SUPABASE_CA_CERT_BASE64?: string;
+  MASTRA_PROJECT_ID?: string;
+  MASTRA_ENVIRONMENT_ID?: string;
 }>;
 
 /**
@@ -73,4 +75,20 @@ export function requirePostgresConnectionString(
   url.search = '';
   url.searchParams.set('sslmode', sslmode);
   return url.toString();
+}
+
+/** E1 hosted runtime permits only the verified low-privilege session pooler. */
+export function requireRuntimeRagAppConnectionString(
+  environment: DatabaseEnvironment = process.env,
+): string {
+  const connectionString = requirePostgresConnectionString(environment);
+  const url = new URL(connectionString);
+  if (
+    url.hostname !== 'aws-0-sa-east-1.pooler.supabase.com' ||
+    url.username !== 'rag_app.' + SUPABASE_PROJECT_REF ||
+    url.searchParams.get('sslmode') !== 'verify-full'
+  ) {
+    throw new Error('Runtime PostgreSQL requires the approved rag_app session pooler with verify-full TLS.');
+  }
+  return connectionString;
 }

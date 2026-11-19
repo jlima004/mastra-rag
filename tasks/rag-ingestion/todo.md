@@ -396,3 +396,17 @@ Evidence: [H6 vector hosted execution receipt](../../docs/rag/e1-h6-vector-space
 - [ ] Codex independent adjudication of operator-SQL vs original `PgVector.createIndex` mechanism and migration-ledger boundary; no retroactive history repair.
 - [ ] Exact-head CI, independent Codex review, and human approval to merge this receipt/test-alignment PR; no automatic deployment.
 - [ ] Runtime DSN, vector live client connectivity, H7/H11/H12, E2 ingestion and paid embeddings all **separately gated**. H10 canceled for Free MVP; `NO_BACKUP_MVP` preserved.
+
+
+## E1 — Runtime PostgreSQL DSN (owner-authorized read-only integration, 2026-11-18)
+
+Evidence / work order: [E1 runtime DSN read-only integration](../../docs/rag/e1-runtime-dsn-readonly.md).
+
+- [x] Owner authorized `E1_RUNTIME_DSN_INTEGRATION` (connection/SELECT-only; no E2, DDL or embeddings).
+- [x] Confirmed H5/H6 hosted project and prepared lazy runtime configuration restricted to `rag_app.<project-ref>`, the approved session pooler host/port and `sslmode=verify-full`; hosted CA required.
+- [x] Prepared enhanced authenticated internal readiness + private `db:check` SELECT-only probe for real `current_user=session_user=rag_app`, 1536-vector layout, `public` namespace RLS and no admin privileges.
+- [x] Existing Mastra/Turso infrastructure and `disableInit:true` retained; no public vector registration, hosted environment variables or live database connections executed by code changes.
+- [ ] Exact-HEAD PR CI and independent Codex review; human merge/deploy approval.
+- [ ] Owner-only configuration of *server-side* Mastra Platform secrets `POSTGRES_CONNECTION_STRING` (rag_app) and `SUPABASE_CA_CERT_BASE64`; never log, paste or commit values.
+- [ ] Real protected `rag_app` credential/TLS/authenticated internal readiness proof; fresh Supabase SELECT-only postflight. **Do not mark runtime DSN COMPLETE merely from CI or generic /health.**
+- [ ] H7/H11/H12, E2 ingestion, vector write/read APIs each separately approved; H10 canceled and `NO_BACKUP_MVP` unchanged.

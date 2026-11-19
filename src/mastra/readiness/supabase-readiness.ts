@@ -1,14 +1,14 @@
 import { registerApiRoute } from '@mastra/core/server';
 import { describeDatabaseCheckFailure } from '../storage/supabase-diagnostics.ts';
 import { createSupabaseVectorStore } from '../storage/supabase-vector.ts';
-import { verifySupabaseFoundation } from '../storage/supabase-probe.ts';
+import { verifySupabaseRuntimeReadonly } from '../storage/supabase-runtime-probe.ts';
 
 export type SupabaseReadiness =
   | Readonly<{ status: 'ok' }>
   | Readonly<{ status: 'unavailable'; category: string }>;
 
 type ReadinessStore = {
-  pool: Parameters<typeof verifySupabaseFoundation>[0];
+  pool: Parameters<typeof verifySupabaseRuntimeReadonly>[0];
   disconnect(): Promise<void>;
 };
 
@@ -19,7 +19,7 @@ export type ReadinessDependencies = Readonly<{
 
 const defaultDependencies: ReadinessDependencies = {
   createStore: createSupabaseVectorStore,
-  verify: verifySupabaseFoundation,
+  verify: verifySupabaseRuntimeReadonly,
 };
 
 /**
