@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   requirePostgresConnectionString,
+  requireRuntimeRagAppConnectionString,
   SUPABASE_PROJECT_REF,
 } from './supabase-config.ts';
 
@@ -129,4 +130,26 @@ test('leaves canonical valid session pooler URLs unchanged', () => {
     requirePostgresConnectionString({ POSTGRES_CONNECTION_STRING: session }),
     session,
   );
+});
+
+const ragAppUrl = 'postgresql://rag_app.' + SUPABASE_PROJECT_REF +
+  ':a%2Fb%40c@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=verify-full';
+
+test('E1 runtime accepts only rag_app on verified project session pooler', () => {
+  assert.equal(requireRuntimeRagAppConnectionString({ POSTGRES_CONNECTION_STRING: ragAppUrl }), ragAppUrl);
+});
+
+test('E1 runtime rejects privileged roles, other hosts, wrong TLS and overrides', () => {
+  for (const candidate of [
+    session,
+    direct,
+    ragAppUrl.replace('rag_app.', 'postgres.'),
+    ragAppUrl.replace('rag_app.', 'service_role.'),
+    ragAppUrl.replace('aws-0-sa-east-1', 'aws-1-sa-east-1'),
+    ragAppUrl.replace('sslmode=verify-full', 'sslmode=require'),
+    ragAppUrl.replace(':5432/', ':6543/'),
+    ragAppUrl + '&host=example.invalid',
+  ]) {
+    assert.throws(() => requireRuntimeRagAppConnectionString({ POSTGRES_CONNECTION_STRING: candidate }));
+  }
 });

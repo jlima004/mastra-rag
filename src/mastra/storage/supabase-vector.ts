@@ -2,7 +2,7 @@ import { PgVector } from '@mastra/pg';
 import { resolveSupabaseTlsOptions } from './supabase-tls.ts';
 import {
   RAG_SCHEMA_NAME,
-  requirePostgresConnectionString,
+  requireRuntimeRagAppConnectionString,
   type DatabaseEnvironment,
 } from './supabase-config.ts';
 
@@ -13,7 +13,12 @@ import {
 export function createSupabaseVectorStore(
   environment: DatabaseEnvironment = process.env,
 ): PgVector {
-  const connectionString = requirePostgresConnectionString(environment);
+  const connectionString = requireRuntimeRagAppConnectionString(environment);
+  // Hosted runtime must use the verified project CA from a server-only secret.
+  if ((environment.MASTRA_PROJECT_ID || environment.MASTRA_ENVIRONMENT_ID) &&
+      !environment.SUPABASE_CA_CERT_BASE64) {
+    throw new Error('SUPABASE_CA_CERT_BASE64 is required for hosted runtime PostgreSQL.');
+  }
   const ssl = resolveSupabaseTlsOptions(connectionString, environment);
 
   return new PgVector({
