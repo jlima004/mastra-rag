@@ -370,3 +370,17 @@ Authority and evidence: [H6-R2 protected operator handoff, final closure §0](..
 - [x] **H6-R2 credential and authentication operational gate COMPLETE / VERIFIED.** No additional password change is needed to close this gate. Do not re-run role creation or `\\password` as part of documentation publication.
 - [ ] Evidence-only PR #26 updated to this final operational status: exact-HEAD CI, Codex independent review (including prior P2 reconciliations), and separate owner merge/deploy gate.
 - [ ] **Separate authorization required:** H5 catalog migration, vector space, application DSN, H7/H11/H12 and E2 ingestion. H10 remains canceled for Supabase Free MVP and `NO_BACKUP_MVP` remains unchanged.
+
+## E1 — H5 hosted catalog applied and independently verified (2026-11-18)
+
+Evidence: [H5 hosted CLI execution + postflight receipt](../../docs/rag/e1-h5-hosted-catalog-execution-receipt.md). This **supersedes** older pending H5 and pre-catalog notes without erasing their history.
+
+- [x] Explicit owner H5 authorization. CLI v3.1.0 private WSL `--dry-run` returned exact project `lmocjhpajhxegzobydau`, sole pending `20261117213614_rag_catalog.sql`, no foundation replay.
+- [x] Private operator `db push --remote=lmocjhpajhxegzobydau --skip-vault` with reviewed interactive Yes on exactly 1 migration; CLI reported success; environment password cleared.
+- [x] Independent hosted ledger check: versions `20261113233720`, `20261117213614` only; 38 catalog ledger statements; PG17.11 ACTIVE_HEALTHY.
+- [x] Independent catalog postflight: nine `rag` tables, RLS on all nine, nine `rag_app` policies, nine privileged `postgres` owners; minimal role flags/zero membership; `rag` USAGE without CREATE; `embedding_space` SELECT-only, DML on other eight; API roles denied.
+- [x] All nine catalog row counts zero, no vector table, H6-S1 unchanged, Supabase Security Advisor `lints=[]`.
+- [x] H5 operational closure: `E1_H5_HOSTED_CATALOG_MIGRATION = COMPLETE / VERIFIED`, with **no automatic further catalog writes**.
+- [ ] Document receipt PR exact-HEAD CI, Codex review and human merge/deploy gate; this is separate from the already-completed remote catalog operation.
+- [ ] Investigate INFO-only Performance Advisor: eight unindexed FKs and five unused indexes after catalog creation, before meaningful workload; no extra DDL authorized.
+- [ ] Independently authorize and review vector flat space, namespace RLS/grants, runtime DSN, H7/H11/H12 and E2; H10 canceled for Free MVP, `NO_BACKUP_MVP` unchanged.
