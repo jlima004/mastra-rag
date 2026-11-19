@@ -20,3 +20,38 @@ test('accepts strong credential and creates a deny-all local provider if missing
   assert.ok(createServerAuth({}));
   assert.ok(createServerAuth({ RAG_SERVER_API_TOKEN: token }));
 });
+
+test('H7 operator-only: reject inherited JS object keys and wrong bearer tokens', async () => {
+  const configured = createServerAuth({ RAG_SERVER_API_TOKEN: token });
+  const denyAll = createServerAuth({});
+  for (const candidate of [
+    '__proto__', 'constructor', 'prototype', 'toString',
+    'valueOf', 'hasOwnProperty', 'random-invalid-operator-token',
+  ]) {
+    const request = new Request('http://localhost:4111/internal/readiness/supabase', {
+      headers: { Authorization: 'Bearer ' + candidate },
+    });
+    assert.equal(await configured.getCurrentUser(request), null, candidate);
+    assert.equal(await denyAll.getCurrentUser(request), null, candidate);
+  }
+
+  const validRequest = new Request('http://localhost:4111/internal/readiness/supabase', {
+    headers: { Authorization: 'Bearer ' + token },
+  });
+  const actual = await configured.getCurrentUser(validRequest);
+  assert.equal(actual?.id, 'rag-operator');
+  assert.equal(actual?.role, 'admin');
+});
+
+test('H7 operator-only: reject prototype keys from alternate auth inputs', async () => {
+  const provider = createServerAuth({ RAG_SERVER_API_TOKEN: token });
+  const attacks: Array<Record<string, string>> = [
+    { 'X-Playground-Access': 'constructor' },
+    { Cookie: 'mastra-token=__proto__' },
+    { Cookie: 'mastra-token=toString' },
+  ];
+  for (const headers of attacks) {
+    const request = new Request('http://localhost:4111/internal/readiness/supabase', { headers });
+    assert.equal(await provider.getCurrentUser(request), null);
+  }
+});

@@ -89,6 +89,27 @@ jobs:
             exit 1
           fi
 
+          # H7: actual production bundle must reject invalid, inherited-key
+          # and alternate-header tokens before entering the readiness handler.
+          for invalid in invalid-h7-token __proto__ constructor toString hasOwnProperty; do
+            rejected_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+              --header "Authorization: Bearer ${invalid}" \
+              http://127.0.0.1:4122/internal/readiness/supabase)
+            if [ "$rejected_status" != '401' ]; then
+              echo "FAIL: H7 unexpected status $rejected_status for invalid bearer auth"
+              exit 1
+            fi
+          done
+          for invalid in __proto__ constructor; do
+            rejected_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+              --header "X-Playground-Access: ${invalid}" \
+              http://127.0.0.1:4122/internal/readiness/supabase)
+            if [ "$rejected_status" != '401' ]; then
+              echo "FAIL: H7 unexpected status $rejected_status for invalid alternate auth"
+              exit 1
+            fi
+          done
+
           authorized_status=$(curl --silent --output /tmp/mastra-supabase-readiness.json --write-out '%{http_code}' \
             --header "Authorization: Bearer ${RAG_SERVER_API_TOKEN}" \
             http://127.0.0.1:4122/internal/readiness/supabase)

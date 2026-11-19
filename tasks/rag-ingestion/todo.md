@@ -1,3 +1,22 @@
+## H7 — Operational Access (operator-only MVP; 2026-11-19)
+
+Owner requested execution of `H7 — Operational Access` after E1 hosted `rag_app` readiness returned HTTP 200 / `{"status":"ok"}`. This authorizes H7 preparation and operator-only hardening, **not automatic removal/rotation of secrets, new production endpoints, H11 spending or E2 ingestion**.
+
+- [x] H7 policy proposed for MVP: **single operator-only principal**, default-deny ingestion/retrieval, no reader/demo/public token, no unauthenticated vector/API routes.
+- [x] Existing `RAG_SERVER_API_TOKEN` production presence (value masked), `SimpleAuth` and protected readiness route confirmed; exact source audit finds no `SUPABASE_DB_PASSWORD` reference in `src/`.
+- [x] Production secret **name-only** inventory identifies `SUPABASE_DB_PASSWORD` (operator/admin secret, not runtime) and `OPENAI_API_KEY` (H11 not ratified) as candidates for owner-controlled runtime removal.
+- [x] H7 code hardening: `SimpleAuth` tokens use a null-prototype lookup map; unit and production-bundle negative tests for prototype-key/invalid tokens.
+- [ ] H7 Draft PR exact-HEAD CI, independent Codex/security-focused review, human merge/deploy authorization.
+- [ ] Owner-only audit of Mastra Platform organization members and access tokens, least-privileged roles, MFA/SSO policies where offered; secret ownership recorded outside Git.
+- [ ] Owner-only removal of unused administrative `SUPABASE_DB_PASSWORD` and unused `OPENAI_API_KEY` from **production runtime** after confirming no operational consumers depend on them; recheck readiness with operator token. **Do not expose actual values.**
+- [ ] Explicit human assessment of the residual production use of `SimpleAuth` (documented for development/testing) and operator token rotation/incident handling before marking H7 COMPLETE.
+- [ ] After release, actual production negative-access smoke (anonymous/invalid/special-key bearer and alternate header) plus positive authorized readiness `200 {"status":"ok"}`, all without publicizing tokens.
+- [ ] H11 provider budget, H12 GC/retention and E2 mutations remain separately blocked. H10 Free MVP cancellation and `NO_BACKUP_MVP` unchanged.
+
+Evidence: [H7 operator-only access decision and runbook](../../docs/decisions/RAG-H7-operator-only-access.md).
+
+---
+
 # RAG ingestion — tracking checklist
 
 **Latest decisions (2026-11-17):** [H5/H6/H10 owner ratification](../../docs/decisions/RAG-E1-H5-H6-H10-owner-ratification.md) approved the operator design and storage **numerical policy**; capacity measurement/enforcement and all hosted permissions remain pending. [NO_BACKUP_MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md) remains in force; older backup/restore/RPO/RTO requirements are superseded.
