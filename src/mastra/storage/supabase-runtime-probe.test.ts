@@ -13,7 +13,7 @@ test('E1 runtime probe uses a single static SELECT; namespace must be explicit',
   assert.match(RUNTIME_READONLY_PROBE_SQL, /current_user = 'rag_app'/);
   assert.match(RUNTIME_READONLY_PROBE_SQL, /session_user = 'rag_app'/);
   assert.match(RUNTIME_READONLY_PROBE_SQL, /row_security_active/);
-  assert.match(RUNTIME_READONLY_PROBE_SQL, /vector\(1536\)/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /a\.atttypid='extensions\.vector'::regtype AND a\.atttypmod=1536/);
   assert.match(RUNTIME_READONLY_PROBE_SQL, /'rag_vector_update'/);
 });
 
