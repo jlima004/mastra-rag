@@ -384,3 +384,15 @@ Evidence: [H5 hosted CLI execution + postflight receipt](../../docs/rag/e1-h5-ho
 - [ ] Document receipt PR exact-HEAD CI, Codex review and human merge/deploy gate; this is separate from the already-completed remote catalog operation.
 - [ ] Investigate INFO-only Performance Advisor: eight unindexed FKs and five unused indexes after catalog creation, before meaningful workload; no extra DDL authorized.
 - [ ] Independently authorize and review vector flat space, namespace RLS/grants, runtime DSN, H7/H11/H12 and E2; H10 canceled for Free MVP, `NO_BACKUP_MVP` unchanged.
+
+## E1 — H6 hosted flat vector provisioned (2026-11-18)
+
+Evidence: [H6 vector hosted execution receipt](../../docs/rag/e1-h6-vector-space-hosted-receipt.md). This **supersedes** older statements that H6 vector provision is pending, without erasing historical checkpoints.
+
+- [x] Owner explicitly authorized `E1_H6_VECTOR_SPACE_PROVISIONING`.
+- [x] Fresh provider preflight: correct project/PG17/Free; H5 ledger 2 exact versions, 9 tables and catalog rows 0; space absent, H6-S1/role minimal intact.
+- [x] Atomic, precondition-guarded hosted operator SQL equivalent to pinned `@mastra/pg` 1.35.0 flat table/index shape; 1536-dimensional `extensions.vector`, no ANN; registry status `building`. **Implementation is not a direct JavaScript createIndex call; architecture-method review pending.**
+- [x] Independent postflight: 10 RLS-enabled `rag` tables/owners `postgres`, 3 namespace=`public` vector RLS policies, `rag_app` SELECT/INSERT/UPDATE and sequence USAGE only, DELETE denied, no API-role access, zero vector data; H5 ledger and H6-S1 unchanged; Security Advisor zero findings.
+- [ ] Codex independent adjudication of operator-SQL vs original `PgVector.createIndex` mechanism and migration-ledger boundary; no retroactive history repair.
+- [ ] Exact-head CI, independent Codex review, and human approval to merge this receipt/test-alignment PR; no automatic deployment.
+- [ ] Runtime DSN, vector live client connectivity, H7/H11/H12, E2 ingestion and paid embeddings all **separately gated**. H10 canceled for Free MVP; `NO_BACKUP_MVP` preserved.
