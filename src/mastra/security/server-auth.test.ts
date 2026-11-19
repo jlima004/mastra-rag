@@ -45,7 +45,7 @@ test('H7 operator-only: reject inherited JS object keys and wrong bearer tokens'
 
 test('H7 operator-only: reject prototype keys from alternate auth inputs', async () => {
   const provider = createServerAuth({ RAG_SERVER_API_TOKEN: token });
-  const attacks = [
+  const attacks: Array<Record<string, string>> = [
     { 'X-Playground-Access': 'constructor' },
     { Cookie: 'mastra-token=__proto__' },
     { Cookie: 'mastra-token=toString' },
