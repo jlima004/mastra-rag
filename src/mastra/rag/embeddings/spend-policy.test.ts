@@ -79,7 +79,9 @@ test('H11 monthly token ceiling and application money ceiling are independent', 
   assert.throws(() => quoteH11OfflineReservation(policy, monthly, plan(100_001), 'ingestion'),
     budgetError);
   const money = { ...policy, applicationMonthlyBudgetUsdCents: 1 };
-  assert.doesNotThrow(() => quoteH11OfflineReservation(money, zero, plan(500_000), 'ingestion'));
+  assert.doesNotThrow(() => quoteH11OfflineReservation(money,
+    { monthlyReservedTokens: 400_000, dailyReservedTokens: 0, evaluationMonthlyReservedTokens: 0 },
+    plan(100_000), 'ingestion'));
   const smallJobMoney = { ...money, maxJobReservedTokens: 150_000 };
   const already = { monthlyReservedTokens: 450_000, dailyReservedTokens: 0,
     evaluationMonthlyReservedTokens: 0 };
