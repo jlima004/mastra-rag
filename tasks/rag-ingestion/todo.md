@@ -1,3 +1,22 @@
+## H11 — Embedding Spend Control (offline-only preparation, 2026-11-19)
+
+Owner directed execution of H11 after H7 private-MVP risk acceptance and production authenticated readiness. Reference: [H11 budget decision proposal](../../docs/decisions/RAG-H11-embedding-spend-control.md).
+
+- [x] Reconciled Step D model, byte+8 token envelope, per-job and caller-supplied daily budget, fake-provider retry caps, disabled production adapter.
+- [x] Confirmed official model USD 0.02/1M input-token pricing and OpenAI project hard-limit option (Enforce a hard limit; noninstantaneous).
+- [x] Pure offline cost/budget quote with fail-closed boundary checks and no hosted provider credentials.
+- [ ] This Draft PR: exact-HEAD CI, independent Codex review, and human merge/deploy approval.
+- [ ] Human ratification of **numerical** USD/month and per-day/per-job/per-evaluation quotas, billed provider/account, and cost ceilings; proposed values are **not automatically approved**.
+- [ ] Human operator independently verifies actual model-router billing path, provider-side hard-cap switch and dedicated project/key scope without sharing credentials.
+- [ ] H9 measured tokenizer and source-data validation; UTF-8 byte+8 is not billed-token upper-bound proof.
+- [ ] Future E2 **durable/atomic** budget reservation, replay/concurrency/restart accounting, settlement under uncertainty and tests; offline quotes are not authorization.
+- [ ] Explicit distinct authorization before first paid smoke, adding `OPENAI_API_KEY` to production, live corpus embedding, E2 writes or provider cost.
+- [ ] H12 retention/GC separately gated; no H10 backup/restore requirements reintroduced for Free MVP.
+
+**State:** `H11_DRAFT_OFFLINE / PROVIDER_HARD_CAP_UNVERIFIED / PAID_NOT_AUTHORIZED / E2_BLOCKED`.
+
+---
+
 ## H7 — Operational Access (operator-only MVP; 2026-11-19)
 
 Owner requested execution of `H7 — Operational Access` after E1 hosted `rag_app` readiness returned HTTP 200 / `{"status":"ok"}`. This authorizes H7 preparation and operator-only hardening, **not automatic removal/rotation of secrets, new production endpoints, H11 spending or E2 ingestion**.
