@@ -18,9 +18,9 @@ test('E1 runtime probe uses a single static SELECT; namespace must be explicit',
 });
 
 test('P1: vector column uses schema-qualified OID and integer dimension regardless of search_path', () => {
-  assert.match(RUNTIME_READONLY_PROBE_SQL, /a\\.atttypid='extensions\\.vector'::regtype/);
-  assert.match(RUNTIME_READONLY_PROBE_SQL, /a\\.atttypmod=1536/);
-  assert.doesNotMatch(RUNTIME_READONLY_PROBE_SQL, /format_type\\(/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /a\.atttypid='extensions\.vector'::regtype/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /a\.atttypmod=1536/);
+  assert.doesNotMatch(RUNTIME_READONLY_PROBE_SQL, /format_type\(/);
 });
 
 test('P2: every RLS policy must match the full approved equality expression', () => {
@@ -29,9 +29,9 @@ test('P2: every RLS policy must match the full approved equality expression', ()
     assert.match(RUNTIME_READONLY_PROBE_SQL, new RegExp("policyname='" + policy + "'"));
   }
   assert.equal(RUNTIME_READONLY_PROBE_SQL.split(expected).length - 1, 4);
-  assert.doesNotMatch(RUNTIME_READONLY_PROBE_SQL, /LIKE\\s*'%public%'/);
-  assert.match(RUNTIME_READONLY_PROBE_SQL, /FROM pg_catalog\\.pg_policies/);
-  assert.match(RUNTIME_READONLY_PROBE_SQL, /count\\(\\*\\)=3/);
+  assert.doesNotMatch(RUNTIME_READONLY_PROBE_SQL, /LIKE\s*'%public%'/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /FROM pg_catalog\.pg_policies/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /count\(\*\)=3/);
 });
 
 test('E1 runtime probe accepts only one true result', async () => {
