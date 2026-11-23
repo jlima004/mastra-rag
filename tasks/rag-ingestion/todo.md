@@ -1,3 +1,24 @@
+## H11 — Embedding Spend Control (offline-only preparation, 2026-11-19)
+
+Owner directed the original **offline-only H11 preparation** after H7. **Later authority:** numerical limits and OpenAI API paid-embedding consent ratified 2026-11-19; owner UI verified dedicated project, active billing, enforced USD 2/month limit, 50/80/95% alerts and single-model allowlist on 2026-11-23. [Current H11 decision](../../docs/decisions/RAG-H11-embedding-spend-control.md) · [H11-OPS Issue #32](https://github.com/jlima004/mastra-rag/issues/32). **Provider UI evidence does not prove direct runtime billing or authorize a live call.**
+
+- [x] Reconciled Step D model, byte+8 token envelope, per-job and caller-supplied daily budget, fake-provider retry caps, disabled production adapter.
+- [x] Confirmed official model USD 0.02/1M input-token pricing and OpenAI project hard-limit option (Enforce a hard limit; noninstantaneous).
+- [x] Pure offline cost/budget quote with fail-closed boundary checks and no hosted provider credentials.
+- [x] Original code HEAD `71fca5c4a1e6723121359b0777beda994905f72f`: CI `44603817117` SUCCESS (4/4 jobs, 171/171 Node tests) and independent Codex code review without findings; no standalone security-review result claimed.
+- [ ] Revised documentation HEAD: rerun exact-HEAD CI / Codex review and obtain distinct **human merge/deploy approval**. The Draft PR is not merged by this checklist.
+- [x] Owner **ratified** H11 numbers on 2026-11-19: OpenAI API direct billing only; USD 2/month project hard limit, USD 1/month app estimate, 5M token-envelope/month, 250k/day UTC, 150k/job (including worst-case retries), 100k eval/month, alerts 50/80/95%. This does **not** implement app-side budget enforcement.
+- [x] Owner UI (2026-11-23) verifies dedicated `Rag-Mastra` OpenAI API project, active Pay as you go billing with auto-reload OFF, USD 2/month **Limit enforced**, 50/80/95% alerts, and **only** `text-embedding-3-small` allowed; no account IDs or payment details stored in GitHub.
+- [ ] Prove that the pinned Mastra model-router runtime actually bills **this** OpenAI API project (not Mastra Gateway), with project-scoped key and no alternate routing/fallback; provider settings alone are insufficient.
+- [ ] H9 measured tokenizer and source-data validation; UTF-8 byte+8 is not billed-token upper-bound proof.
+- [ ] Future E2 **durable/atomic** budget reservation, replay/concurrency/restart accounting, settlement under uncertainty and tests; offline quotes are not authorization.
+- [ ] **Financial consent already ratified**; require separate controlled authorization before provisioning `OPENAI_API_KEY` in production, executing the first bounded paid smoke, live corpus embedding, E2 writes or other hosted changes. No paid calls enabled by this PR.
+- [ ] H12 retention/GC separately gated; no H10 backup/restore requirements reintroduced for Free MVP.
+
+**Current state (2026-11-23):** `H11_NUMERICS_RATIFIED / PROVIDER_SETUP_OWNER_UI_VERIFIED / BILLING_ROUTE_UNPROVEN / H9_H12_E2_PENDING / APPLICATION_BUDGET_NOT_DURABLE / PAID_EXECUTION_BLOCKED`. Original preparation was offline-only; the later financial consent does not supersede execution safety gates.
+
+---
+
 ## H7 — Operational Access (operator-only MVP; 2026-11-19)
 
 Owner requested execution of `H7 — Operational Access` after E1 hosted `rag_app` readiness returned HTTP 200 / `{"status":"ok"}`. This authorizes H7 preparation and operator-only hardening, **not automatic removal/rotation of secrets, new production endpoints, H11 spending or E2 ingestion**.
@@ -42,7 +63,7 @@ Status legend: `[ ]` not done · `[x]` done. Stage A ratified partially on 2026-
 
 - [x] H1 Corpus / use case accepted for MVP: LGPD + selected CD/ANPD resolutions (exact official sources pending Step B)
 - [x] H2 Initial formats accepted: HTML + Markdown/TXT; PDF phase 2; no OCR
-- [x] H3 Model baseline accepted: `openai/text-embedding-3-small` @1536; **account/billing and paid use remain pending H11**
+- [x] H3 Model baseline accepted: `openai/text-embedding-3-small` @1536; H11 numerical policy and paid-use consent **later ratified 2026-11-19**, provider configuration verified by owner UI 2026-11-23; **live use remains gated by H9/H12/E2 and billing-route proof**
 - [x] H4 direction ratified for **local E1** (PgVector + catalog, exact search first); physical SQL and E1-P2 reconciliation remain pending
 - [x] H5 direction ratified for **local E1** (versioned `db/migrations/`, owner-only remote applier); migration history and SQL approval pending
 - [x] H6 least-privilege **design direction** ratified for local tests; hosted role creation and DSN rotation **not approved**
@@ -50,7 +71,7 @@ Status legend: `[ ]` not done · `[x]` done. Stage A ratified partially on 2026-
 - [ ] H8 Mastra environment and Turso regions verified; latency accepted or region plan decided
 - [x] H9 Dependency *evaluation* conditionally accepted; actual parser/tokenizer/`zod` package installations require separate version/security review and owner approval
 - [x] H10 **NO_BACKUP_MVP** decided 2026-11-17 ([owner decision](../../docs/decisions/RAG-H10-mvp-no-backup.md)); [ ] actual corpus and storage-limit enforcement pending
-- [ ] H11 Embedding spend cap and evaluation budget set
+- [x] H11 Embedding spend cap and evaluation sub-budget **ratified** (2026-11-19); provider cap/allowlist evidenced by owner UI (2026-11-23); **E2 runtime enforcement and paid execution still pending**
 - [ ] H12 Retention and GC windows ratified (proposed: 7-day grace; immediate purge on erasure)
 
 ## Step B — Contracts and validation (expected #8)
@@ -82,7 +103,8 @@ Status legend: `[ ]` not done · `[x]` done. Stage A ratified partially on 2026-
 - [x] Per-job + supplied daily token budget, worst-case call/reservation bound; conservative **UTF-8 byte-plus-eight proxy**, not calibrated model-token counts
 - [x] Exact dimensions, finite values, reported usage and vector-count validation **before any future upsert**
 - [x] No OpenAI key at import, no server registration; missing-key startup requires CI smoke
-- [ ] H11: owner-ratified account, provider-side hard spend cap, daily/token budgets, paid authorization
+- [x] H11: numerical budget and paid-embedding financial consent owner-ratified; dedicated OpenAI API project, enforced USD 2/month cap and model allowlist owner-UI verified (2026-11-23)
+- [ ] H11 execution: prove actual direct billing path/key scope, implement **durable** daily/monthly/job/eval budget enforcement, and separately approve first paid call
 - [ ] H9: approved tokenizer for validated preflight accounting; no package installed in this PR
 - [x] PR #10 exact-head CI full PASS (105/105), independent Codex re-review no material findings, human merge @ `0075155`. **No live embedding, DDL or production ingestion authorized**.
 
