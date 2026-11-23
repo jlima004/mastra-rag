@@ -1,3 +1,21 @@
+## H9C — Official provenance + Token Grid (Draft, 2026-11-23)
+
+Authority: owner approved controlled **read-only acquisition** of manifest-approved official Planalto/ANPD/DOU sources and offline token-grid preparation. [H9C decision/evidence](../../docs/decisions/RAG-H9C-official-source-and-token-grid.md) · [Issue #35](https://github.com/jlima004/mastra-rag/issues/35).
+
+- [x] Selected **unchanged existing three-source manifest** for acquisition attempts; no added hosts/acts/canonical substitutions.
+- [x] Official ANPD index confirms Resolutions nº 15/2024 and nº 18/2024 current; Planalto original and compiled LGPD references located, compiled amendments from Lei nº 15.352/2026 observed. **Not a frozen legal snapshot.**
+- [x] Attempted official read-only retrieval: both canonical DOU URLs returned **HTTP 502 via research client**; direct raw-byte Planalto attempt failed at DNS in this execution environment. **No raw SHA/normalized SHA, charset/redirect receipt or legal corpus accepted.**
+- [x] Added opt-in, operator-only pinned HTTPS acquisition script for the existing manifest, exclusive private raw/receipt archives outside the Git repository. **Not executed successfully** and not invoked by CI.
+- [x] Implemented separate versioned local `cl100k_base` token-grid renderer for structural 256/512/1024 and recursive 400/60, synthetic tests, and aggregate-only evidence CLI. No old byte-proxy IDs or runtime routes changed.
+- [ ] Exact HEAD CI and independent Codex review; human merge/deploy gate.
+- [ ] Successful verified official raw-byte capture and parser/charset/amendment/retification review or explicit adjudication of blocked sources.
+- [ ] Official corpus frozen with reproducible SHA evidence and article/locator QA; run four profiles on identical verified legal source, select profile based on results.
+- [ ] H12 retention, E2 durable atomic budgets, actual OpenAI project billing route, first separately authorized paid smoke **remain blocked**.
+
+**State:** `H9C_SYNTHETIC_GRID_DRAFT / OFFICIAL_SOURCE_HTTP_502_AND_DNS_BLOCKED / CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`.
+
+---
+
 ## H9B — Pinned cl100k_base Tokenizer (Draft, 2026-11-23)
 
 Owner directed continuation after H9A merged/deployed. [H9B decision and evidence](../../docs/decisions/RAG-H9B-pinned-tokenizer.md). Scope: offline tokenizer integration **only**, no official-corpus ingestion, no runtime enabling, no paid API call.
