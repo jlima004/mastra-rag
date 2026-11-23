@@ -24,6 +24,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test
+      - name: H9B pinned tokenizer synthetic-only audit (no network or provider key)
+        run: npm run rag:h9:synthetic
       - run: npm run typecheck
       - run: npm run build
       - name: Smoke-test server authentication and protected Supabase readiness
