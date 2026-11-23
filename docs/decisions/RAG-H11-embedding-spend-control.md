@@ -1,33 +1,33 @@
 # H11 — Embedding spend controls (operator decision package)
 
-**Prepared 2026-11-19; baseline:** `master@58268ece070293143a76ffdda4edce56160cf33e` (H7 PR #30 merged, CI/deploy verified). **State:** `H11_OFFLINE_BUDGET_CONTRACT_READY / BILLING_ACCOUNT_UNVERIFIED / OWNER_NUMBERS_UNRATIFIED / NO_PAID_USE`. The owner requested execution of H11; this authorizes preparation of a Draft PR and offline regressions **only**, not billing changes, purchases, paid embeddings, H12 GC, E2 ingestion or production API key provisioning.
+**Prepared 2026-11-19; baseline:** `master@58268ece070293143a76ffdda4edce56160cf33e` (H7 PR #30 merged, CI/deploy verified). H11 was originally prepared as an **offline-only Draft PR** with no permission to call a paid provider. **Later decisions:** the owner ratified the numerical policy and approved paid embeddings **charged directly to their OpenAI API account** on 2026-11-19; on 2026-11-23, the owner supplied UI evidence of a dedicated project, active billing and provider controls (tracked in [Issue #32](https://github.com/jlima004/mastra-rag/issues/32)). Neither decision enables paid execution without the remaining application gates. **Current state:** `H11_NUMERICS_RATIFIED / PROVIDER_SETUP_OWNER_UI_VERIFIED / BILLING_ROUTE_UNPROVEN / H9_H12_E2_PENDING / PAID_EXECUTION_BLOCKED`.
 
 ## 1. Technical baseline and boundaries
 
-- Step D already implements `EmbeddingProvider`, lazy `ModelRouterEmbeddingModel('openai/text-embedding-3-small')`, `allowPaidCalls` false by default, per-job token planning and caller-supplied `remainingDailyTokens`. This is **not** a persistent daily quota: independent callers could reset it. The adapter is not registered in `src/mastra/index.ts` or an HTTP route, and hosted `OPENAI_API_KEY` is absent.
+- Step D already implements `EmbeddingProvider`, lazy `ModelRouterEmbeddingModel('openai/text-embedding-3-small')`, `allowPaidCalls` false by default, per-job token planning and caller-supplied `remainingDailyTokens`. This is **not** a persistent daily quota: independent callers could reset it. The adapter is not registered in `src/mastra/index.ts` or an HTTP route; no production key provisioning is established by this PR (the original H11 preparation recorded hosted `OPENAI_API_KEY` as absent).
 - The existing `UTF-8 bytes + 8 per input` envelope is an experimental proxy and is **not** a proved tokenizer count or provider-billing upper bound (H9 open). The existing up-front worst-case reservation includes initial batches plus three possible retries for the entire job, at most 128 chunks/request and `MAX_TOKENS_PER_JOB=2_000_000` hard code ceiling. No E2 durable reservation ledger exists.
 - Published **2026-11-19** official model list quotes `text-embedding-3-small` at **USD 0.02 per 1,000,000 input tokens** (non-batch pricing): [model reference](https://developers.openai.com/api/docs/models/text-embedding-3-small). Pure quotes convert exact integer token amounts into micro-USD using bigint arithmetic and round upward. Prices can change; owner reconfirms prior to paid use.
 - Official OpenAI [project spend limits](https://help.openai.com/en/articles/9186755-managing-projects-in-the-api-platform): an owner can set monthly spend limits and **Enforce a hard limit** in project Limits. Spend alerts alone do **not** stop traffic. Hard-limit enforcement may lag billing and **is not a zero-overrun guarantee**. Organization/project quotas and rate limits are separate. **Verify the actual charge path first:** the Mastra model router/gateway may select account/provider differently than a raw OpenAI API request. An OpenAI project limit does not prove protection for a different billing route.
 
-## 2. Budget decision proposal — owner must explicitly ratify or adjust
+## 2. Owner-ratified MVP budget — 2026-11-19
 
-These values are **proposals**, not default production configuration or consent to spend.
+**All numerical values below were explicitly ratified by the owner on 2026-11-19**, along with paid-embedding consent for their **directly billed OpenAI API account**. This is a financial decision, **not** executable production configuration or permission to bypass live-call gates. Provider controls listed as verified were confirmed by **owner-supplied UI evidence on 2026-11-23**, not by a live API request. See [H11-OPS Issue #32](https://github.com/jlima004/mastra-rag/issues/32).
 
-| Control | Proposed MVP bound | Semantics |
+| Control | Ratified MVP bound | Semantics |
 | --- | --- | --- |
-| Billing identity | Dedicated **OpenAI API project** for `text-embedding-3-small`, if this is the actual billed path; otherwise individually adjudicate Mastra gateway billing | Verify own project, payment route and key scope before enabling |
-| Provider hard spend limit | **USD 2.00 per calendar month** with **Enforce a hard limit = ON** | Independent provider safety net, approximate enforcement |
+| Billing identity | Dedicated owner-controlled **OpenAI API project `Rag-Mastra`**, direct OpenAI API billing only, `text-embedding-3-small` | Project existence verified by owner UI; **actual Mastra runtime billing route and scoped API key still unproven**. Mastra Gateway charges are not authorized. |
+| Provider hard spend limit | **USD 2.00 per calendar month**, **Limit enforced** | Verified by owner UI on 2026-11-23; independent provider safety net with noninstantaneous enforcement, **not** a strict zero-overrun guarantee |
 | Application project monthly budget | **USD 1.00** projected *embeddings* only | Conservative app budget below provider cap, does not cover unrelated provider usage |
 | Application monthly reservation | **5,000,000 token-envelope units** | Durable E2 counter for ingestion + evaluation |
 | Daily reservation | **250,000 token-envelope units** | Durable server-side counter, UTC date boundary |
 | Per-job reservation | **150,000 token-envelope units**, including worst-case three global retries | Below immutable `MAX_TOKENS_PER_JOB=2,000,000`; refuse oversized jobs upfront |
 | Evaluation reservation | **100,000 token-envelope units/month** | Separate sub-budget, also counts toward global monthly/daily limits |
-| Alerts | **50%, 80%, 95%** on provider project, if supported | Notification only; not a substitute for hard limit |
-| Other models | **Disabled** until separate pricing and model gate | No Google fallback in paid MVP without authorization |
+| Alerts | **50%, 80%, 95%** on the dedicated OpenAI API project | Configured and verified by owner UI on 2026-11-23; notification only, not enforcement |
+| Other models | **Blocked** at project allowlist; only `text-embedding-3-small` allowed | Verified by owner UI on 2026-11-23; no other paid model or Google fallback approved |
 
 At the published price 5 million tokens would cost about **USD 0.10** for this embedding model, *if* billed at that price. Dollar budget exceeds estimated embedding cost intentionally to accommodate measurement error and other project spend, but is **not an accurate forecast** until the exact tokenizer, billing route, and all key consumers are reconciled.
 
-Owner ratification must identify the billed project and separate (a) configuration of limits, (b) provision of an API key in a private server-side secret, and (c) authorization of each first paid smoke/ingestion action. Approving the Draft PR alone does none of these.
+The owner's **budget and paid-use consent is recorded**, and the project limit, model allowlist, alerts, and active **Pay as you go** billing with **auto-reload OFF** were evidenced in the owner UI on 2026-11-23. Do not publish balance/payment details or project identifiers. Remaining distinct gates are (a) proving the exact billed runtime route, (b) privately provisioning a project-scoped server-side key with separate release approval, (c) H9/H12 and durable E2 enforcement, and (d) separately scoping the **first live paid smoke**. No such operation is authorized merely by merging this PR.
 
 ## 3. Offline implementation scope (this PR)
 
@@ -50,10 +50,10 @@ The **current H11 PR does not implement these requirements** and therefore must 
 
 ## 5. Owner operational handoff (no secret sharing)
 
-- Open [OpenAI API projects](https://platform.openai.com/settings/organization/projects) and identify the dedicated project; in its Limits page inspect Monthly spend limit, **Enforce a hard limit**, and usage alerts. Never infer hard limit from a soft budget screenshot.
-- If Mastra gateway is the actual payer, inspect **Mastra Gateway spend limits and charge ownership** instead. Do not install a new secret or configure the wrong provider based on model names alone.
-- Do not reintroduce `OPENAI_API_KEY` to Mastra production until project, hard cap, owner ratification and billing path are confirmed. Keep `allowPaidCalls` false and no embedding route registered.
-- Record in the PR only: project alias (non-secret), billable provider, currency, hard-limit amount and enabled/disabled state, daily/monthly quotas, date/time of operator verification; **never** account IDs or key values unless specifically approved.
+- **Completed (owner UI, 2026-11-23):** [OpenAI API project](https://platform.openai.com/settings/organization/projects) `Rag-Mastra` exists; its Limits page shows **USD 2/month, Limit enforced**, 50/80/95% alerts and the single-model allowlist; organization billing shows active **Pay as you go**, **auto-reload OFF**. These screenshots prove displayed settings, **not** billable runtime routing or atomic app limits.
+- **Not completed:** independently verify that the pinned Mastra model router and actual deployed runtime use the project-scoped OpenAI API credential and are billed **directly to the approved OpenAI API project**. Reject Mastra Gateway billing, unknown aliases, alternative base URLs and fallback instead of silently changing the authorized payer.
+- Do not provision `OPENAI_API_KEY` to Mastra production until **direct billing route, scoped key custody and the separate controlled release** are approved. Keep `allowPaidCalls` false and no embedding route registered. Provider settings alone do not unlock E2, H9, H12 or the first paid smoke.
+- Record only non-sensitive project alias, chosen provider, currency, limits and owner-UI verification date in PR/Issue #32; **never** account IDs, payment details, balances, raw secret values or screenshots containing private data.
 - Stop if cap controls unsupported, unknown organization vs gateway payer, H9 tokenizer still uncalibrated, source texts still unverified, or pending H12 retention.
 
-**Required next decision:** owner reviews/ratifies numeric H11 budget and selects verified billing route; deploy/provider configuration and first paid call remain distinct execution gates. **State:** `H11_OFFLINE_PREPARATION / PROVIDER_CAP_NOT_VERIFIED / H9_PENDING / H12_PENDING / E2_BLOCKED`.
+**Remaining gates:** prove direct OpenAI API billing via the pinned runtime and scoped key, satisfy H9 measured tokenizer/source validation, ratify H12 retention/erasure, implement/test E2 atomic durable quotas, and separately authorize credential provisioning and the first bounded paid smoke. **State:** `H11_NUMERICS_RATIFIED / PROVIDER_SETUP_OWNER_UI_VERIFIED / BILLING_ROUTE_UNPROVEN / APPLICATION_BUDGET_NOT_DURABLE / H9_H12_E2_PENDING / PAID_EXECUTION_BLOCKED`. **No paid call, merge or deploy is implied.**
