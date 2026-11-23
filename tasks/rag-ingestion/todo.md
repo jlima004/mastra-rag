@@ -1,3 +1,21 @@
+## H9 — Tokenizer Calibration (offline-assay Draft, 2026-11-23)
+
+Authority: owner directed H9 progress after [H11 offline release](../../docs/decisions/RAG-H11-embedding-spend-control.md). Contract and decision package: [H9 tokenizer calibration](../../docs/decisions/RAG-H9-tokenizer-calibration.md). **Prior dependency approval scope remains evaluation-only.** No package install or paid use is authorized by this Draft.
+
+- [x] Reconciled current Step C 512/400 **byte proxy**, versioned chunk identities, Step D byte+8 estimation, H11 offline quote, and OpenAI cl100k_base model mapping.
+- [x] Added isolated offline token-count audit using an **unverified injected counter**, full embedding content, aggregate percentiles, 256/512/1024 threshold observations, provider cap and UTF-8 proxy comparison.
+- [x] Added synthetic-only negative/boundary tests; no new dependency, secret, network call, HTML parser replacement, runtime registration or production route.
+- [x] Evaluated candidate **js-tiktoken@1.0.21** (pure JS, rank-only import, MIT) against **tiktoken@1.0.22** (WASM), without installation; exact package security/integrity/bundle review and owner approval still required.
+- [ ] Exact-HEAD CI, independent Codex review and human merge/deploy gate for H9A Draft.
+- [ ] Human package-specific approval for H9B; then pin tokenizer and lockfile in an independently reviewed PR.
+- [ ] Obtain/verify official current LGPD and ANPD/DOU snapshots, extraction/charset/amendment provenance; synthetic fixture is not a legal reference.
+- [ ] Re-chunk same verified corpus with real cl100k_base counts at 256/512/1024 and recursive 400/60; measure p50/p95/max, clipping, locator coverage, offsets, costs and versioned golden identities.
+- [ ] H9 approval for production preflight; **H12, E2 atomic durable budget ledger, actual OpenAI billing-route/key custody and first bounded paid smoke remain blocked.**
+
+**State:** `H9_OFFLINE_ASSAY_DRAFT / TOKENIZER_DEPENDENCY_NOT_APPROVED / OFFICIAL_CORPUS_UNVERIFIED / CALIBRATION_NOT_COMPLETE / PAID_EXECUTION_BLOCKED`.
+
+---
+
 ## H11 — Embedding Spend Control (offline-only preparation, 2026-11-19)
 
 Owner directed the original **offline-only H11 preparation** after H7. **Later authority:** numerical limits and OpenAI API paid-embedding consent ratified 2026-11-19; owner UI verified dedicated project, active billing, enforced USD 2/month limit, 50/80/95% alerts and single-model allowlist on 2026-11-23. [Current H11 decision](../../docs/decisions/RAG-H11-embedding-spend-control.md) · [H11-OPS Issue #32](https://github.com/jlima004/mastra-rag/issues/32). **Provider UI evidence does not prove direct runtime billing or authorize a live call.**
