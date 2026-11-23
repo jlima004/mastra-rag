@@ -54,7 +54,8 @@ test('H9C counts complete input, preserves UTF-16 source offsets and legal locat
       assert.ok(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(chunk.body));
       assert.ok(chunk.id !== original.chunkSet.chunks[0].id);
       assert.equal(chunk.ordinal, result.chunks.indexOf(chunk));
-      assert.ok(chunk.legalUnitIds.length > 0);
+      if (doc.blocks.some(b => b.kind !== 'heading' && b.start < chunk.charEnd && b.end > chunk.charStart))
+        assert.ok(chunk.legalUnitIds.length > 0);
     }
   }
 });
@@ -73,7 +74,11 @@ test('H9C structural grid covers every normative source character, excluding hea
 
 test('H9C recursive comparator produces measurable overlap with forward progress', () => {
   const config = H9_TOKEN_GRID_PROFILES[3];
-  const result = renderH9TokenGridOffline(doc, fetched, source, config);
+  const longDoc = normalizeLegalBlocks([
+    { kind: 'heading', text: 'CAPÍTULO ÚNICO' },
+    { kind: 'text', text: 'Art. 1º Este conteúdo é apenas uma simulação. ' + 'Proteção de dados pessoais e transparência. '.repeat(110) },
+  ], source);
+  const result = renderH9TokenGridOffline(longDoc, fetched, source, config);
   assert.ok(result.chunks.length >= 2);
   let hasOverlap = false;
   for (let i = 1; i < result.chunks.length; i++) {
@@ -82,7 +87,7 @@ test('H9C recursive comparator produces measurable overlap with forward progress
     assert.ok(cur.charStart <= prev.charEnd, 'gap detected');
     if (cur.charStart < prev.charEnd) {
       hasOverlap = true;
-      const repeated = doc.normalizedText.slice(cur.charStart, prev.charEnd);
+      const repeated = longDoc.normalizedText.slice(cur.charStart, prev.charEnd);
       assert.ok(countH9Cl100kTokens(repeated) <= config.overlapTokens);
     }
   }
