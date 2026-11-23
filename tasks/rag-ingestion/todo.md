@@ -1,3 +1,22 @@
+## H9B — Pinned cl100k_base Tokenizer (Draft, 2026-11-23)
+
+Owner directed continuation after H9A merged/deployed. [H9B decision and evidence](../../docs/decisions/RAG-H9B-pinned-tokenizer.md). Scope: offline tokenizer integration **only**, no official-corpus ingestion, no runtime enabling, no paid API call.
+
+- [x] Reviewed `js-tiktoken@1.0.21` MIT/pure-JS, `base64-js@1.5.1`, rank-only `cl100k_base`, public dependency/advisory indexes and independent matching SRI references.
+- [x] Added exact version to package.json and integrity-pinned lockfile; existing base64-js promoted from dev-only to production as required. **Registry tarball validation still needs GitHub CI `npm ci`.**
+- [x] Implemented lazy offline token counter, independent OpenAI golden counts, synthetic pt-BR legal-chunk audit, fail-closed validation, deterministic aggregate-only CLI.
+- [x] Added synthetic CLI invocation to CI without secrets or provider calls. Existing byte-proxy chunker, chunk IDs, live Step D planner and H11 admission unchanged.
+- [ ] Exact-HEAD 4/4 CI, Node tests, typecheck, synthetic audit, Mastra production bundle and Codex independent review.
+- [ ] Full npm audit/security/supply-chain and runtime/bundle-size review before human merge.
+- [ ] Owner-gated merge/deploy. H9B integration does **not** approve paid calls.
+- [ ] Official current LGPD/ANPD/DOU snapshot with canonical source/charset/sha/provenance and safe parser verification.
+- [ ] H9C new versioned token-based chunking grid 256/512/1024 (plus 400/60 comparator) on the **same verified corpus**, with locator/offset and cost evidence.
+- [ ] H12, E2 atomic durable budgets, actual OpenAI API billing project proof and separately bounded paid smoke.
+
+**State:** `H9B_TOKENIZER_INTEGRATION_DRAFT / CORPUS_UNVERIFIED / TRUE_RECHUNKING_GRID_PENDING / PAID_EXECUTION_BLOCKED`.
+
+---
+
 ## H9 — Tokenizer Calibration (offline-assay Draft, 2026-11-23)
 
 Authority: owner directed H9 progress after [H11 offline release](../../docs/decisions/RAG-H11-embedding-spend-control.md). Contract and decision package: [H9 tokenizer calibration](../../docs/decisions/RAG-H9-tokenizer-calibration.md). **Prior dependency approval scope remains evaluation-only.** No package install or paid use is authorized by this Draft.
