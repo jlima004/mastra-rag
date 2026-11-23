@@ -19,7 +19,8 @@
   "dependencies": {
     "@mastra/core": "1.83.0",
     "@mastra/pg": "1.35.0",
-    "@mastra/libsql": "1.30.0"
+    "@mastra/libsql": "1.30.0",
+    "js-tiktoken": "1.0.21"
   },
   "devDependencies": {
     "@types/node": "latest",
