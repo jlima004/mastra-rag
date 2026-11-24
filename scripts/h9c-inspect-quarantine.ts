@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { SOURCE_MANIFEST } from '../src/mastra/rag/contracts/manifest.ts';
 import {
   inspectH9CQuarantinedEvidence, type H9CQuarantineReceipt,
+  type H9CQuarantineInspection,
 } from '../src/mastra/rag/processing/quarantine-inspection.ts';
 
 // Offline-only: no fetch, no parser promotion, no provider request, no hosted DB.
@@ -44,7 +45,7 @@ if (process.argv.length !== 3 || !dirname) {
     const dir = privateDirectory(dirname);
     const entries = readdirSync(dir);
     const receipts = entries.filter(name => name.endsWith('.receipt.json'));
-    const results = [];
+    const results: H9CQuarantineInspection[] = [];
     for (const file of receipts.sort()) {
       // Reject names and symlinks that do not match the fixed source/hash scheme.
       const match = /^(br-[a-z0-9-]+)-([0-9a-f]{64})\.receipt\.json$/.exec(file);
