@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { documentId, sha256 } from '../contracts/ids.ts';
+import { documentId, pipelineProfileId, sha256 } from '../contracts/ids.ts';
 import { SOURCE_MANIFEST } from '../contracts/manifest.ts';
 import type { FetchedDocument } from '../contracts/types.ts';
 import { normalizeLegalBlocks } from './legal.ts';
@@ -120,4 +120,125 @@ test('H9C rejects tampered source hashes and out-of-contract grid profiles', () 
     doc, fetched, source,
     { strategy: 'legal-structure', maxTokens: 400, overlapTokens: 60 },
   ), e => e instanceof RagProcessingError && e.code === 'INVALID_DOCUMENT');
+});
+
+
+const H9C_R2_LEGAL_CAP = 256;
+const H9C_R2_CHAPTER = 'CAPÍTULO TESTE';
+const H9C_R2_CRUMB = [source.title, H9C_R2_CHAPTER, 'lgpd:art1'].join(' › ');
+
+/**
+ * Find a *real cl100k_base* boundary instead of assuming that a fixed
+ * number of characters is equivalent to 256 model tokens. These are all
+ * invented legal texts, never sampled official legislation.
+ */
+function h9cR2NearLimitCaput(condition: (header: string) => boolean): string {
+  for (let count = 1; count < 600; count++) {
+    const caput = ('Art. 1º ' + 'dado '.repeat(count)).trim();
+    const header = H9C_R2_CRUMB + '\n' + caput;
+    if (condition(header)) return caput;
+  }
+  assert.fail('Unable to reproduce cl100k_base Unicode boundary on synthetic input');
+}
+function h9cR2FullInput(header: string, body: string): string {
+  return header + '\n---\n' + body;
+}
+function h9cR2Doc(caput: string, child: string) {
+  return normalizeLegalBlocks([
+    { kind: 'heading', text: H9C_R2_CHAPTER },
+    { kind: 'text', text: caput },
+    { kind: 'text', text: child },
+  ], source);
+}
+function h9cR2AssertOffsetIntegrity(
+  document: ReturnType<typeof normalizeLegalBlocks>,
+  chunks: ReturnType<typeof renderH9TokenGridOffline>['chunks'],
+): void {
+  for (const chunk of chunks) {
+    assert.equal(document.normalizedText.slice(chunk.charStart, chunk.charEnd), chunk.body);
+    assert.ok(chunk.tokenCount <= H9C_R2_LEGAL_CAP);
+    assert.equal(countH9Cl100kTokens(chunk.content), chunk.tokenCount);
+    assert.ok(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(chunk.body));
+  }
+  for (const block of document.blocks.filter(block => block.kind !== 'heading')) {
+    for (let offset = block.start; offset < block.end; offset++) {
+      assert.ok(chunks.some(chunk => chunk.charStart <= offset && chunk.charEnd > offset),
+        'source character uncovered at UTF-16 offset ' + offset);
+    }
+  }
+}
+
+test('H9C R2 uses actual leading emoji to downgrade header before splitting', () => {
+  const caput = h9cR2NearLimitCaput(header =>
+    countH9Cl100kTokens(h9cR2FullInput(header, 'x')) <= H9C_R2_LEGAL_CAP &&
+    countH9Cl100kTokens(h9cR2FullInput(header, '🧪')) > H9C_R2_LEGAL_CAP);
+  const document = h9cR2Doc(caput, '🧪 Proteção de dados em cenário inventado.');
+  const child = document.blocks[2];
+  const result = renderH9TokenGridOffline(document, fetched, source, H9_TOKEN_GRID_PROFILES[0]);
+  const firstChild = result.chunks.find(chunk => chunk.charStart === child.start);
+  assert.ok(firstChild, 'the leading Unicode scalar must be covered');
+  assert.ok(firstChild.body.startsWith('🧪'));
+  assert.ok(firstChild.content.startsWith(H9C_R2_CRUMB + '\n---\n'),
+    'the shorter breadcrumb must be selected instead of an overlong caput');
+  assert.ok(!firstChild.content.startsWith(H9C_R2_CRUMB + '\n' + caput));
+  assert.ok(firstChild.legalUnitIds.some(id => id.includes('art1')));
+  h9cR2AssertOffsetIntegrity(document, result.chunks);
+  assert.equal(result.paidAdmissionApproved, false);
+});
+
+test('H9C R2 downgrades the header when a later window starts with a multi-token emoji', () => {
+  const caput = h9cR2NearLimitCaput(header =>
+    countH9Cl100kTokens(h9cR2FullInput(header, 'x')) <= H9C_R2_LEGAL_CAP &&
+    countH9Cl100kTokens(h9cR2FullInput(header, 'x🧪')) > H9C_R2_LEGAL_CAP &&
+    countH9Cl100kTokens(h9cR2FullInput(header, '🧪')) > H9C_R2_LEGAL_CAP);
+  const document = h9cR2Doc(caput, 'x🧪 Texto de demonstração.');
+  const child = document.blocks[2];
+  const result = renderH9TokenGridOffline(document, fetched, source, H9_TOKEN_GRID_PROFILES[0]);
+  const firstChild = result.chunks.find(chunk => chunk.charStart === child.start);
+  assert.ok(firstChild);
+  assert.equal(firstChild.body, 'x', 'the long header must fit only the first scalar');
+  assert.ok(firstChild.content.startsWith(H9C_R2_CRUMB + '\n' + caput + '\n---\n'));
+  const nextChild = result.chunks.find(chunk => chunk.charStart === firstChild.charEnd);
+  assert.ok(nextChild, 'segment following the first scalar must exist');
+  assert.ok(nextChild.body.startsWith('🧪'));
+  assert.ok(nextChild.content.startsWith(H9C_R2_CRUMB + '\n---\n'),
+    'a later Unicode scalar must trigger per-window header downgrade');
+  assert.equal(nextChild.charStart, child.start + 1);
+  assert.equal(nextChild.legalUnitIds.includes(child.locator), true);
+  h9cR2AssertOffsetIntegrity(document, result.chunks);
+  assert.equal(result.paidAdmissionApproved, false);
+});
+
+test('H9C R2 structural algorithm @2 has new profile IDs and leaves recursive identity unchanged', () => {
+  const profile = H9_TOKEN_GRID_PROFILES[0];
+  const oldProfile = pipelineProfileId({
+    chunker: {
+      strategy: profile.strategy,
+      maxTokens: profile.maxTokens,
+      overlapTokens: profile.overlapTokens,
+      tokenizer: 'cl100k_base/js-tiktoken@1.0.21',
+      contextHeader: 'breadcrumb+caput',
+      algorithmVersion: 'legal-structure-token-greedy@1',
+    },
+    extractor: source.extractor,
+    normalizer: 'legal-text@1',
+  });
+  const newStructural = renderH9TokenGridOffline(doc, fetched, source, profile);
+  assert.notEqual(newStructural.profileId, oldProfile);
+  assert.notEqual(newStructural.chunkSetId, original.chunkSet.chunkSetId);
+  assert.ok(newStructural.chunks.every(chunk => chunk.id !== original.chunkSet.chunks[0].id));
+  const recursive = H9_TOKEN_GRID_PROFILES[3];
+  const previousRecursiveId = pipelineProfileId({
+    chunker: {
+      strategy: recursive.strategy, maxTokens: recursive.maxTokens,
+      overlapTokens: recursive.overlapTokens,
+      tokenizer: 'cl100k_base/js-tiktoken@1.0.21',
+      contextHeader: 'none',
+      algorithmVersion: 'recursive-token-window@1',
+    },
+    extractor: source.extractor,
+    normalizer: 'legal-text@1',
+  });
+  assert.equal(renderH9TokenGridOffline(doc, fetched, source, recursive).profileId,
+    previousRecursiveId);
 });
