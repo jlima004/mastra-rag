@@ -87,15 +87,39 @@ function contextHeader(source: SourceManifestEntry, block: LegalBlock, caput?: s
   const crumb = [source.title, ...block.headingPath, block.articleLocator ?? ''].filter(Boolean).join(' › ');
   return caput ? crumb + '\n' + caput : crumb;
 }
-function selectHeader(source: SourceManifestEntry, block: LegalBlock, caput: string, cap: number): string {
-  // Keep room for at least one scalar of actual body content.
-  const exemplar = 'x';
-  for (const header of [
+function headerChoices(
+  source: SourceManifestEntry, block: LegalBlock, caput: string,
+): readonly string[] {
+  // Preserve the most informative breadcrumb first; the legal locator is
+  // the minimum required header, never silently replace it with an empty one.
+  return [...new Set([
     contextHeader(source, block, caput),
     contextHeader(source, block),
     block.articleLocator ?? source.sourceId,
-  ]) {
-    if (fits(exemplar, header, cap)) return header;
+  ])];
+}
+
+/**
+ * Reserve capacity for the actual next Unicode scalar (including preceding
+ * whitespace), not for an ASCII placeholder. Never split surrogate pairs.
+ */
+function firstMeaningfulScalarPrefix(text: string, start: number, end: number): string {
+  let prefix = '';
+  for (let at = start; at < end;) {
+    const scalar = String.fromCodePoint(text.codePointAt(at)!);
+    prefix += scalar;
+    at += scalar.length;
+    if (prefix.length > H9_MAX_AUDIT_INPUT_CHARS) fail('CHUNK_HEADER_TOO_LARGE');
+    if (scalar.trim()) return prefix;
+  }
+  return fail('CHUNK_EMPTY');
+}
+function selectHeader(
+  candidates: readonly string[], text: string, start: number, end: number, cap: number,
+): string {
+  const actualBodyPrefix = firstMeaningfulScalarPrefix(text, start, end);
+  for (const header of candidates) {
+    if (fits(actualBodyPrefix, header, cap)) return header;
   }
   return fail('CHUNK_HEADER_TOO_LARGE');
 }
@@ -116,13 +140,16 @@ function unitIds(blocks: readonly LegalBlock[], start: number, end: number): rea
  */
 function splitTokenWindow(
   sourceText: string, positions: readonly number[], start: number, end: number,
-  header: string, maxTokens: number, overlapTokens: number,
-): readonly { start: number; end: number }[] {
-  const out: { start: number; end: number }[] = [];
+  headerCandidates: readonly string[], maxTokens: number, overlapTokens: number,
+): readonly { start: number; end: number; header: string }[] {
+  const out: { start: number; end: number; header: string }[] = [];
   let from = start;
   while (from < end) {
     const startPos = lowerBound(positions, from);
     if (positions[startPos] !== from) fail('INVALID_DOCUMENT');
+    // Re-evaluate at EVERY segment boundary: the next scalar may require more
+    // tokens than the previous one, so a longer header can become unsafe.
+    const header = selectHeader(headerCandidates, sourceText, from, end, maxTokens);
     const maxAllowedChars = H9_MAX_AUDIT_INPUT_CHARS - header.length - (header ? SEPARATOR.length : 0);
     const cap = Math.min(end, from + maxAllowedChars);
     let low = startPos + 1;
@@ -147,7 +174,7 @@ function splitTokenWindow(
       if (preferred > from && positions[lowerBound(positions, preferred)] === preferred &&
           fits(sourceText.slice(from, preferred), header, maxTokens)) to = preferred;
     }
-    out.push({ start: from, end: to });
+    out.push({ start: from, end: to, header });
     if (to === end) break;
     if (overlapTokens === 0) {
       from = to;
@@ -196,8 +223,10 @@ export function renderH9TokenGridOffline(
       overlapTokens: config.overlapTokens,
       tokenizer: 'cl100k_base/js-tiktoken@1.0.21',
       contextHeader: config.strategy === 'legal-structure' ? 'breadcrumb+caput' : 'none',
+      // R2 changes legal headers on multi-token Unicode boundaries. Bump
+      // the profile algorithm identity rather than reusing candidate @1 IDs.
       algorithmVersion: config.strategy === 'legal-structure'
-        ? 'legal-structure-token-greedy@1' : 'recursive-token-window@1',
+        ? 'legal-structure-token-greedy@2' : 'recursive-token-window@1',
     },
     extractor: source.extractor,
     normalizer: 'legal-text@1',
@@ -230,12 +259,15 @@ export function renderH9TokenGridOffline(
       legalUnitIds: unitIds(doc.blocks, start, end),
     }));
   }
-  function splitAndEmit(start: number, end: number, header: string, overlap = 0): void {
-    for (const s of splitTokenWindow(sourceText, positions, start, end, header, config.maxTokens, overlap))
-      emit(s.start, s.end, header);
+  function splitAndEmit(
+    start: number, end: number, headerCandidates: readonly string[], overlap = 0,
+  ): void {
+    for (const s of splitTokenWindow(
+      sourceText, positions, start, end, headerCandidates, config.maxTokens, overlap,
+    )) emit(s.start, s.end, s.header);
   }
   if (config.strategy === 'recursive-baseline') {
-    splitAndEmit(0, sourceText.length, '', config.overlapTokens);
+    splitAndEmit(0, sourceText.length, [''], config.overlapTokens);
   } else {
     const groups: LegalBlock[][] = [];
     for (const block of doc.blocks) {
@@ -248,10 +280,11 @@ export function renderH9TokenGridOffline(
       if (first.kind === 'heading') continue;
       const start = first.start, end = group[group.length - 1].end;
       if (!first.articleLocator) {
-        splitAndEmit(start, end, '');
+        splitAndEmit(start, end, ['']);
         continue;
       }
-      const headline = selectHeader(source, first, '', config.maxTokens);
+      const headlineHeaders = headerChoices(source, first, '');
+      const headline = selectHeader(headlineHeaders, sourceText, start, end, config.maxTokens);
       if (fits(sourceText.slice(start, end), headline, config.maxTokens)) {
         emit(start, end, headline);
         continue;
@@ -264,7 +297,8 @@ export function renderH9TokenGridOffline(
         pending = undefined;
       }
       for (const unit of group) {
-        const header = selectHeader(source, unit, unit === first ? '' : caput, config.maxTokens);
+        const headers = headerChoices(source, unit, unit === first ? '' : caput);
+        const header = selectHeader(headers, sourceText, unit.start, unit.end, config.maxTokens);
         if (pending && pending.header === header &&
             fits(sourceText.slice(pending.start, unit.end), header, config.maxTokens)) {
           pending.end = unit.end;
@@ -274,7 +308,7 @@ export function renderH9TokenGridOffline(
         if (fits(sourceText.slice(unit.start, unit.end), header, config.maxTokens)) {
           pending = { start: unit.start, end: unit.end, header };
         } else {
-          splitAndEmit(unit.start, unit.end, header);
+          splitAndEmit(unit.start, unit.end, headers);
         }
       }
       flush();
