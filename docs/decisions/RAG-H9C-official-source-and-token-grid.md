@@ -2,7 +2,7 @@
 
 **Prepared:** 2026-11-23. **Baseline:** `master@242f529a5662cfd5b21e29465197f28d8d49ac9e` (H9B merged, CI/deploy/health confirmed). **Authorization:** owner approved progressing with controlled, read-only official-source acquisition and freezing provenance plus token-grid calibration, but **not** production ingestion, new host allowlists, paid calls, SQL/remote writes or automatic merge/deploy.
 
-**Current state:** `H9C_OFFICIAL_REFERENCES_FOUND / DOU_HTTP_502 / RAW_OFFICIAL_BYTES_NOT_ACQUIRED / SNAPSHOT_NOT_FROZEN / TOKEN_GRID_SYNTHETIC_ONLY / PAID_EXECUTION_BLOCKED`.
+**Current state (R1 in progress, 2026-11-24):** `H9C_OPERATOR_ATTEMPTS_RECORDED / ARCHIVE_SECURITY_R1_IMPLEMENTED_CANDIDATE / EXACT_HEAD_CI_AND_CODEX_PENDING / OFFICIAL_CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`. Original PR #36 R0 had **three blocking Codex P2s** on output confinement and partial writes; neither prior green CI nor a subsequent successful operator HTTP response makes the source corpus accepted.
 
 ## 1. Exact source set, unchanged manifest
 
@@ -23,6 +23,7 @@ ANPD's [official regulations index](https://www.gov.br/anpd/pt-br/acesso-a-infor
 - Public web search/reader successfully obtained **text-extraction views** of original Planalto LGPD, compiled Planalto LGPD and the official ANPD index. These are secondary *retrieval evidence*, **not raw-source snapshots**. The web extraction displayed corrupted accent characters for parts of Planalto: cannot infer correct charset or a canonical normalized hash from this.
 - Direct raw-byte acquisition from the execution container for the manifest's Planalto URL **failed at DNS resolution**. No HTTP status/header, remote IP, TLS or bytes were observed in that direct attempt. This environment limitation is **not** a claim that the Planalto site itself was down.
 - Both canonical `in.gov.br` resolutions returned **HTTP 502 from the research client**; not a reliable original response body or raw publication snapshot. Do not bypass a challenge, use unofficial mirrors or silently substitute a `gov.br` HTML/PDF representation.
+- **WSL operator results (2026-11-23):** `br-planalto-lei-13709-2018` returned `FETCH_TIMEOUT` (transport root cause not proven); both ANPD DOU sources returned `EXTRACT_UNSUPPORTED_HTML` using the pre-R1 parser-before-archive code. In the latter cases, fetching and decoding advanced to extraction, **but no raw evidence was preserved**, and there is no proof the responses contained the correct legal texts. The WSL process used Node v24.22.3; CI uses Node 22, with **no causal attribution** to this difference.
 - **No authentic raw SHA-256, normalized SHA-256, effective charset, final raw HTTP URL/redirect chain, frozen artifact or legal amendment-adjudication result exists yet.** No placeholder hashes will be invented and no page-reader text will be labeled as official bytes.
 - Operator-script dependency is the pre-existing allowlisted, DNS-pinned, IPv4/TLS-verified `fetchApprovedSourceById`. It rejects disallowed redirects/addresses, unexpected response status/types and oversized responses. When it fails, the acquisition is blocked: **no fallback through an unapproved host.**
 
@@ -37,9 +38,11 @@ npm run rag:h9:acquire:operator -- br-anpd-res-15-2024 /tmp/h9c-official-private
 npm run rag:h9:acquire:operator -- br-anpd-res-18-2024 /tmp/h9c-official-private
 ```
 
-**Do not infer that these commands were run successfully.** On successful acquisition and deterministic decoding/extraction/normalization, each writes an immutable, exclusive, mode-0600 raw HTML file and JSON receipt to an existing private mode-0700 directory **outside the repo**. It never overwrites existing evidence and never logs HTML, source body, secrets or raw parsing exceptions. The receipt contains raw/decoded/normalized SHA-256, charset, URL, timestamp and parser/source identity, explicitly marked `officialLegalTextAccepted: false` and `snapshotSemanticallyReviewed: false`. A successful network download or deterministic parser result still **does not** establish legally accurate current consolidated text; that requires independent amendment/revocation/retification review.
+**Operator attempts above were unsuccessful; do not repeat them until R1 exact-HEAD CI, security review and human approval.** The R1 implementation uses `openH9CPrivateArchiveDirectory()` from `private-archive.ts`: the real checkout root is derived from its own module location, not `process.cwd()`; the output must be an absolute canonical **private mode-0700** directory outside the checkout, with trusted ancestor chain (root-owned sticky `/tmp` is supported). A Linux directory fd is opened **before** network access; writes use `/proc/self/fd/<fd>/...` and revalidate the pinned inode/path, preventing changes to the pathname from redirecting evidence into a symlink target. R1 is **Linux/WSL only**, fails closed on unsupported platforms, and does not attempt to defeat an attacker with the same trusted user privileges.
 
-The current HTML extractor is explicitly a restricted fixture parser, not a proven real Planalto/DOU extractor; the operator script may fail closed on true portal HTML. A full HTML parser or revised extractor must receive its own package/version/security review and golden extraction comparison.
+On a successful manifest-allowlisted 200/HTTPS response, **raw bytes are retained in private quarantine even if deterministic HTML parsing fails**. Extraction classification is separately recorded as `unreviewed-parsed` or `unsupported` with a fixed error code and null normalized hash on failure. The archive publishes raw and receipt via exclusive **hard links** from fsynced private staging files; **the receipt is last and is the commit marker**. A failed operation rolls back only inode-matched artifacts created by that attempt. Original bytes, the source URL/charset, SHA-256 and parser status are kept in the private receipt; the CLI prints limited hashes/status, not raw source HTML or exceptions. Both `officialLegalTextAccepted` and `snapshotSemanticallyReviewed` are **always false**. Full current consolidated legal text still requires independent review. These are implementation claims to be verified by exact-HEAD CI and Codex; not proof of successful government-site acquisition.
+
+The current HTML extractor is explicitly a restricted fixture parser, not a proven real Planalto/DOU extractor; **R1 quarantines unsupported responses without promoting them to legal text**. An upstream `FETCH_TIMEOUT`, DNS/SSRF rejection, charset sniffing conflict or non-200 response still fails closed without a raw snapshot. A full HTML parser or revised extractor must receive its own package/version/security review and golden extraction comparison.
 
 ## 4. H9C offline token-grid implementation
 
@@ -54,11 +57,19 @@ Run `npm run rag:h9:grid:synthetic` to emit **aggregate-only** measurement recei
 
 ## 5. Remaining approval gates
 
-- [ ] Exact-HEAD CI all jobs, independent Codex review, owner merge/deploy authorization.
+- [ ] **R1 exact-HEAD** CI all jobs, independent Codex code and security reviews, reconciliation/closure of 3 P2s, owner merge/deploy authorization. **Prior R0 CI 187/187 PASS does not certify R1.**
 - [ ] Successful operator HTTPS acquisition for all **three** manifesto URLs with exact raw/normalized SHA and private frozen bytes, or explicit owner adjudication of a narrower/changed corpus.
 - [ ] Review true redirects, hostname/IP/TLS, charset, copyrights, anchors, revoked/amended norms, official effective dates, extraction fidelity; approve parser dependency if needed.
 - [ ] Independently validate snapshot completeness and correct legal locators; do not treat a single hash as proof of legally operative content.
 - [ ] Run the new four-profile grid on the **same frozen approved official corpus**, with per-profile identity/goldens, evidence reproducibility, full-body article/inciso offsets, overlap and H11 budget projections; then ratify selected profile.
 - [ ] H12 retention/erasure, E2 atomic durable reservations, direct OpenAI project billing and project-scoped secret route, first bounded paid smoke **remain blocked**.
 
-**H9C is not COMPLETE:** this PR is intentionally an offline tooling milestone and documented official-source acquisition blocker, not a legal corpus acceptance, ingestion or paid-execution release.
+### R1 security remediation and test matrix (2026-11-24)
+
+- **P2-01 checkout exclusion:** derive repository root from `import.meta.url` inside `private-archive.ts`; deny writes under it even when CLI is invoked from a different cwd. Synthetic regression exercises this condition.
+- **P2-02 directory substitution:** open a pinned Linux directory handle before network await, require 0700 owner-only output and trustworthy ancestors, create all staging/final files through `/proc/self/fd/<fd>` rather than re-resolving an attacker-swapped name, and fail if the pinned directory path/inode changed. Regression renames the original private directory and replaces its former name with a world-readable symlink; no evidence is emitted to the decoy.
+- **P2-03 incomplete artifacts:** stage and fsync full raw+JSON files, verify byte counts, hard-link each exclusive final artifact and publish the receipt last. Any failure removes only current-attempt inode-matched stages/final links. Synthetic disk-full and receipt-collision tests verify no truncated final evidence or deletion of old receipts.
+- **Parser separation:** `source-quarantine.ts` classifies valid fetched responses independently; unsupported real HTML (or a non-legal interstitial) may be preserved only as **unreviewed private bytes** with `normalizedSha256: null`, explicit parse error code and acceptance flags false. Parser failures are not retried via alternate hosts.
+- **Test scope:** all new regression fixtures are synthetic and offline. No evidence of a successful real-site fetch or semantically complete legal extraction is claimed. Subsequent live retry requires distinct operator authorization after independent review.
+
+**H9C is not COMPLETE:** this PR is still an offline tooling milestone with official-source acquisition blocked; source snapshots, legal QA, ingress and paid execution remain unapproved.
