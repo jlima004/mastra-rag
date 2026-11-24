@@ -7,12 +7,14 @@ Authority: owner approved controlled **read-only acquisition** of manifest-appro
 - [x] Attempted official read-only retrieval: both canonical DOU URLs returned **HTTP 502 via research client**; direct raw-byte Planalto attempt failed at DNS in this execution environment. **No raw SHA/normalized SHA, charset/redirect receipt or legal corpus accepted.**
 - [x] Added opt-in, operator-only pinned HTTPS acquisition script for the existing manifest, exclusive private raw/receipt archives outside the Git repository. **Not executed successfully** and not invoked by CI.
 - [x] Implemented separate versioned local `cl100k_base` token-grid renderer for structural 256/512/1024 and recursive 400/60, synthetic tests, and aggregate-only evidence CLI. No old byte-proxy IDs or runtime routes changed.
-- [ ] Exact HEAD CI and independent Codex review; human merge/deploy gate.
+- [ ] **R1 HEAD CI and Codex code+security review**, with three original P2 findings remediated and adjudicated before human merge/deploy. R0 CI does not approve R1.
+- [x] Operator attempted three approved sources in WSL (Node 24.22.3): Planalto `FETCH_TIMEOUT`; DOU 15/2024 and 18/2024 `EXTRACT_UNSUPPORTED_HTML`. No official bytes or hashes were archived under pre-R1 code; causes not fully proven.
+- [x] R1 candidate fixes checkout-root/cwd confusion, directory replacement during asynchronous fetch and incomplete archive artifacts; preserves unsupported parsed responses privately as **quarantined, unreviewed bytes**. Synthetic offline regression suite added; **no authorized live retry yet**.
 - [ ] Successful verified official raw-byte capture and parser/charset/amendment/retification review or explicit adjudication of blocked sources.
 - [ ] Official corpus frozen with reproducible SHA evidence and article/locator QA; run four profiles on identical verified legal source, select profile based on results.
 - [ ] H12 retention, E2 durable atomic budgets, actual OpenAI project billing route, first separately authorized paid smoke **remain blocked**.
 
-**State:** `H9C_SYNTHETIC_GRID_DRAFT / OFFICIAL_SOURCE_HTTP_502_AND_DNS_BLOCKED / CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`.
+**State:** `H9C_R1_SECURITY_REMEDIATION_CANDIDATE / THREE_P2_REVIEW_PENDING / OPERATOR_SOURCE_ERRORS_RECORDED / OFFICIAL_CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`.
 
 ---
 
