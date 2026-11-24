@@ -51,13 +51,14 @@ The new `token-grid.ts` adds a **separate** renderer for the installed `js-tikto
 - Legal-structure: 256, 512, 1024 **model tokens**; no overlap, context headers included in the full input.
 - Recursive comparator: 400 **model tokens**, 60-token **body overlap**.
 - Scalar-safe UTF-16 source offsets; deterministic article/locator grouping, greedy children, binary-search split and exact `cl100k_base` measurement. Fail closed on per-profile over-cap, malformed/inconsistent normalized hashes and job caps. No network/provider access.
-- Explicit algorithm version `legal-structure-token-greedy@1` or `recursive-token-window@1` and tokenization policy `cl100k_base/js-tiktoken@1.0.21` in the profile hash. The historical byte-proxy chunker and its `rag:chunkset-rendered:v2` identity formula are **unchanged**; new profile IDs yield distinct rendered chunk-set and chunk IDs. The new result is marked `provenance: synthetic-only-unverified-source` and `paidAdmissionApproved: false`.
+- Explicit algorithm version `legal-structure-token-greedy@2` (R2) or `recursive-token-window@1` and tokenization policy `cl100k_base/js-tiktoken@1.0.21` in the profile hash. The historical byte-proxy chunker and its `rag:chunkset-rendered:v2` identity formula are **unchanged**; new profile IDs yield distinct rendered chunk-set and chunk IDs. The new result is marked `provenance: synthetic-only-unverified-source` and `paidAdmissionApproved: false`.
 
 Run `npm run rag:h9:grid:synthetic` to emit **aggregate-only** measurement receipts from the invented synthetic LGPD fixture. The result includes p50/p95/max, chunk count, over-target, locator intersections, body offset reconstruction, batch/retry-inclusive token envelope and estimated USD microcents using the current H11 offline quote. A synthetic output is **not** a measurement of current law, not evidence of retrieval quality, not provider-reported billing and not a published chunk/index.
 
 ## 5. Remaining approval gates
 
-- [ ] **R1 exact-HEAD** CI all jobs, independent Codex code and security reviews, reconciliation/closure of 3 P2s, owner merge/deploy authorization. **Prior R0 CI 187/187 PASS does not certify R1.**
+- [x] R1 exact-HEAD CI **196/196 PASS** on `6c79ac2505`; three original archive P2 threads corrected and resolved.
+- [ ] **R2 exact-HEAD** CI, independent Codex review of header/body Unicode regressions and *new* structural profile version, independent security gate and human merge/deploy authorization. Prior R1 green CI is not transferable.
 - [ ] Successful operator HTTPS acquisition for all **three** manifesto URLs with exact raw/normalized SHA and private frozen bytes, or explicit owner adjudication of a narrower/changed corpus.
 - [ ] Review true redirects, hostname/IP/TLS, charset, copyrights, anchors, revoked/amended norms, official effective dates, extraction fidelity; approve parser dependency if needed.
 - [ ] Independently validate snapshot completeness and correct legal locators; do not treat a single hash as proof of legally operative content.
@@ -71,5 +72,16 @@ Run `npm run rag:h9:grid:synthetic` to emit **aggregate-only** measurement recei
 - **P2-03 incomplete artifacts:** stage and fsync full raw+JSON files, verify byte counts, hard-link each exclusive final artifact and publish the receipt last. Any failure removes only current-attempt inode-matched stages/final links. Synthetic disk-full and receipt-collision tests verify no truncated final evidence or deletion of old receipts.
 - **Parser separation:** `source-quarantine.ts` classifies valid fetched responses independently; unsupported real HTML (or a non-legal interstitial) may be preserved only as **unreviewed private bytes** with `normalizedSha256: null`, explicit parse error code and acceptance flags false. Parser failures are not retried via alternate hosts.
 - **Test scope:** all new regression fixtures are synthetic and offline. No evidence of a successful real-site fetch or semantically complete legal extraction is claimed. Subsequent live retry requires distinct operator authorization after independent review.
+
+### R2 Unicode header-capacity remediation (2026-11-24)
+
+Codex identified a **new** P2 on R1 HEAD `6c79ac2505`, separate from the three resolved archival P2s: `selectHeader()` measured `'x'` rather than the actual next Unicode scalar, so an overlong breadcrumb/caput could pass admission for ASCII but fail on a subsequent multítoken scalar such as `🧪`.
+
+- Header choices remain ordered: **breadcrumb + caput**, **breadcrumb**, **article locator**. The first non-whitespace Unicode scalar **from the actual source span**, including any leading whitespace, is now measured with the complete header and separator; no fabricated ASCII exemplar is used.
+- The token-window renderer **reselects the header independently at every subsequent UTF-16 scalar-aligned window start**. This allows safe downgrade when the first window fits a rich header but the next starts with a higher-cost emoji. Header contents are context only; source bytes, article locators, UTF-16 offsets, `legalUnitIds` and exact counts must stay intact.
+- R2 explicitly versions the structural algorithm as `legal-structure-token-greedy@2`. This changes **structural** profile IDs, rendered chunk-set IDs and chunk identities, rather than silently reusing the R0/R1 `@1` identity; recursive `recursive-token-window@1` and legacy byte proxy remain unchanged. No production profile migrated or enabled.
+- Three new synthetic offline regressions seek **actual cl100k_base near-capacity boundaries**: first-scalar emoji fallback; later-window `x` → `🧪` downgrade; and old-vs-new profile identity with recursive preservation. All keep the original legal-source acquisition and paid gates blocked.
+
+**R2 candidate ≠ approval:** exact new HEAD CI, Codex review and original P2 thread closure remain required. No additional live Planalto/DOU request or paid OpenAI call was authorized or executed.
 
 **H9C is not COMPLETE:** this PR is still an offline tooling milestone with official-source acquisition blocked; source snapshots, legal QA, ingress and paid execution remain unapproved.
