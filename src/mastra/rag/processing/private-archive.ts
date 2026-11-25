@@ -182,7 +182,7 @@ export class H9CPrivateArchiveDirectory {
 
   readEvidenceBytes(name: string, limit: number): Buffer {
     if (typeof name !== 'string' ||
-        !/^br-[a-z0-9-]+-[0-9a-f]{64}\\.(?:source\\.html|receipt\\.json)$/.test(name) ||
+        !/^br-[a-z0-9-]+-[0-9a-f]{64}\.(?:source\.html|receipt\.json)$/.test(name) ||
         !Number.isSafeInteger(limit) || limit < 1) unsafe();
     this.assertStable();
     const candidate = this.path(name);
