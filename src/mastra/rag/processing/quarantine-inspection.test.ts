@@ -90,3 +90,32 @@ test('H9C inspection retains parser unsupported status without pretending extrac
   assert.equal(result.extractorCode, 'EXTRACT_UNSUPPORTED_HTML');
   assert.equal(result.documentClassification, 'unreviewed-requires-human-inspection');
 });
+
+
+test('H9C inspector never forwards attacker-controlled extractor diagnostics', () => {
+  const { raw, receipt } = fixture('<html><body>Texto sintético</body></html>');
+  for (const injected of [
+    'Authorization: Bearer synthetic-secret',
+    'EXTRACT_UNSUPPORTED_HTML\n/tmp/h9c-private/raw',
+    '/home/operator/private/secret.txt',
+    '<html><p>raw legal text</p></html>',
+    'FETCH_TIMEOUT',
+    '',
+  ]) {
+    assert.throws(() => inspectH9CQuarantinedEvidence(raw, {
+      ...receipt, extractionErrorCode: injected,
+    }), /H9C_INSPECTION_INVALID_EVIDENCE/);
+  }
+  const accepted = [
+    'DECODE_INVALID_CHARSET', 'DECODE_CHARSET_CONFLICT',
+    'EXTRACT_UNSUPPORTED_HTML', 'EXTRACT_UNSUPPORTED_ENTITY',
+    'EXTRACT_EMPTY', 'NORMALIZED_TOO_LARGE', 'INVALID_DOCUMENT',
+    'H9C_ASSESSMENT_FAILED',
+  ];
+  for (const code of accepted) {
+    const result = inspectH9CQuarantinedEvidence(raw, {
+      ...receipt, extractionErrorCode: code,
+    });
+    assert.equal(result.extractorCode, code);
+  }
+});
