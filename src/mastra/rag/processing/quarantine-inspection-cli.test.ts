@@ -88,3 +88,22 @@ test('H9C operator CLI refuses untrusted file permissions and tampered raw evide
     rmSync(fixture.dir, { recursive: true, force: true });
   }
 });
+
+
+test('H9C operator CLI refuses credential/path injection in an otherwise valid receipt', () => {
+  const fixture = setup();
+  try {
+    const receipt = JSON.parse(readFileSync(fixture.receiptName, 'utf8'));
+    receipt.extractionErrorCode =
+      'Authorization: Bearer synthetic-credential\n/tmp/h9c-private/secret.html';
+    writeFileSync(fixture.receiptName, JSON.stringify(receipt));
+    const result = run(fixture.dir);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), 'H9C_INSPECTION_FAILED');
+    assert.ok(!result.stderr.includes('synthetic-credential'));
+    assert.ok(!result.stderr.includes(fixture.dir));
+  } finally {
+    rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});
