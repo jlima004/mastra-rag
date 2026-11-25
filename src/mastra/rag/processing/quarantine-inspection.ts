@@ -48,6 +48,17 @@ export type H9CQuarantineReceipt = Readonly<{
   paidAdmissionApproved: boolean;
 }>;
 
+/**
+ * Only statuses produced by assessH9CQuarantinedResponse() may cross into
+ * operator-shareable JSON. Receipt files are inputs, not trusted error logs.
+ */
+const H9C_ACCEPTED_EXTRACTION_CODES: ReadonlySet<string> = new Set([
+  'DECODE_INVALID_CHARSET', 'DECODE_CHARSET_CONFLICT',
+  'EXTRACT_UNSUPPORTED_HTML', 'EXTRACT_UNSUPPORTED_ENTITY',
+  'EXTRACT_EMPTY', 'NORMALIZED_TOO_LARGE', 'INVALID_DOCUMENT',
+  'H9C_ASSESSMENT_FAILED',
+]);
+
 function invalid(): never {
   throw new Error('H9C_INSPECTION_INVALID_EVIDENCE');
 }
@@ -77,7 +88,8 @@ export function inspectH9CQuarantinedEvidence(
       receipt.evidenceFileBasename !== receipt.sourceId + '-' +
         receipt.rawSha256 + '.source.html' ||
       (receipt.extractionStatus === 'unsupported' &&
-        typeof receipt.extractionErrorCode !== 'string') ||
+        (typeof receipt.extractionErrorCode !== 'string' ||
+          !H9C_ACCEPTED_EXTRACTION_CODES.has(receipt.extractionErrorCode))) ||
       (receipt.extractionStatus === 'unreviewed-parsed' &&
         receipt.extractionErrorCode !== null)) invalid();
 
