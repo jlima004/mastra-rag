@@ -74,3 +74,34 @@ After the source-review gate passes, use the already merged pinned `cl100k_base/
 The future official run needs a **separately reviewed read-only local driver** accepting validated frozen snapshots, preserving the exact profile and content hashes, and reporting full-input counts (including headers), p50/p95/max, legal locator/offset coverage, retry-inclusive H11 estimates and identity reproducibility. The existing `H9RenderedTokenSet.provenance` is explicitly `synthetic-only-unverified-source`; do not silently change this type or promote production usage. Keep H9C Issue #35 open until that evidence is ratified.
 
 **Release classification:** `H9C_OPERATOR_RETRY_AUTHORIZED / PRIVATE_INSPECTION_DRAFT / OFFICIAL_CORPUS_UNFROZEN / H12_E2_PENDING / PAID_EXECUTION_BLOCKED`.
+
+## Observed WSL acquisition outcomes — 2026-11-25
+
+The operator executed the existing canonical manifest IDs from the local WSL Node v24.22.3 checkout. Results from the operator's **own sanitized output**:
+
+| Manifest source | Raw SHA-256 | Bytes | Local stage | Legal acceptance |
+| --- | --- | ---: | --- | --- |
+| `br-anpd-res-15-2024` | `115ce3abf2408d2677a54606dd848a8126f38a550922d538f94ca41c28f6c7f2` | 114363 | `H9C_OPERATOR_BYTES_QUARANTINED_UNREVIEWED`, extractor `EXTRACT_UNSUPPORTED_HTML` | NO |
+| `br-anpd-res-18-2024` | `08ddc82b4d643f55bbea4369bf9783144beaabefbccaeb4116fa1d0d5d97f601` | 100459 | `H9C_OPERATOR_BYTES_QUARANTINED_UNREVIEWED`, extractor `EXTRACT_UNSUPPORTED_HTML` | NO |
+| `br-planalto-lei-13709-2018` | — | — | `FETCH_TIMEOUT` on **two operator attempts** | NO |
+
+No actual raw HTML, private receipt files or response headers were uploaded to GitHub. Both DOU files must stay **private and immutable**, as frozen *unreviewed transport artifacts*; an HTTP 200 does not prove that they contain the legally correct resolutions. They have `normalizedSha256: null`. Do not needlessly fetch the DOU pages again.
+
+The operator then exited fish and ran the DNS-only Planalto diagnostic in **Bash**, which returned `{ dns: 'OK', ipv4: 1, ipv6: 0 }`. The failure to run Bash `<<'JS'` syntax directly in fish was a shell-syntax issue, **not** a DNS failure. DNS success does not prove TLS or source-page availability; the existing transport can map multiple request exceptions into `FETCH_TIMEOUT`. Do not broaden DNS, IPv4, certificate or allowlist gates. If needed, use the following **fish-safe, DNS-only** equivalent without a heredoc:
+
+```bash
+node --input-type=module -e 'import { lookup } from "node:dns/promises"; try { const a = await lookup("www.planalto.gov.br", { all: true }); console.log({dns:"OK", ipv4:a.filter(x=>x.family===4).length, ipv6:a.filter(x=>x.family===6).length}); } catch { console.log({dns:"FAILED"}); }'
+```
+
+## Inspector security R2 (new findings on PR #37)
+
+Codex reviewed exact R1 HEAD `62609583d4a7dfc0b80444ff1e3a55df2feee6a8` and identified **two blocking P2s**, despite 206/206 tests and 4/4 CI success:
+
+1. A raw receipt `extractionErrorCode` could include an injected Authorization header, file path or HTML, which the inspector would print without filtering.
+2. Directory inspection validated only leaf permissions and then re-resolved the directory path, permitting an attacker-writable ancestor to be replaced between validation and reads.
+
+The R2 candidate **restricts `extractionErrorCode` to known `assessH9CQuarantinedResponse` failure codes**, rejecting any arbitrary string. All enumeration and source/receipt reads now **reuse `openH9CPrivateArchiveDirectory`'s verified Linux directory fd**, trusted ancestor chain and inode/path stability checks, `O_NOFOLLOW`, and owner-only file/mode/size checks. Synthetic regressions exercise injected credentials, swapped ancestor/leaf paths, world-writable nonsticky ancestor, symlink evidence and in-place source modification. **These implementation notes are not a security approval**: exact R2 HEAD CI, Codex code/security re-review and human merge gate remain pending.
+
+**Next operator command (after R2 review):** `npm run rag:h9:inspect:operator -- /tmp/h9c-official-private`. Do not paste raw HTML or private receipts here; share the sanitized JSON result only. No further government-site fetch is required to inspect the two already quarantined DOU artifacts.
+
+**Current gate:** `DOU_TWO_QUARANTINED_UNREVIEWED / PLANALTO_DNS_OK_FETCH_TIMEOUT / R2_INSPECTOR_SECURITY_REVIEW_PENDING / OFFICIAL_CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`.
