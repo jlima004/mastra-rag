@@ -1,3 +1,14 @@
+## H9C-C2 — Versioned offline DOU extractor candidate (2026-11-26)
+
+[Decision and gate criteria](../../docs/decisions/RAG-H9C-C2-versioned-dou-extractor.md).
+
+- [x] C2-G1/G2/G5: implemented explicit offline dispatch, bounded inert extraction and T1–T6 synthetic regressions. Confirmed the active manifest and legacy goldens.
+- [x] C2-G3/G4: revalidated both selected quarantine pairs through the private descriptor. Recorded header and legal region association, normalized identities, repeats and resource measurements.
+- [ ] C2-G6/G8: independent review, separate specialized security status, stacked Draft and exact-HEAD CI and Codex Review.
+- [x] Prepared the private checklist for the pending C2-G7 human legal validation. Production activation and official four-profile calibration require separate gates.
+
+---
+
 ## H9C — Official provenance + Token Grid (Draft, 2026-11-23)
 
 Authority: owner approved controlled **read-only acquisition** of manifest-approved official Planalto/ANPD/DOU sources and offline token-grid preparation. [H9C decision/evidence](../../docs/decisions/RAG-H9C-official-source-and-token-grid.md) · [Issue #35](https://github.com/jlima004/mastra-rag/issues/35).

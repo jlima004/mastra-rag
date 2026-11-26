@@ -1,10 +1,10 @@
 import {
   canonicalJson, chunkId, chunkSetId, documentVersionId, pipelineProfileId, sha256,
 } from '../contracts/ids.ts';
-import { RAG_LIMITS, type FetchedDocument, type SourceManifestEntry } from '../contracts/types.ts';
+import { RAG_LIMITS, type FetchedDocument } from '../contracts/types.ts';
 import { RagProcessingError } from './errors.ts';
 import type { LegalBlock, NormalizedLegalDocument } from './legal.ts';
-import { renderAwareChunkSetId } from './chunk.ts';
+import { renderAwareChunkSetId, type OfflineChunkSource } from './chunk.ts';
 import { countH9Cl100kTokens } from './cl100k-counter.ts';
 import { H9_MAX_AUDIT_INPUT_CHARS } from './token-calibration.ts';
 
@@ -83,12 +83,12 @@ function fits(body: string, header: string, cap: number): boolean {
       H9_MAX_AUDIT_INPUT_CHARS) return false;
   return tokenCount(fullInput(body, header)) <= cap;
 }
-function contextHeader(source: SourceManifestEntry, block: LegalBlock, caput?: string): string {
+function contextHeader(source: OfflineChunkSource, block: LegalBlock, caput?: string): string {
   const crumb = [source.title, ...block.headingPath, block.articleLocator ?? ''].filter(Boolean).join(' › ');
   return caput ? crumb + '\n' + caput : crumb;
 }
 function headerChoices(
-  source: SourceManifestEntry, block: LegalBlock, caput: string,
+  source: OfflineChunkSource, block: LegalBlock, caput: string,
 ): readonly string[] {
   // Preserve the most informative breadcrumb first; the legal locator is
   // the minimum required header, never silently replace it with an empty one.
@@ -206,7 +206,7 @@ function splitTokenWindow(
 export function renderH9TokenGridOffline(
   doc: NormalizedLegalDocument,
   fetched: FetchedDocument,
-  source: SourceManifestEntry,
+  source: OfflineChunkSource,
   config: H9TokenGridConfig,
 ): H9RenderedTokenSet {
   if (!doc || !fetched || !source || doc.sourceId !== source.sourceId ||
