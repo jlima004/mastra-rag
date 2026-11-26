@@ -1,7 +1,13 @@
 import { canonicalJson, chunkId, chunkSetId, documentVersionId, pipelineProfileId, sha256 } from '../contracts/ids.ts';
 import { RAG_LIMITS, type FetchedDocument, type SourceManifestEntry } from '../contracts/types.ts';
+import type { DOU_EXTRACTOR_CANDIDATE } from './dou-html.ts';
 import { RagProcessingError } from './errors.ts';
 import type { LegalBlock, NormalizedLegalDocument } from './legal.ts';
+
+// Offline renderers need identity and context metadata, not a manifest entry.
+export type OfflineChunkSource = Pick<SourceManifestEntry, 'sourceId' | 'title'> & Readonly<{
+  extractor: SourceManifestEntry['extractor'] | typeof DOU_EXTRACTOR_CANDIDATE;
+}>;
 
 export type ChunkStrategy = 'legal-structure' | 'recursive-baseline';
 export type OfflineChunkConfig = Readonly<{
@@ -109,7 +115,7 @@ function splitWithinBudget(
   return pieces;
 }
 
-function contextHeader(source: SourceManifestEntry, block: LegalBlock, caput?: string): string {
+function contextHeader(source: OfflineChunkSource, block: LegalBlock, caput?: string): string {
   const crumb = [source.title, ...block.headingPath, block.articleLocator ?? ''].filter(Boolean).join(' › ');
   return caput ? crumb + '\n' + caput : crumb;
 }
@@ -117,7 +123,7 @@ function contextHeader(source: SourceManifestEntry, block: LegalBlock, caput?: s
 const HEADER_SEPARATOR_BYTES = Buffer.byteLength('\n---\n', 'utf8');
 const MIN_SPLIT_BODY_BYTES = 8;
 
-function chooseHeader(source: SourceManifestEntry, block: LegalBlock, caput: string, maxBytes: number): string {
+function chooseHeader(source: OfflineChunkSource, block: LegalBlock, caput: string, maxBytes: number): string {
   const hasBodyRoom = (header: string): boolean =>
     size(header) + HEADER_SEPARATOR_BYTES + MIN_SPLIT_BODY_BYTES <= maxBytes;
   const detailed = contextHeader(source, block, caput);
@@ -147,7 +153,7 @@ export function renderAwareChunkSetId(
 export function makeOfflineChunkSet(
   doc: NormalizedLegalDocument,
   fetched: FetchedDocument,
-  source: SourceManifestEntry,
+  source: OfflineChunkSource,
   config: OfflineChunkConfig = STRUCTURAL_PROXY_CONFIG,
 ): OfflineChunkSet {
   if (fetched.sourceId !== source.sourceId || doc.sourceId !== source.sourceId ||
