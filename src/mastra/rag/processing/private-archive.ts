@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import {
   closeSync, constants, fstatSync, fsyncSync, linkSync, lstatSync,
-  openSync, realpathSync, unlinkSync, writeFileSync,
+  openSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync,
   type Stats,
 } from 'node:fs';
 import { dirname, isAbsolute, parse, relative, resolve, sep } from 'node:path';
@@ -165,6 +165,48 @@ export class H9CPrivateArchiveDirectory {
     } finally {
       unlinkCreatedOnly(stagedReceipt?.path ?? '', stagedReceipt?.stat);
       unlinkCreatedOnly(stagedRaw?.path ?? '', stagedRaw?.stat);
+    }
+  }
+
+  /**
+   * Inspection uses the EXACT same validated directory handle and ancestor
+   * checks as the publisher. A moved/replaced directory is never followed.
+   * This is read-only and cannot be called on an untrusted arbitrary filename.
+   */
+  listEvidenceNames(): readonly string[] {
+    this.assertStable();
+    const names = readdirSync(this.path('.'));
+    this.assertStable();
+    return names;
+  }
+
+  readEvidenceBytes(name: string, limit: number): Buffer {
+    if (typeof name !== 'string' ||
+        !/^br-[a-z0-9-]+-[0-9a-f]{64}\.(?:source\.html|receipt\.json)$/.test(name) ||
+        !Number.isSafeInteger(limit) || limit < 1) unsafe();
+    this.assertStable();
+    const candidate = this.path(name);
+    const before = lstatSync(candidate);
+    if (!before.isFile() || before.isSymbolicLink() ||
+        before.uid !== process.getuid?.() ||
+        (before.mode & 0o777) !== 0o600 || before.nlink !== 1 ||
+        before.size < 1 || before.size > limit) unsafe();
+    let fileFd: number | undefined;
+    try {
+      fileFd = openSync(candidate, constants.O_RDONLY | constants.O_NOFOLLOW |
+        constants.O_NONBLOCK);
+      const opened = fstatSync(fileFd);
+      if (!opened.isFile() || !sameFile(before, opened) ||
+          opened.uid !== before.uid || (opened.mode & 0o777) !== 0o600 ||
+          opened.nlink !== 1 || opened.size < 1 || opened.size > limit) unsafe();
+      const bytes = readFileSync(fileFd);
+      const after = fstatSync(fileFd);
+      if (!sameFile(opened, after) || after.size !== opened.size ||
+          bytes.byteLength !== opened.size || after.nlink !== 1) unsafe();
+      this.assertStable();
+      return bytes;
+    } finally {
+      if (fileFd !== undefined) closeSync(fileFd);
     }
   }
 
