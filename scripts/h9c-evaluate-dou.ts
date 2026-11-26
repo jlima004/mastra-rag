@@ -104,11 +104,12 @@ function scalarBoundary(text: string, index: number): boolean {
 
 function summarizeNormalized(doc: NormalizedLegalDocument) {
   const structuralCounts = { heading: 0, article: 0, paragraph: 0, inciso: 0, alinea: 0, preamble: 0 };
-  const articleLocators = new Set<string>();
+  const explicitUnitLocators = new Set<string>();
   const headingDigests = new Map<string, string>();
   const metadataHasher = createHash('sha256').update(LOCATOR_METADATA_DIGEST + '\n');
   let explicitParagraphs = 0;
   let duplicateArticleLocators = 0;
+  let duplicateExplicitSubordinateLocators = 0;
   let annexArticles = 0;
   let annexBlocks = 0;
   let annexStart = -1;
@@ -119,9 +120,9 @@ function summarizeNormalized(doc: NormalizedLegalDocument) {
   let expectedStart = 0;
   for (const block of doc.blocks) {
     structuralCounts[block.kind]++;
-    if (block.kind === 'paragraph' && /^(?:§\s*\d|Par[aá]grafo\s+[uú]nico\b)/iu.test(block.text)) {
-      explicitParagraphs++;
-    }
+    const explicitParagraph = block.kind === 'paragraph' &&
+      /^(?:§\s*\d|Par[aá]grafo\s+[uú]nico\b)/iu.test(block.text);
+    if (explicitParagraph) explicitParagraphs++;
     if (block.headingPath.length) blocksWithHeadingContext++;
     annotations += block.annotations.length;
     const inAnnex = /:anexo[1-9][0-9]*:/.test(block.locator);
@@ -131,9 +132,13 @@ function summarizeNormalized(doc: NormalizedLegalDocument) {
       annexEnd = block.end;
       if (block.kind === 'article') annexArticles++;
     }
-    if (block.kind === 'article') {
-      if (articleLocators.has(block.locator)) duplicateArticleLocators++;
-      articleLocators.add(block.locator);
+    if (block.kind === 'article' || explicitParagraph ||
+        block.kind === 'inciso' || block.kind === 'alinea') {
+      if (explicitUnitLocators.has(block.locator)) {
+        if (block.kind === 'article') duplicateArticleLocators++;
+        else duplicateExplicitSubordinateLocators++;
+      }
+      explicitUnitLocators.add(block.locator);
     }
     if (block.start === expectedStart && block.end > block.start &&
         block.end <= doc.normalizedText.length &&
@@ -166,6 +171,8 @@ function summarizeNormalized(doc: NormalizedLegalDocument) {
     structuralCounts,
     explicitParagraphs,
     duplicateArticleLocators,
+    duplicateExplicitSubordinateLocators,
+    uniqueExplicitLegalUnitLocators: explicitUnitLocators.size,
     annexArticles,
     annexBlocks,
     annexUtf16: annexStart < 0 ? 0 : annexEnd - annexStart,
@@ -242,6 +249,9 @@ function candidateIteration(decoded: string, source: SourceManifestEntry) {
   }
   if (normalization.duplicateArticleLocators > 0) {
     structuralIssues.push('DUPLICATE_ARTICLE_LOCATORS');
+  }
+  if (normalization.duplicateExplicitSubordinateLocators > 0) {
+    structuralIssues.push('DUPLICATE_EXPLICIT_SUBORDINATE_LOCATORS');
   }
   if (normalization.verifiedUtf16Offsets !== normalized.blocks.length) {
     structuralIssues.push('NORMALIZED_OFFSET_MISMATCH');

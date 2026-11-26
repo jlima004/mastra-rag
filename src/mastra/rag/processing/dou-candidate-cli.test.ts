@@ -192,3 +192,25 @@ test('H9C-C2 locator metadata digests repeated heading context without replaying
     rmSync(fixture.directory, { recursive: true, force: true });
   }
 });
+
+test('H9C-C2 flags a duplicate explicit legal unit locator without penalizing continuations', () => {
+  const extra = '<p>Continuação fictícia da condição anterior.</p>' +
+    '<p>I - Outra unidade com numerador repetido.</p>';
+  const bytes = Buffer.from(raw.toString('utf8').replace('</body></html></div>', extra + '</body></html></div>'));
+  const fixture = createFixture(bytes);
+  try {
+    const result = run(fixture.directory, sha256(fixture.receiptBytes), source.sourceId, fixture.digest);
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.candidate.classification, 'DOU_CANDIDATE_STRUCTURAL_INCOMPLETE');
+    assert.deepEqual(report.candidate.structuralIssues, ['DUPLICATE_EXPLICIT_SUBORDINATE_LOCATORS']);
+    const { normalization } = report.candidate;
+    assert.equal(normalization.structuralCounts.inciso, 2);
+    assert.equal(normalization.duplicateExplicitSubordinateLocators, 1);
+    assert.equal(normalization.duplicateArticleLocators, 0);
+    assert.equal(normalization.uniqueExplicitLegalUnitLocators, 2);
+    assert.equal(report.repeatability.verified, true);
+  } finally {
+    rmSync(fixture.directory, { recursive: true, force: true });
+  }
+});
