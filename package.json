@@ -15,7 +15,8 @@
     "rag:h9:grid:synthetic": "node --experimental-strip-types scripts/h9-grid-synthetic.ts",
     "rag:h9:acquire:operator": "node --experimental-strip-types scripts/h9c-fetch-operator.ts",
     "rag:h9:inspect:operator": "node --experimental-strip-types scripts/h9c-inspect-quarantine.ts",
-    "rag:h9:evaluate:dou": "node --experimental-strip-types scripts/h9c-evaluate-dou.ts"
+    "rag:h9:evaluate:dou": "node --experimental-strip-types scripts/h9c-evaluate-dou.ts",
+    "rag:e2:local": "node --experimental-strip-types scripts/e2-ingest-local.ts"
   },
   "license": "Apache-2.0",
   "type": "module",

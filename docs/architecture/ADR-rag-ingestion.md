@@ -28,6 +28,12 @@ The [E1 adjudication proposal](../decisions/RAG-E1-adjudication-proposal.md) rec
 - H10 (historical backup proposal, **superseded**): the owner subsequently decided **no backups in the MVP**; remaining H10 work is corpus sizing, a storage ceiling and enforcement. Permanent data loss and undefined RPO/RTO are accepted as inherent risks of this choice, not a demonstrated recovery capability.
 
 No hosted SQL, role/grant, credential, vector provisioning or paid operation is authorized. A separate human decision must first adjudicate H4/H5/H6/H10.
+## E2-MVP checkpoint (2026-11-27)
+
+PostgreSQL `rag` owns ingestion claims, spend reservations, attempts and publication. E2 uses the existing PgVector projection in the `public` namespace and the E1 flat cosine space. Build mutations and PgVector SQL share a fenced transaction client because the pinned public PgVector upsert checks out its own connection. The catalog pointer controls visibility and the server bootstrap retains `disableInit: true`. Turso continues to own Mastra-native state.
+
+The internal operator service uses measured S512 input and a fake-only local CLI. A single PostgreSQL budget lock covers UTC reservations across processes. Lease expiry retains attempts, and the operator can settle ambiguous spending from authoritative evidence. The H12 candidate uses manual GC and persistent erasure tombstones while retaining the spend ledger. See the [implemented contract and operational gates](../specs/SPEC-rag-ingestion.md#116-e2-mvp-local-execution).
+
 ## Context
 
 The repository currently contains infrastructure only (PRs #1–#6):

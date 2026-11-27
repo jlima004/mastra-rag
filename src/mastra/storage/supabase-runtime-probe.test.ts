@@ -28,10 +28,12 @@ test('P2: every RLS policy must match the full approved equality expression', ()
   for (const policy of ['rag_vector_select', 'rag_vector_insert', 'rag_vector_update']) {
     assert.match(RUNTIME_READONLY_PROBE_SQL, new RegExp("policyname='" + policy + "'"));
   }
-  assert.equal(RUNTIME_READONLY_PROBE_SQL.split(expected).length - 1, 4);
+  assert.equal(RUNTIME_READONLY_PROBE_SQL.split(expected).length - 1, 5);
   assert.doesNotMatch(RUNTIME_READONLY_PROBE_SQL, /LIKE\s*'%public%'/);
   assert.match(RUNTIME_READONLY_PROBE_SQL, /FROM pg_catalog\.pg_policies/);
-  assert.match(RUNTIME_READONLY_PROBE_SQL, /count\(\*\)=3/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /count\(\*\) FILTER \(WHERE policyname <> 'rag_vector_delete'\) = 3/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /policyname = 'rag_vector_delete' AND cmd = 'DELETE'/);
+  assert.match(RUNTIME_READONLY_PROBE_SQL, /to_regclass\('rag\.embedding_reservation'\) IS NULL/);
 });
 
 test('E1 runtime probe accepts only one true result', async () => {

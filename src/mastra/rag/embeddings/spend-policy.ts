@@ -23,6 +23,17 @@ export type H11OfflinePolicy = Readonly<{
   maxEvaluationMonthlyReservedTokens: number;
 }>;
 
+// Owner-ratified numbers from RAG-H11-embedding-spend-control.md.
+export const H11_MVP_POLICY: H11OfflinePolicy = Object.freeze({
+  modelId: H11_MODEL_ID,
+  plannedProviderHardLimitUsdCents: 200,
+  applicationMonthlyBudgetUsdCents: 100,
+  maxMonthlyReservedTokens: 5_000_000,
+  maxDailyReservedTokens: 250_000,
+  maxJobReservedTokens: 150_000,
+  maxEvaluationMonthlyReservedTokens: 100_000,
+});
+
 /**
  * Caller-supplied historical totals are untrusted for live enforcement.
  * Only the future durable E2 ledger may supply authoritative snapshots.

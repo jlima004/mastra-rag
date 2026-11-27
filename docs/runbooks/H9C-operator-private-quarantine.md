@@ -105,3 +105,28 @@ The R2 candidate **restricts `extractionErrorCode` to known `assessH9CQuarantine
 **Next operator command (after R2 review):** `npm run rag:h9:inspect:operator -- /tmp/h9c-official-private`. Do not paste raw HTML or private receipts here; share the sanitized JSON result only. No further government-site fetch is required to inspect the two already quarantined DOU artifacts.
 
 **Current gate:** `DOU_TWO_QUARANTINED_UNREVIEWED / PLANALTO_DNS_OK_FETCH_TIMEOUT / R2_INSPECTOR_SECURITY_REVIEW_PENDING / OFFICIAL_CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`.
+
+## 6. E2-MVP retention and erasure candidate
+
+The H12 policy is experimental and awaits owner ratification. Published documents stay in the corpus. Manual garbage collection considers superseded and failed builds after seven days. The collector protects the current pointer, the previous pointer while its rollback window remains open, active jobs, and ambiguous attempts pending reconciliation. The operator can run a dry-run through the internal `collectIngestionGarbage(pool)` entrypoint. Review the returned document, chunk-set and space IDs. Pass `{ dryRun: false }` to apply the collection. Each build is revalidated under the same PostgreSQL document lock used by ingest and publication. Run another pass for a retry-required outcome. The next pass reevaluates durable state, including transactions whose commit acknowledgement was lost.
+
+Use the internal `deleteIngestedDocument(pool, documentId)` or `deleteIngestedSource(pool, sourceId)` operation for an authorized erasure. The first commit sets tombstones, removes publications, and cancels active claims. The second operation deletes and verifies the vectors in namespace `public` and removes the derived catalog text. A failed purge leaves the tombstone and `rag.document.purge_pending_at` in place. Re-run with the same ID until each affected document has a committed `purged_at`. Reconcile conflicting projection metadata or an unsupported space before retrying. A deleted source blocks first-time ingestion as well as republication. Job, reservation and attempt rows remain available for reconciliation, together with document/version identifiers, hashes, and minimum provenance.
+
+On the disposable PostgreSQL 17 fixture, the same operations are available through the local entrypoint.
+
+```bash
+npm run rag:e2:local -- gc
+npm run rag:e2:local -- gc --apply
+npm run rag:e2:local -- delete-document "$SYNTHETIC_DOCUMENT_ID"
+npm run rag:e2:local -- delete-source "$SYNTHETIC_SOURCE_ID"
+```
+
+The local entrypoint checks the database name, role, PostgreSQL version and disposable fixture marker.
+
+### Private files and external content
+
+1. For an authorized erasure, identify the exact source ID, document ID, raw SHA-256 and affected versions. Use the existing private archive inspector and descriptor checks to match receipts and payloads in the approved archive. Check the owner-controlled archive directory and file modes before acting.
+2. Inventory the matched `*.source.html` and `*.receipt.json` pairs and any private exports or evidence that reproduce their text. Check the private H9C quarantine/evidence roots and E2 evidence directory, then other approved operator export locations recorded for the document. Validate the parent directory, owner and exact file before removing it. Remove the authorized copies by their verified names, avoiding wildcard deletion and paths outside the approved directories. Check file absence in the same directories and record a sanitized completion or pending status.
+3. Track coverage of local archives, exports, application logs and external systems individually. Database purge confirms removal of vectors and derived catalog text in this space. Provider-side data and external copies require their own operator verification. Mastra/Turso threads and traces currently have no RAG agent content. When those features begin quoting source content, inventory the affected IDs, traces and retained copies and use the corresponding storage/observability deletion procedure.
+
+The E2-MVP rehearsal uses synthetic fixtures for destructive tests. Keep the real experimental snapshots available as private evidence during this delivery. External backup remains outside MVP scope under H10.

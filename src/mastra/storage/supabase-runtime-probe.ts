@@ -17,13 +17,20 @@ export const RUNTIME_VECTOR_TYPE_CONTRACT_SQL = `EXISTS (
       AND a.atttypid='extensions.vector'::regtype AND a.atttypmod=1536
   )`;
 
+export const RUNTIME_VECTOR_KEY_CONTRACT_SQL = `EXISTS (SELECT 1 FROM pg_index x JOIN pg_class idx ON idx.oid=x.indexrelid
+    WHERE x.indrelid='rag.chunks_te3s_1536_v1'::regclass
+      AND idx.relname='chunks_te3s_1536_v1_namespace_vector_id_idx'
+      AND x.indisunique AND x.indisvalid AND x.indisready AND x.indpred IS NULL
+      AND x.indnkeyatts=2 AND pg_get_indexdef(x.indexrelid) LIKE '%(namespace, vector_id)%')`;
+
 /**
- * Exact PostgreSQL 17 pg_policies text for the H6 owner-approved
- * namespace='public' equality. Substring checks would accept '<>' or OR true.
- * All three role/command/predicate pairs must match; no extra policies.
+ * Match full predicates for E1 and the scoped E2 DELETE permission.
+ * The E2 policy is required only when the durable ledger exists. An extra
+ * policy, an unexpected role or a changed namespace predicate fails closed.
  */
 export const RUNTIME_VECTOR_POLICIES_CONTRACT_SQL = `(
-    SELECT count(*)=3 AND count(*) FILTER (
+    SELECT count(*) FILTER (WHERE policyname <> 'rag_vector_delete') = 3
+      AND count(*) FILTER (
       WHERE roles=ARRAY['rag_app']::name[]
         AND (
           (policyname='rag_vector_select' AND cmd='SELECT'
@@ -34,6 +41,14 @@ export const RUNTIME_VECTOR_POLICIES_CONTRACT_SQL = `(
             AND qual='((namespace)::text = ''public''::text)' AND with_check='((namespace)::text = ''public''::text)')
         )
     )=3
+      AND CASE WHEN to_regclass('rag.embedding_reservation') IS NULL
+        THEN count(*) FILTER (WHERE policyname = 'rag_vector_delete') = 0
+        ELSE count(*) FILTER (
+          WHERE policyname = 'rag_vector_delete' AND cmd = 'DELETE'
+            AND roles = ARRAY['rag_app']::name[] AND with_check IS NULL
+            AND qual = '((namespace)::text = ''public''::text)'
+        ) = 1
+      END
     FROM pg_catalog.pg_policies
     WHERE schemaname='rag' AND tablename='chunks_te3s_1536_v1'
   )`;
@@ -60,15 +75,13 @@ export const RUNTIME_READONLY_PROBE_SQL = `SELECT (
       AND c.relrowsecurity AND pg_get_userbyid(c.relowner)='postgres')
   AND row_security_active('rag.chunks_te3s_1536_v1'::regclass)
   AND ${RUNTIME_VECTOR_TYPE_CONTRACT_SQL}
-  AND EXISTS (SELECT 1 FROM pg_index x JOIN pg_class idx ON idx.oid=x.indexrelid
-    WHERE x.indrelid='rag.chunks_te3s_1536_v1'::regclass
-      AND idx.relname='chunks_te3s_1536_v1_namespace_vector_id_idx'
-      AND x.indisunique AND pg_get_indexdef(x.indexrelid) LIKE '%(namespace, vector_id)%')
+  AND ${RUNTIME_VECTOR_KEY_CONTRACT_SQL}
   AND ${RUNTIME_VECTOR_POLICIES_CONTRACT_SQL}
   AND has_table_privilege(current_user,'rag.chunks_te3s_1536_v1','SELECT')
   AND has_table_privilege(current_user,'rag.chunks_te3s_1536_v1','INSERT')
   AND has_table_privilege(current_user,'rag.chunks_te3s_1536_v1','UPDATE')
-  AND NOT has_table_privilege(current_user,'rag.chunks_te3s_1536_v1','DELETE')
+  AND has_table_privilege(current_user,'rag.chunks_te3s_1536_v1','DELETE')
+    = (to_regclass('rag.embedding_reservation') IS NOT NULL)
   AND NOT has_table_privilege(current_user,'rag.chunks_te3s_1536_v1','TRUNCATE')
   AND has_sequence_privilege(current_user,'rag.chunks_te3s_1536_v1_id_seq','USAGE')
   AND has_table_privilege(current_user,'rag.embedding_space','SELECT')

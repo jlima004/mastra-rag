@@ -180,7 +180,7 @@ export function planEmbeddingJob(args: EmbeddingJobArguments): EmbeddingJobPlan 
   return prepare(args).plan;
 }
 
-function backoffMs(retriesUsed: number, random: () => number, retryAfterMs: number | null): number {
+export function embeddingBackoffMs(retriesUsed: number, random: () => number, retryAfterMs: number | null): number {
   const draw = random();
   if (typeof draw !== 'number' || !Number.isFinite(draw) || draw < 0 || draw >= 1) {
     throw new RagEmbeddingError('EMBED_INVALID_INPUT');
@@ -241,7 +241,7 @@ export async function embedMissingDocumentChunks(
         if (retriesUsed >= RAG_LIMITS.MAX_JOB_ATTEMPTS - 1) {
           throw new RagEmbeddingError('EMBED_RETRY_EXHAUSTED');
         }
-        const wait = backoffMs(retriesUsed, random, failure.retryAfterMs);
+        const wait = embeddingBackoffMs(retriesUsed, random, failure.retryAfterMs);
         retriesUsed += 1;
         assertReady(args.signal);
         try { await sleep(wait, args.signal); }

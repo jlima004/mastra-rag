@@ -206,6 +206,24 @@ function splitTokenWindow(
   return out;
 }
 
+export function tokenGridPipelineProfile(source: OfflineChunkSource, config: H9TokenGridConfig) {
+  return {
+    chunker: {
+      strategy: config.strategy,
+      maxTokens: config.maxTokens,
+      overlapTokens: config.overlapTokens,
+      tokenizer: 'cl100k_base/js-tiktoken@1.0.21',
+      contextHeader: config.strategy === 'legal-structure' ? 'breadcrumb+caput' : 'none',
+      // R2 changes legal headers on multi-token Unicode boundaries. Bump
+      // the profile algorithm identity rather than reusing candidate @1 IDs.
+      algorithmVersion: config.strategy === 'legal-structure'
+        ? 'legal-structure-token-greedy@2' : 'recursive-token-window@1',
+    },
+    extractor: source.extractor,
+    normalizer: 'legal-text@1',
+  } as const;
+}
+
 /**
  * NEW versioned profile, strictly separate from historical utf8-byte-proxy@1.
  * Never exposes provider access or marks an official legal snapshot approved.
@@ -223,21 +241,7 @@ export function renderH9TokenChunksOffline(
         p.maxTokens === config?.maxTokens && p.overlapTokens === config?.overlapTokens)) {
     fail('INVALID_DOCUMENT');
   }
-  const profileId = pipelineProfileId({
-    chunker: {
-      strategy: config.strategy,
-      maxTokens: config.maxTokens,
-      overlapTokens: config.overlapTokens,
-      tokenizer: 'cl100k_base/js-tiktoken@1.0.21',
-      contextHeader: config.strategy === 'legal-structure' ? 'breadcrumb+caput' : 'none',
-      // R2 changes legal headers on multi-token Unicode boundaries. Bump
-      // the profile algorithm identity rather than reusing candidate @1 IDs.
-      algorithmVersion: config.strategy === 'legal-structure'
-        ? 'legal-structure-token-greedy@2' : 'recursive-token-window@1',
-    },
-    extractor: source.extractor,
-    normalizer: 'legal-text@1',
-  });
+  const profileId = pipelineProfileId(tokenGridPipelineProfile(source, config));
   const versionId = documentVersionId(fetched.documentId, fetched.contentSha256);
   const baseSetId = chunkSetId(versionId, profileId);
   const headerMetadataHash = config.strategy === 'legal-structure'
