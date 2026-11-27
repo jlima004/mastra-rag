@@ -22,6 +22,7 @@ type Checkpoint = 'before_reservation' | 'after_reservation' | 'after_attempt_st
 
 type IngestionOptions = Readonly<{
   signal?: AbortSignal;
+  maxProviderCalls?: number;
   checkpoint?: (point: Checkpoint) => Promise<void> | void;
 }>;
 
@@ -45,6 +46,10 @@ export async function ingestValidatedDocument(
 async function ingest(
   pool: Pool, provider: EmbeddingProvider, input: ValidatedIngestionInput, options: IngestionOptions,
 ) {
+  const { maxProviderCalls } = options;
+  if (maxProviderCalls !== undefined && (!Number.isSafeInteger(maxProviderCalls) || maxProviderCalls < 1)) {
+    throw new RagEmbeddingError('EMBED_INVALID_INPUT');
+  }
   let catalog: ReturnType<typeof prepareCatalog>;
   try {
     catalog = prepareCatalog(input);
@@ -116,6 +121,9 @@ async function ingest(
           chunk.bytes !== catalog.chunks[index].byte_count)) {
       throw new IngestionError('E2_IDENTITY_CONFLICT');
     }
+    if (maxProviderCalls !== undefined && plan.batches.length > maxProviderCalls) {
+      throw new RagEmbeddingError('EMBED_CALL_LIMIT_REACHED');
+    }
     await reserveEmbeddingPlan(tx, claim.jobId, plan);
     await tx.query(`
       INSERT INTO rag.index_build (chunk_set_id, space_id, status, embedded_count)
@@ -134,7 +142,7 @@ async function ingest(
     for (;;) {
       if (signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
       const attempt = await owned(claim, async tx => {
-        const next = await beginEmbeddingAttempt(tx, claim.jobId, batchIndex, batch);
+        const next = await beginEmbeddingAttempt(tx, claim.jobId, batchIndex, batch, maxProviderCalls);
         if (next.state === 'complete') {
           const present = await readProjection(tx, catalog);
           if (batch.chunks.some(chunk => !present.has(chunk.chunkId))) throw new IngestionError('E2_BUILD_INVALID');

@@ -1,5 +1,14 @@
 ## H9C-MVP — Experimental admission and calibration (2026-11-26)
 
+## H11-OPS checkpoint — 2026-11-27
+
+- [x] Use direct OpenAI transport with bounded indexed responses and no hidden retries.
+- [x] Wire the guarded first operation to the E2 durable ledger and S512 frozen admission.
+- [x] Prepare read-only preflight, dry-run, administrative activation candidate, and one-call [runbook](../../docs/rag/h11-ops-runbook.md).
+- [ ] Provision the approved project key, authorize and activate the space, and separately approve the first paid ingestion. Verify the billing attribution before further ingestion.
+
+Sections below record their original checkpoints.
+
 [Owner decision](https://github.com/jlima004/mastra-rag/issues/35) · [Calibration and recommendation](../../docs/decisions/RAG-H9C-official-source-and-token-grid.md#h9c-mvp--ratified-scope-and-calibration-2026-11-26).
 
 - [x] MVP-G1: revalidate and freeze two DOU pairs. Defer LGPD with its canonical identity preserved.

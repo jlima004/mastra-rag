@@ -200,7 +200,7 @@ jobs:
         env:
           E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/test-e1-h6-postgrest-local.sh
-      - name: Verify durable ingestion, spend and erasure with the fake provider
+      - name: Verify durable ingestion, spend and erasure with fake and simulated OpenAI providers
         env:
           E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/test-e2-local.sh

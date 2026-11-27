@@ -86,7 +86,7 @@ test('response inspection retains overage and valid usage with invalid vectors',
 });
 
 test('retry policy preserves a bounded Retry-After and classifies timeout as unknown', () => {
-  const started = { state: 'started', attemptId: 'attempt', retriesUsed: 0, utcDay: '2026-11-27' } as const;
+  const started = { state: 'started', attemptId: 'attempt', retriesUsed: 0, reservedTokens: 10, callLimitReached: false, utcDay: '2026-11-27' } as const;
   const transient = new RagEmbeddingError('EMBED_PROVIDER_TRANSIENT', { retryable: true, retryAfterMs: 2000 });
   assert.deepEqual(inspectEmbeddingFailure(transient, started, () => 0),
     { state: 'retryable', delayMs: 2000, errorCode: 'EMBED_PROVIDER_TRANSIENT' });

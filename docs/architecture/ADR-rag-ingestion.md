@@ -205,7 +205,7 @@ Each **embedding space** = (`provider`, `embeddingModel`, `dimension`, `metric`,
 
 ### Provider abstraction
 
-The application depends on a narrow `EmbeddingProvider` interface (SPEC §9.2), not on a provider SDK. The MVP implementation wraps `ModelRouterEmbeddingModel.doEmbed`, which needs no new dependency (E12). The embedder MUST be constructed lazily on first use so the process can start without `OPENAI_API_KEY` (the constructor throws when the key is missing, E12).
+The application depends on the narrow `EmbeddingProvider` interface. H11-OPS uses native Node fetch for the fixed OpenAI embeddings endpoint. The installed legacy Router honors `OPENAI_BASE_URL` and loses the response index mapping. The direct adapter sends one non-replayable request per E2 attempt, reads the key only at execution, and passes known usage across the vector validation boundary. See the [H11 decision](../decisions/RAG-H11-embedding-spend-control.md).
 
 ### Reversibility
 
@@ -308,7 +308,7 @@ High: publication keeps `previous_chunk_set_id`, so a bad publication can be rol
 | H8 | Region verification and latency acceptance | Verify environment + Turso regions; consider `iad` for new environments |  PENDING |
 | H9 | New runtime dependencies in later PRs | HTML parser, tokenizer, possibly `zod` as a direct dependency |  CONDITIONAL: evaluate choices; exact packages not approved |
 | H10 | Supabase Free / storage budget / no-backup MVP | No backups or real restore drill in MVP; approve and enforce corpus capacity limits before persistence |  **NO_BACKUP_MVP_DECIDED / CAPACITY_PENDING** ([decision](../decisions/RAG-H10-mvp-no-backup.md)) |
-| H11 | Monthly embedding spend cap and evaluation budget | Provider-side hard limit + per-job token budget |  PENDING |
+| H11 | Monthly embedding spend cap and evaluation budget | Ratified provider limits and E2 durable ledger with a one-call first ingestion | Technical preparation in H11-OPS. Credential, activation, authorization and billing attribution pending. |
 | H12 | Retention / purge windows | 7-day GC grace for superseded vectors; immediate purge on erasure |  PENDING; D5 principles only accepted |
 
 ## References (accessed 2026-11-16)
