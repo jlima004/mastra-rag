@@ -534,3 +534,12 @@ Evidence / work order: [E1 runtime DSN read-only integration](../../docs/rag/e1-
 - [ ] Owner-only configuration of *server-side* Mastra Platform secrets `POSTGRES_CONNECTION_STRING` (rag_app) and `SUPABASE_CA_CERT_BASE64`; never log, paste or commit values.
 - [ ] Real protected `rag_app` credential/TLS/authenticated internal readiness proof; fresh Supabase SELECT-only postflight. **Do not mark runtime DSN COMPLETE merely from CI or generic /health.**
 - [ ] H7/H11/H12, E2 ingestion, vector write/read APIs each separately approved; H10 canceled and `NO_BACKUP_MVP` unchanged.
+
+## E2-MVP — S512 durable ingestion candidate (2026-11-27)
+
+- [x] Integrate S512 token accounting and the E1-compatible width migration.
+- [x] Implement PostgreSQL job fencing, atomic H11 reservations, durable attempts, verified vectors and publication.
+- [x] Implement manual H12 dry-run/GC, source/document tombstones and retryable purge.
+- [x] Exercise PostgreSQL 17 + PgVector with synthetic failures and both descriptor-validated frozen snapshots through the fake provider.
+- [ ] Verify candidate CI and Codex Code Review at the Draft HEAD.
+- [ ] Human H12 ratification, separate authorization for hosted migration and H11-OPS. Paid execution and manifest activation remain blocked.

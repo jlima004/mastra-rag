@@ -200,7 +200,10 @@ jobs:
         env:
           E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/test-e1-h6-postgrest-local.sh
-
+      - name: Verify durable ingestion, spend and erasure with the fake provider
+        env:
+          E1_LOCAL_TEST_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/test-e2-local.sh
 
   e1-h6-role-pre-catalog:
     name: E1 H6 disposable pre-catalog rag_app provisioning proof

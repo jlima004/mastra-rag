@@ -76,7 +76,7 @@ Follow [MVP_SCOPE_SIMPLIFICATION](https://github.com/jlima004/mastra-rag/issues/
 | C | (#9) | Fetch, extraction, normalization and chunking (offline) | B merged; H9 authorizes dependency evaluation, **not installation**; package-specific owner review required | No (fixture-based tests only; no live fetch in CI) |
 | D | (#10) | Embedding provider interface and OpenAI adapter | C merged, H3 model baseline; **H11 before any paid/manual provider call** | No in CI (fake provider); live smoke only after H11 |
 | E1 | (#11a) | Catalog migration SQL, roles/grants, space provisioning script (reviewed, not applied by CI) | D merged, H4, H5, H6, H10 | Owner applies after merge |
-| E2 | (#11b) | Ingestion orchestration, publication, GC/delete, operator routes (synchronous MVP) | E1 merged and applied, H7, H12 | Yes — against Supabase with `rag_app` |
+| E2 | (#11b) | Durable ingestion, spend ledger, publication and manual GC/delete | E1, H7, ratified S512; H12 candidate | Yes — disposable PostgreSQL and fake provider |
 | F | (#12) | Retrieval service, operator route and retrieval evaluation baseline | E2 merged, H8, H11 | Yes — first paid embeddings of the corpus, owner-approved |
 | G | later | Follow-ups: agent + generation eval, HNSW if triggered, hybrid search, reranking, PDF, reader access | F merged | Per step |
 
@@ -153,12 +153,11 @@ separates what is demonstrated from future runtime and DB integration.
 - **Owner actions after separately authorized hosted gates (not authorized by E1 merge):** reconcile the single Supabase migration ledger and reviewed SQL/target under H5; create and verify least-privilege `rag_app` under H6 **before** applying catalogue policies/grants; apply only the independently approved non-destructive migration; provision the `flat` PgVector space under its own approval; verify RLS, permissions, namespace and readiness (`NOT rolsuper`). Runtime DSN/credential changes require separate approval. **No logical dump, pre-migration backup or real restore is required or planned in the MVP** ([H10 owner decision](../../docs/decisions/RAG-H10-mvp-no-backup.md)); the storage-capacity ceiling and enforcement remain pending.
 - **Approval criteria:** SQL reviewed line by line; down script reviewed; no application code changes required to boot.
 
-## Step E2 — Ingestion orchestration (expected #11b)
+## Step E2 — Durable ingestion, spend and retention candidate
 
-- **Scope:** Runtime PgVector with constructor option `disableInit: true`; catalog repository with schema-qualified SQL; publication transaction (SPEC §11.2); visibility rule (SPEC §11.3); GC and delete (SPEC §11.4.1, §11.5); **synchronous** operator route `POST /internal/rag/ingestion-jobs` (SPEC §6.2.1) — plain service, not a Mastra background worker; PgVector is **not** registered in `new Mastra({ vectors })`; namespace-required adapter wrapper (SPEC §9.4); reconciler report.
-- **Dependencies:** E1 merged and applied; H7, H12.
-- **Tests:** CI service container `pgvector/pgvector:pg17`; every SPEC §11.4 scenario; crash-during-embedding resume; concurrent publication; dimension mismatch; deletion vs in-flight; content reversion; namespace omission rejected at type/test level; log capture asserts no text/secrets/query text; anonymous `401`.
-- **Approval criteria:** SPEC §16 criteria 2–6 and 8 pass against the local container.
+- Run the ratified S512 pipeline on the frozen snapshots through a local operator CLI, PostgreSQL 17 and fake embeddings.
+- Verify measured preflight, H12, concurrent budget admission, durable recovery and atomic publication with the E1 runtime role. Check local validation and independent review, then verify the Draft PR HEAD in CI and Codex Code Review.
+- Human gates remain H12 ratification, separate authorization for the reviewed hosted migration and H11-OPS. See the [E2 operational contract](../../docs/specs/SPEC-rag-ingestion.md#116-e2-mvp-local-execution).
 
 ## Step F — Retrieval and quality baseline (expected #12)
 

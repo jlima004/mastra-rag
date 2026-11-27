@@ -7,22 +7,10 @@ import {
 import { requireEmbeddingSpace } from './space.ts';
 import {
   estimateH11EmbeddingCostMicroUsd, H11_MODEL_ID, H11_PRICE_MICRO_USD_PER_MILLION_INPUT_TOKENS,
-  MICRO_USD_PER_CENT, quoteH11OfflineReservation, type H11OfflinePolicy,
+  H11_MVP_POLICY as LIMITS, MICRO_USD_PER_CENT, quoteH11OfflineReservation,
 } from './spend-policy.ts';
 
 const SPACE = requireEmbeddingSpace('chunks_te3s_1536_v1');
-// Numeric decision in RAG-H11-embedding-spend-control.md (2026-11-19).
-// This policy is scoped to the offline calibration.
-const LIMITS: H11OfflinePolicy = Object.freeze({
-  modelId: H11_MODEL_ID,
-  plannedProviderHardLimitUsdCents: 200,
-  applicationMonthlyBudgetUsdCents: 100,
-  maxMonthlyReservedTokens: 5_000_000,
-  maxDailyReservedTokens: 250_000,
-  maxJobReservedTokens: 150_000,
-  maxEvaluationMonthlyReservedTokens: 100_000,
-});
-
 type Input = Pick<H9RenderedTokenChunk, 'content' | 'tokenCount'>;
 
 function planJob(inputTokens: readonly number[]) {
