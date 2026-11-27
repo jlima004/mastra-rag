@@ -34,17 +34,24 @@ export type H9RenderedTokenChunk = Readonly<{
   legalUnitIds: readonly string[];
 }>;
 
-export type H9RenderedTokenSet = Readonly<{
-  provenance: 'synthetic-only-unverified-source';
+export type H9OfflineTokenSet = Readonly<{
   paidAdmissionApproved: false;
   profileId: string;
+  versionId: string;
+  baseChunkSetId: string;
   chunkSetId: string;
+  headerMetadataSha256: string | null;
   normalizedSha256: string;
   tokenizer: 'cl100k_base/js-tiktoken@1.0.21';
   identityVersion: 'rag:chunkset-rendered:v2';
   config: H9TokenGridConfig;
   totalTokens: number;
   chunks: readonly H9RenderedTokenChunk[];
+}>;
+
+export type H9RenderedTokenSet = Omit<H9OfflineTokenSet,
+  'versionId' | 'baseChunkSetId' | 'headerMetadataSha256'> & Readonly<{
+  provenance: 'synthetic-only-unverified-source';
 }>;
 
 const SEPARATOR = '\n---\n';
@@ -135,7 +142,7 @@ function unitIds(blocks: readonly LegalBlock[], start: number, end: number): rea
 
 /**
  * Token-based, scalar-safe segmenter. Binary-searches full rendered inputs, not
- * byte/character proxies. Only synthetic local calibration is in scope.
+ * byte/character proxies.
  * Optional overlap is measured in the same cl100k_base encoding, with progress.
  */
 function splitTokenWindow(
@@ -203,12 +210,12 @@ function splitTokenWindow(
  * NEW versioned profile, strictly separate from historical utf8-byte-proxy@1.
  * Never exposes provider access or marks an official legal snapshot approved.
  */
-export function renderH9TokenGridOffline(
+export function renderH9TokenChunksOffline(
   doc: NormalizedLegalDocument,
   fetched: FetchedDocument,
   source: OfflineChunkSource,
   config: H9TokenGridConfig,
-): H9RenderedTokenSet {
+): H9OfflineTokenSet {
   if (!doc || !fetched || !source || doc.sourceId !== source.sourceId ||
       fetched.sourceId !== source.sourceId ||
       sha256(doc.normalizedText) !== doc.normalizedSha256 ||
@@ -316,9 +323,11 @@ export function renderH9TokenGridOffline(
   }
   if (chunks.length === 0) fail('CHUNK_EMPTY');
   return Object.freeze({
-    provenance: 'synthetic-only-unverified-source',
     paidAdmissionApproved: false,
     profileId,
+    versionId,
+    baseChunkSetId: baseSetId,
+    headerMetadataSha256: headerMetadataHash,
     chunkSetId: setId,
     normalizedSha256: doc.normalizedSha256,
     tokenizer: 'cl100k_base/js-tiktoken@1.0.21',
@@ -327,4 +336,16 @@ export function renderH9TokenGridOffline(
     totalTokens,
     chunks: Object.freeze(chunks),
   });
+}
+
+/** Preserve the synthetic grid's public contract. */
+export function renderH9TokenGridOffline(
+  doc: NormalizedLegalDocument,
+  fetched: FetchedDocument,
+  source: OfflineChunkSource,
+  config: H9TokenGridConfig,
+): H9RenderedTokenSet {
+  const { versionId, baseChunkSetId, headerMetadataSha256, ...set } =
+    renderH9TokenChunksOffline(doc, fetched, source, config);
+  return Object.freeze({ provenance: 'synthetic-only-unverified-source', ...set });
 }

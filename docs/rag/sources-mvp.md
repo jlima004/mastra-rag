@@ -7,6 +7,10 @@ exact HTTPS references from official publications. Step B never requests their c
 performs DNS resolution or creates a local HTML cache. Live content and amendments
 are verified later in Step C before a legal-text snapshot is allowed to become current.
 
+## Experimental subset (2026-11-26)
+
+The [H9C-MVP decision](../decisions/RAG-H9C-official-source-and-token-grid.md#h9c-mvp--ratified-scope-and-calibration-2026-11-26) records offline admission of the two exact DOU snapshots for Resolutions 15/2024 and 18/2024. The [experimental manifest](../../src/mastra/rag/processing/mvp-corpus.ts) records the acquisition dates and digests. LGPD remains in the fixed manifest for future work. The owner deferred the independent legal comparison for this experimental subset. Production activation and paid execution require separate approval.
+
 ## Sources included in the fixed manifest
 
 | ID | Official act | Canonical reference in manifest | Reference evidence | Caveat |

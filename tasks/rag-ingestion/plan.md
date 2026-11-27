@@ -50,7 +50,11 @@ The [operator package work order](../../docs/rag/e1-operator-package.md) stages 
 
 [Current CLI historian operator runbook](../../docs/rag/e1-h5-remote-cli-readonly-gate.md) records owner authorization for `supabase migration list --remote=lmocjhpajhxegzobydau` using CLI **3.1.0** only. The connected Supabase **MCP** read verified foundation `20261113233720`; the owner subsequently executed the **actual authenticated CLI 3.1.0** remote listing on 2026-11-18 and the Local/Remote columns independently matched. However CLI 3.1.0 prints `Initialising login role...` and its tagged source may POST for a short-lived login role with `read_only:false` when no database password is supplied; the authenticated history proof is complete, while the stronger no-provider-side-effect claim is not established. Operator script and offline CI mock enforce target/hash and no-write scope. This gate authorizes no `db push`, `migration repair`, roles, credentials, vector provisioning, H6 security modification or E2 ingestion. **NO_BACKUP_MVP** remains binding.
 
-## H9C-C2 — Versioned offline DOU extractor candidate (2026-11-26)
+## H9C-MVP — Experimental admission and calibration (2026-11-26)
+
+Follow [MVP_SCOPE_SIMPLIFICATION](https://github.com/jlima004/mastra-rag/issues/35). Freeze the two selected ANPD DOU snapshots with a basic documentary review, defer LGPD and the exhaustive legal comparison, and calibrate the four profiles offline. The [decision and measurements](../../docs/decisions/RAG-H9C-official-source-and-token-grid.md#h9c-mvp--ratified-scope-and-calibration-2026-11-26) recommend S512. Submit the candidate in one Draft for Product Manager adjudication. H12 retention/erasure, E2 atomic budget and publication controls, H11-OPS, and explicit production activation remain downstream work.
+
+## Historical H9C-C2 — Versioned offline DOU extractor candidate (2026-11-26)
 
 [H9C-C2 decision](../../docs/decisions/RAG-H9C-C2-versioned-dou-extractor.md) defines the dedicated `dou-html@2` extraction contract, explicit offline dispatch, identity and resource fences. Validate only the two selected private H9C-C1 pairs and synthetic controls. Publish the candidate as a separate Draft stacked on PR #37. Technical extraction and exact-HEAD review feed the pending human legal cotejo. The larger H9C corpus and calibration gates stay open.
 

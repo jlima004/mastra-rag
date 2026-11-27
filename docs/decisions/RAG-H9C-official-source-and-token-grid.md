@@ -1,8 +1,35 @@
 # H9C — Official source acquisition attempt and offline token-grid calibration
 
+## H9C-MVP — Ratified scope and calibration (2026-11-26)
+
+The owner ratified `MVP_SCOPE_SIMPLIFICATION` in [Issue #35](https://github.com/jlima004/mastra-rag/issues/35). The initial experimental corpus is the two frozen DOU snapshots of Resolutions CD/ANPD 15/2024 and 18/2024. The historical scope and findings below apply to the earlier acquisition and calibration work. The LGPD and the Planalto investigation are deferred, with the existing source identity and canonical URI preserved. The MVP replaces the exhaustive C2-G7 legal comparison with a basic documentary check of source identity, hashes, headers, articles, annexes, ordered locators and offsets. Legal currency, an independent legal comparison and complete browser-visible fidelity remain unverified.
+
+The [versioned experimental manifest](../../src/mastra/rag/processing/mvp-corpus.ts) binds the exact source identity, rendered source title, UTC acquisition date and hashes of the raw bytes, receipt, normalized text, extracted blocks and locator metadata. The descriptor reader, strict decoder, `dou-html@2` and `normalizeDouLegalBlocks` (`legal-text@1`, under the versioned DOU extractor profile) revalidated both pairs. The results matched the H9C-C2 evidence, including 171 and 102 blocks, 135 and 77 explicit locators, and 3 + 24 and 2 + 21 main-act and annex articles. The active source manifest still dispatches `dou-html@1`. The experimental classification is `MVP_EXPERIMENTAL_CORPUS_FROZEN`. Approval flags for legal certification, paid admission and production activation are false.
+
+Run `npm run --silent rag:h9:grid:mvp -- /absolute/private/quarantine` on Linux or WSL with the existing private descriptor policy. The command reads both frozen pairs and emits sanitized JSON. The stable `result` and its SHA-256 cover per-source and aggregate metrics and identities. The separate `performance` object records local observations. The real corpus stays outside CI, which exercises invented fixtures and the existing synthetic grid.
+
+### Measured results and initial profile
+
+| Profile | Chunks | Rendered tokens | p50 | p95 | Max | Body block coverage | Ingestion estimate (USD) | Retry reserve tokens |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| S256 | 118 | 21,866 | 198 | 255 | 256 | 225/273 | 0.000438 | 87,464 |
+| S512 | 65 | 14,897 | 196 | 490 | 512 | 225/273 | 0.000298 | 59,588 |
+| S1024 | 56 | 13,659 | 171 | 837 | 974 | 225/273 | 0.000274 | 54,636 |
+| R400 | 33 | 12,157 | 379 | 397 | 397 | 273/273 | 0.000244 | 48,628 |
+
+The grid uses `cl100k_base/js-tiktoken@1.0.21` and rendered identity v2. All four profiles recovered 225/225 non-heading blocks, both annexes' normative body, and 212/212 explicit locator IDs. No results exceeded the profile's token limit. The structural profiles relocate heading context into rendered breadcrumbs (46/48 headings represented) and omit inter-block separators at split boundaries. R400 preserves all source offsets and repeats 1,860 tokens across planned overlaps. Checks found zero unexpected gaps, repeats or offset mismatches. Percentiles use nearest rank. Header overhead is the marginal cost of rendering the header and separator, including the effect of the BPE boundary.
+
+**Recommend S512 for the initial MVP.** All 215 article-scoped blocks retain their breadcrumbs, with zero individual explicit units split and four of 50 complete article scopes split. S256 splits 17 article scopes and five explicit paragraphs and emits 53 additional vectors. S1024 retains three more article scopes together and saves nine vectors, with a p95 of 837 and a maximum of 974 tokens. R400 saves vectors and retains every heading in the body, and 28 of its 33 chunks mix multiple articles. Article-aligned chunks with explicit locators support direct references in later evaluation. These measurements quantify structure and granularity. Retrieval quality and citation accuracy require semantic evaluation after an index and RAG agent are available.
+
+H11's configured USD 0.02 per million renders a measured quote of USD 0.000298 for S512 and USD 0.001192 including three retries per document job. Two cold jobs on the same UTC day use two initial batches, with a largest batch of 9,863 tokens. Under a zero-usage starting scenario, measured headroom is 110,548 tokens in the tightest job, 190,412/day, 4,940,412/month and USD 0.998808/month. The evaluation reserve remains 100,000 tokens/month and the provider control remains USD 2/month. The current Step D byte-plus-eight input check would reject 19 S512 chunks at its 1,024-unit hard cap. Confirm the production token accounting path before activation. H11 arithmetic offline provides no enforcement or provider-billed usage evidence.
+
+Before productive activation, obtain profile ratification, explicitly approve the extractor and served corpus, and complete H12 retention/erasure, E2 durable spend reservations and H11-OPS billing-route and key custody checks. Paid ingestion and a bounded first paid smoke require separate authorization.
+
+## Historical H9C acquisition and token-grid work
+
 **Prepared:** 2026-11-23. **Baseline:** `master@242f529a5662cfd5b21e29465197f28d8d49ac9e` (H9B merged, CI/deploy/health confirmed). **Authorization:** owner approved progressing with controlled, read-only official-source acquisition and freezing provenance plus token-grid calibration, but **not** production ingestion, new host allowlists, paid calls, SQL/remote writes or automatic merge/deploy.
 
-**Current state (R1 in progress, 2026-11-24):** `H9C_OPERATOR_ATTEMPTS_RECORDED / ARCHIVE_SECURITY_R1_IMPLEMENTED_CANDIDATE / EXACT_HEAD_CI_AND_CODEX_PENDING / OFFICIAL_CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`. Original PR #36 R0 had **three blocking Codex P2s** on output confinement and partial writes; neither prior green CI nor a subsequent successful operator HTTP response makes the source corpus accepted.
+**Recorded state (R1 in progress, 2026-11-24):** `H9C_OPERATOR_ATTEMPTS_RECORDED / ARCHIVE_SECURITY_R1_IMPLEMENTED_CANDIDATE / EXACT_HEAD_CI_AND_CODEX_PENDING / OFFICIAL_CORPUS_UNFROZEN / PAID_EXECUTION_BLOCKED`. Original PR #36 R0 had **three blocking Codex P2s** on output confinement and partial writes; neither prior green CI nor a subsequent successful operator HTTP response makes the source corpus accepted.
 
 ## 1. Exact source set, unchanged manifest
 
@@ -55,7 +82,7 @@ The new `token-grid.ts` adds a **separate** renderer for the installed `js-tikto
 
 Run `npm run rag:h9:grid:synthetic` to emit **aggregate-only** measurement receipts from the invented synthetic LGPD fixture. The result includes p50/p95/max, chunk count, over-target, locator intersections, body offset reconstruction, batch/retry-inclusive token envelope and estimated USD microcents using the current H11 offline quote. A synthetic output is **not** a measurement of current law, not evidence of retrieval quality, not provider-reported billing and not a published chunk/index.
 
-## 5. Remaining approval gates
+## 5. Historical approval gates
 
 - [x] R1 exact-HEAD CI **196/196 PASS** on `6c79ac2505`; three original archive P2 threads corrected and resolved.
 - [ ] **R2 exact-HEAD** CI, independent Codex review of header/body Unicode regressions and *new* structural profile version, independent security gate and human merge/deploy authorization. Prior R1 green CI is not transferable.
@@ -84,4 +111,4 @@ Codex identified a **new** P2 on R1 HEAD `6c79ac2505`, separate from the three r
 
 **R2 candidate ≠ approval:** exact new HEAD CI, Codex review and original P2 thread closure remain required. No additional live Planalto/DOU request or paid OpenAI call was authorized or executed.
 
-**H9C is not COMPLETE:** this PR is still an offline tooling milestone with official-source acquisition blocked; source snapshots, legal QA, ingress and paid execution remain unapproved.
+**State at R2:** offline tooling milestone with acquisition blocked. The ratified MVP scope and offline results above record the later disposition.

@@ -2,6 +2,9 @@
 
 **Decision (2026-11-26).** Implement a dedicated, dependency-free DOU extractor and test its fidelity offline against the two selected H9C-C1 quarantine pairs. The candidate depends on [PR #37](https://github.com/jlima004/mastra-rag/pull/37) at `d5085df4cbdc44c71f28e89ba8dd2ad2d0f8475c`. Track remaining H9C work in [Issue #35](https://github.com/jlima004/mastra-rag/issues/35).
 
+
+**Integration and MVP disposition (2026-11-26).** [PR #37](https://github.com/jlima004/mastra-rag/pull/37) and [PR #38](https://github.com/jlima004/mastra-rag/pull/38) merged with passing CI. The owner replaced C2-G7 with basic documentary admission for the two exact experimental pairs, and accepted the absence of a standalone specialized security-review receipt within the reviewed offline scope. See [Issue #35](https://github.com/jlima004/mastra-rag/issues/35) and the [H9C-MVP decision](RAG-H9C-official-source-and-token-grid.md#h9c-mvp--ratified-scope-and-calibration-2026-11-26). The independent legal comparison and productive activation remain outside this decision.
+
 ## Cause and scope
 
 On both selected snapshots, the legacy extractor read a JavaScript comment's CDATA opener as HTML markup under `head/script`, at UTF-16 offset 7,221. H9C-C1 reproduced the rejection with synthetic control C2 and restored acceptance with C3 by removing the opener alone. Repeated interventions exposed seven similar rejection points and a tag-boundary rejection. This evidence applies to the two new hashes. The older snapshots' causes remain undetermined.
@@ -79,4 +82,4 @@ Select only the exact H9C-C1 pairs below. Their raw and receipt contents remain 
 | C2-G7 | `PENDING_HUMAN_LEGAL_VALIDATION` |
 | C2-G8 | Stacked Draft, CI and Codex Review on its exact SHA, with material findings and threads resolved |
 
-Record the separate specialized security review status. Adjudicate legal provenance, text and hierarchy, editorial boundaries, amendments, corrigenda and vigency against independent official references in the later human gate. Production activation needs explicit human approval of the extractor and verified corpus, resolution of the PR #37 dependency, and applicable reviewed calibration and downstream controls. The Planalto investigation remains suspended. H12, E2 and paid execution remain gated under their existing decisions.
+The original C2 procedure asked for a separate specialized security review status. It called for an independent legal comparison of provenance, text and hierarchy, editorial boundaries, amendments, corrigenda and vigency. The owner deferred that comparison for experimental admission. Production activation needs explicit human approval of the extractor and verified corpus, resolution of the PR #37 dependency, and applicable reviewed calibration and downstream controls. The Planalto investigation remains suspended. H12, E2 and paid execution remain gated under their existing decisions.
