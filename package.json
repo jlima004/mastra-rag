@@ -11,6 +11,7 @@
     "build": "mastra build",
     "start": "mastra start",
     "rag:h9:synthetic": "node --experimental-strip-types scripts/h9-audit-synthetic.ts",
+    "rag:h9:grid:mvp": "node --experimental-strip-types scripts/h9c-grid-mvp.ts",
     "rag:h9:grid:synthetic": "node --experimental-strip-types scripts/h9-grid-synthetic.ts",
     "rag:h9:acquire:operator": "node --experimental-strip-types scripts/h9c-fetch-operator.ts",
     "rag:h9:inspect:operator": "node --experimental-strip-types scripts/h9c-inspect-quarantine.ts",

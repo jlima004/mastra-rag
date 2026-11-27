@@ -1,15 +1,28 @@
-## H9C-C2 — Versioned offline DOU extractor candidate (2026-11-26)
+## H9C-MVP — Experimental admission and calibration (2026-11-26)
+
+[Owner decision](https://github.com/jlima004/mastra-rag/issues/35) · [Calibration and recommendation](../../docs/decisions/RAG-H9C-official-source-and-token-grid.md#h9c-mvp--ratified-scope-and-calibration-2026-11-26).
+
+- [x] MVP-G1: revalidate and freeze two DOU pairs. Defer LGPD with its canonical identity preserved.
+- [x] MVP-G2: run S256, S512, S1024 and R400 on identical inputs with the pinned local tokenizer.
+- [x] MVP-G3: verify body coverage, locators, offsets, caps, identities and H11 offline quotes.
+- [x] MVP-G4: recommend S512 and reconcile the experimental scope and downstream work.
+- [ ] MVP-G5: record candidate test, independent review, exact-HEAD CI and Codex Code Review results in the Draft PR.
+- [ ] Product Manager ratification, production extractor activation, H12, E2 and H11-OPS. Paid execution remains blocked.
+
+---
+
+## Historical H9C-C2 — Versioned offline DOU extractor candidate (2026-11-26)
 
 [Decision and gate criteria](../../docs/decisions/RAG-H9C-C2-versioned-dou-extractor.md).
 
 - [x] C2-G1/G2/G5: implemented explicit offline dispatch, bounded inert extraction and T1–T6 synthetic regressions. Confirmed the active manifest and legacy goldens.
 - [x] C2-G3/G4: revalidated both selected quarantine pairs through the private descriptor. Recorded header and legal region association, normalized identities, repeats and resource measurements.
-- [ ] C2-G6/G8: independent review, separate specialized security status, stacked Draft and exact-HEAD CI and Codex Review.
-- [x] Prepared the private checklist for the pending C2-G7 human legal validation. Production activation and official four-profile calibration require separate gates.
+- [x] C2-G6/G8: independent review, CI and Codex Code Review completed for [PR #38](https://github.com/jlima004/mastra-rag/pull/38). The owner accepted the residual absence of a standalone specialized security-review receipt for offline scope.
+- [x] Prepared the private C2-G7 checklist. The owner later substituted basic documentary validation for the experimental MVP and deferred the full legal comparison.
 
 ---
 
-## H9C — Official provenance + Token Grid (Draft, 2026-11-23)
+## Historical H9C — Official provenance + Token Grid (Draft, 2026-11-23)
 
 Authority: owner approved controlled **read-only acquisition** of manifest-approved official Planalto/ANPD/DOU sources and offline token-grid preparation. [H9C decision/evidence](../../docs/decisions/RAG-H9C-official-source-and-token-grid.md) · [Issue #35](https://github.com/jlima004/mastra-rag/issues/35).
 

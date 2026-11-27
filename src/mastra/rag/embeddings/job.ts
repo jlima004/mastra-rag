@@ -55,10 +55,10 @@ export type EmbeddingJobExecution = Readonly<{
   random?: () => number;
 }>;
 
-type Batch = Readonly<{ chunks: readonly DocumentEmbeddingInput[]; upperBound: number }>;
-type PreparedPlan = Readonly<{ plan: EmbeddingJobPlan; batches: readonly Batch[] }>;
+type Batch<T> = Readonly<{ chunks: readonly T[]; tokens: number }>;
+type PreparedPlan = Readonly<{ plan: EmbeddingJobPlan; batches: readonly Batch<DocumentEmbeddingInput>[] }>;
 const HASH_ID = /^[0-9a-f]{64}$/;
-const MAX_BATCH_SIZE = 128;
+export const EMBEDDING_JOB_MAX_BATCH_SIZE = 128;
 const MAX_RETRY_DELAY_MS = 30_000;
 
 function assertReady(signal: AbortSignal): void {
@@ -85,6 +85,32 @@ function isBudget(n: unknown): n is number {
     n <= RAG_LIMITS.MAX_TOKENS_PER_JOB;
 }
 
+/** Batching and the retry envelope shared by runtime preflight and offline measurements. */
+export function planEmbeddingBatches<T>(
+  chunks: readonly T[], countTokens: (chunk: T) => number, batchSize: number,
+) {
+  if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > EMBEDDING_JOB_MAX_BATCH_SIZE) {
+    throw new RagEmbeddingError('EMBED_INVALID_INPUT');
+  }
+  const batches: Batch<T>[] = [];
+  let totalTokens = 0;
+  let largestBatchTokens = 0;
+  for (let i = 0; i < chunks.length; i += batchSize) {
+    const group = chunks.slice(i, i + batchSize);
+    const tokens = group.reduce((sum, chunk) => sum + countTokens(chunk), 0);
+    totalTokens += tokens;
+    largestBatchTokens = Math.max(largestBatchTokens, tokens);
+    batches.push({ chunks: group, tokens });
+  }
+  // One initial call per nonempty batch, with a global retry allowance per job.
+  const retriesAvailable = batches.length ? RAG_LIMITS.MAX_JOB_ATTEMPTS - 1 : 0;
+  return {
+    batches, totalTokens, largestBatchTokens,
+    worstCaseTokenReservation: totalTokens + retriesAvailable * largestBatchTokens,
+    maxProviderCalls: batches.length + retriesAvailable,
+  };
+}
+
 function prepare(args: EmbeddingJobArguments): PreparedPlan {
   if (!args || !(args.signal instanceof AbortSignal) ||
       !isBudget(args.tokenBudget) || args.tokenBudget === 0 ||
@@ -101,7 +127,7 @@ function prepare(args: EmbeddingJobArguments): PreparedPlan {
       args.provider.maxInputTokens < 1) {
     throw new RagEmbeddingError('EMBED_INVALID_INPUT');
   }
-  const batchSize = Math.min(args.provider.maxInputsPerCall, MAX_BATCH_SIZE);
+  const batchSize = Math.min(args.provider.maxInputsPerCall, EMBEDDING_JOB_MAX_BATCH_SIZE);
   const seen = new Set<string>();
   const stableChunks: DocumentEmbeddingInput[] = [];
   for (const c of args.chunks) {
@@ -127,20 +153,9 @@ function prepare(args: EmbeddingJobArguments): PreparedPlan {
   }
   const present = new Set(existing);
   const missing = stableChunks.filter(chunk => !present.has(chunk.chunkId));
-  const batches: Batch[] = [];
-  let estimatedTokenUpperBound = 0;
-  for (let i = 0; i < missing.length; i += batchSize) {
-    const group = missing.slice(i, i + batchSize);
-    const upper = group.reduce((sum, c) =>
-      sum + conservativeInputTokenUpperBound(c.text), 0);
-    estimatedTokenUpperBound += upper;
-    batches.push({ chunks: group, upperBound: upper });
-  }
-  const worstBatch = Math.max(0, ...batches.map(b => b.upperBound));
-  // One initial call per nonempty batch; at most three retries FOR THE JOB.
-  const retriesAvailable = batches.length ? RAG_LIMITS.MAX_JOB_ATTEMPTS - 1 : 0;
-  const worstCaseTokenReservation =
-    estimatedTokenUpperBound + retriesAvailable * worstBatch;
+  const { batches, totalTokens, maxProviderCalls, worstCaseTokenReservation } = planEmbeddingBatches(
+    missing, c => conservativeInputTokenUpperBound(c.text), batchSize,
+  );
   if (worstCaseTokenReservation > args.tokenBudget ||
       worstCaseTokenReservation > args.remainingDailyTokens) {
     throw new RagEmbeddingError('EMBED_BUDGET_EXCEEDED');
@@ -151,8 +166,8 @@ function prepare(args: EmbeddingJobArguments): PreparedPlan {
       missingCount: missing.length,
       skippedCount: args.chunks.length - missing.length,
       batchCount: batches.length,
-      maxProviderCalls: batches.length + retriesAvailable,
-      estimatedTokenUpperBound,
+      maxProviderCalls,
+      estimatedTokenUpperBound: totalTokens,
       worstCaseTokenReservation,
       batchSize,
     }),
@@ -205,7 +220,7 @@ export async function embedMissingDocumentChunks(
       assertReady(args.signal);
       // Reserve EVERY attempt, including failed 429/5xx calls whose billing is
       // unknown. Preflight already guarantees enough room for all 3 retries.
-      reservedTokenUpperBound += batch.upperBound;
+      reservedTokenUpperBound += batch.tokens;
       if (reservedTokenUpperBound > args.tokenBudget ||
           reservedTokenUpperBound > args.remainingDailyTokens ||
           providerCalls >= prepared.plan.maxProviderCalls) {
@@ -241,7 +256,7 @@ export async function embedMissingDocumentChunks(
         response.vectors, batch.chunks.length, args.provider.dimension,
       );
       const reported = requireEmbeddingUsage(response.usage);
-      if (reported > batch.upperBound) {
+      if (reported > batch.tokens) {
         // Conservative envelope failed to cover reported tokens: stop before
         // any future call/persistence and require a revised token policy.
         throw new RagEmbeddingError('EMBED_USAGE_INVALID');

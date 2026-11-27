@@ -5,7 +5,7 @@ import type { EmbeddingJobPlan } from './job.ts';
 export const H11_MODEL_ID = 'openai/text-embedding-3-small' as const;
 export const H11_PRICE_MICRO_USD_PER_MILLION_INPUT_TOKENS = 20_000n;
 const ONE_MILLION = 1_000_000n;
-const MICRO_USD_PER_CENT = 10_000n;
+export const MICRO_USD_PER_CENT = 10_000n;
 const MAX_MONTHLY_TOKENS = 2_000_000_000;
 
 /**
