@@ -4,10 +4,7 @@ import { RAG_LIMITS } from '../contracts/types.ts';
 import { RagEmbeddingError } from './errors.ts';
 import { requireEmbeddingUsage, validateEmbeddingVectors, type EmbeddingProvider } from './provider.ts';
 import { assertProviderMatchesSpace, EMBEDDING_SPACES, requireEmbeddingSpace } from './space.ts';
-import {
-  createOpenAIEmbeddingProvider, OPENAI_ROUTER_MODEL_ID, parseRetryAfter,
-  sanitizeProviderFailure, type RouterEmbeddingModel,
-} from './openai.ts';
+import { parseRetryAfter } from './openai.ts';
 import {
   conservativeInputTokenUpperBound, embedMissingDocumentChunks, planEmbeddingJob,
   type DocumentEmbeddingInput, type EmbeddingJobArguments,
@@ -59,115 +56,6 @@ test('typed space registry is immutable and rejects cross-space vector writes', 
   assert.throws(() => requireEmbeddingSpace('chunks_unapproved_1536_v2'), e => code(e,'EMBED_INVALID_SPACE'));
   assert.throws(() => assertProviderMatchesSpace({ spaceId:SPACE_ID, dimension: 768 }, space),
     e => code(e,'EMBED_INVALID_SPACE'));
-});
-
-test('OpenAI model router adapter is lazy and gated with no environment key', async () => {
-  assert.equal(OPENAI_ROUTER_MODEL_ID, 'openai/text-embedding-3-small');
-  const before = process.env.OPENAI_API_KEY;
-  delete process.env.OPENAI_API_KEY;
-  try {
-    const provider = createOpenAIEmbeddingProvider();
-    assert.equal(provider.dimension, 1536);
-    assert.equal(provider.maxInputTokens, 8191);
-    await assert.rejects(provider.embed(['hello'],{signal,purpose:'document'}),
-      e => code(e,'EMBED_PAID_NOT_AUTHORIZED'));
-    // A missing API key must never break module import or Mastra startup.
-  } finally {
-    if (before === undefined) delete process.env.OPENAI_API_KEY;
-    else process.env.OPENAI_API_KEY = before;
-  }
-});
-
-test('injected Mastra doEmbed boundary forwards inputs/signal but creates model only on call', async () => {
-  let initialized = 0;
-  const inputsObserved: string[][] = [];
-  const mock: RouterEmbeddingModel = {
-    async doEmbed({ values, abortSignal }) {
-      inputsObserved.push(values);
-      assert.equal(abortSignal, signal);
-      return { embeddings: values.map(() => [...VALID_VECTOR]), usage: { tokens: 5 } };
-    },
-  };
-  const provider = createOpenAIEmbeddingProvider({
-    modelFactory: async () => { initialized++; return mock; },
-  });
-  assert.equal(initialized, 0);
-  const a = await provider.embed(['palavra sintética'],{signal,purpose:'document'});
-  const b = await provider.embed(['query sintética'],{signal,purpose:'query'});
-  assert.equal(initialized, 1);
-  assert.equal(a.vectors[0].length, 1536);
-  assert.equal(b.usage.tokens, 5);
-  assert.deepEqual(inputsObserved,[['palavra sintética'],['query sintética']]);
-});
-
-test('lazy router constructor failures are sanitized even before doEmbed', async () => {
-  const secret='RAW_PROVIDER_CONSTRUCTOR_SECRET';
-  const provider=createOpenAIEmbeddingProvider({
-    modelFactory: async()=>{throw new Error(secret);},
-  });
-  await assert.rejects(provider.embed(['synthetic'],{signal,purpose:'document'}), e => {
-    assert.ok(code(e,'EMBED_PROVIDER_FAILURE'));
-    assert.doesNotMatch(JSON.stringify(e),/RAW_PROVIDER_CONSTRUCTOR_SECRET/);
-    return true;
-  });
-});
-
-test('provider validates shape and finite values before returning embeddings', async () => {
-  const wrongShape = createOpenAIEmbeddingProvider({
-    modelFactory: () => ({ doEmbed: async () => ({
-      embeddings: [[1,2]], usage: { tokens: 1 },
-    }) }),
-  });
-  await assert.rejects(wrongShape.embed(['a'],{signal,purpose:'document'}),
-    e => code(e,'EMBED_DIMENSION_MISMATCH'));
-  const wrongValue = createOpenAIEmbeddingProvider({
-    modelFactory: () => ({ doEmbed: async () => ({
-      embeddings: [[...VALID_VECTOR.slice(0,1535), NaN]], usage: { tokens: 1 },
-    }) }),
-  });
-  await assert.rejects(wrongValue.embed(['a'],{signal,purpose:'document'}),
-    e => code(e,'EMBED_NONFINITE_VECTOR'));
-  assert.throws(() => validateEmbeddingVectors([new Array(1536).fill(Infinity)],1,1536),
-    e => code(e,'EMBED_NONFINITE_VECTOR'));
-  assert.throws(() => requireEmbeddingUsage({ tokens: -1 }),e => code(e,'EMBED_USAGE_INVALID'));
-  assert.throws(() => requireEmbeddingUsage({ tokens: '10' }),e => code(e,'EMBED_USAGE_INVALID'));
-});
-
-test('upstream provider errors are reduced to fixed codes without leaked text or API keys', async () => {
-  const secret = 'KEY_SECRET_NOT_TO_EXPOSE_123';
-  const adapter = createOpenAIEmbeddingProvider({
-    modelFactory: () => ({ doEmbed: async () => { throw Object.assign(
-      new Error('raw content ' + secret), { status: 429, headers: {'retry-after':'2'} },
-    ); } }),
-  });
-  await assert.rejects(adapter.embed(['sensitive text'],{signal,purpose:'document'}), e => {
-    assert.ok(code(e,'EMBED_PROVIDER_TRANSIENT'));
-    assert.ok(e instanceof RagEmbeddingError);
-    assert.equal(e.retryable,true);
-    assert.equal(e.retryAfterMs,2000);
-    assert.doesNotMatch(JSON.stringify(e),/KEY_SECRET_NOT_TO_EXPOSE_123/);
-    return true;
-  });
-  const bad = sanitizeProviderFailure(
-    Object.assign(new Error(secret), { status: 401 }), signal);
-  assert.ok(code(bad,'EMBED_PROVIDER_FAILURE'));
-  assert.equal(bad.retryable,false);
-});
-
-test('AI SDK responseHeaders on 429/503 are honored and never retried early', async () => {
-  for(const status of [429,503]){
-    const sdkShape={statusCode:status,responseHeaders:{'retry-after':'60'}};
-    const failure=sanitizeProviderFailure(sdkShape,signal);
-    assert.equal(failure.retryable,true);
-    assert.equal(failure.retryAfterMs,60_000);
-    let calls=0;
-    const provider=fakeProvider(async()=>{calls++;throw failure;});
-    await assert.rejects(embedMissingDocumentChunks(args(fixtureChunks(1),provider),{
-      random:()=>0,
-      sleep:async()=>{assert.fail('must not ignore a 60s Retry-After');},
-    }), e=>code(e,'EMBED_RETRY_DELAY_EXCEEDED'));
-    assert.equal(calls,1);
-  }
 });
 
 test('Retry-After parser handles seconds and HTTP dates and refuses malicious/oversized values', () => {
@@ -349,14 +237,7 @@ test('provider dimension mismatch or invalid usage halts job before any persiste
     e=>code(e,'EMBED_USAGE_INVALID'));
 });
 
-test('max input count and fake provider async error keep messages sanitized', async () => {
-  const injected=createOpenAIEmbeddingProvider({
-    modelFactory:()=>({doEmbed:async()=>{throw new Error('SECRET-EMBEDDING-INPUT');}}),
-  });
-  await assert.rejects(injected.embed(['a'],{signal,purpose:'query'}),
-    e=>code(e,'EMBED_PROVIDER_FAILURE'));
-  await assert.rejects(injected.embed(new Array(129).fill('test'),{signal,purpose:'document'}),
-    e=>code(e,'EMBED_INVALID_INPUT'));
-  const tokens=conservativeInputTokenUpperBound('Árvore');
+test('legacy byte estimate keeps its UTF-8 padding', () => {
+  const tokens = conservativeInputTokenUpperBound('Árvore');
   assert.ok(tokens > Buffer.byteLength('Árvore'));
 });

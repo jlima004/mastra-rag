@@ -1,58 +1,42 @@
-import type { EmbeddingProvider } from './provider.ts';
-import { requireEmbeddingUsage, validateEmbeddingVectors } from './provider.ts';
+import { countH9Cl100kTokens } from '../processing/cl100k-counter.ts';
 import { RagEmbeddingError } from './errors.ts';
+import { requireEmbeddingUsage, validateEmbeddingVectors, type EmbeddingProvider } from './provider.ts';
 import { requireEmbeddingSpace } from './space.ts';
 
-export const OPENAI_ROUTER_MODEL_ID = 'openai/text-embedding-3-small' as const;
 const SPACE = requireEmbeddingSpace('chunks_te3s_1536_v1');
-const MAX_INPUTS_PER_CALL = 128;
-const MAX_INPUT_TOKENS = 8191;
+export const OPENAI_EMBEDDING_CONFIG = Object.freeze({
+  endpoint: 'https://api.openai.com/v1/embeddings',
+  provider: 'openai',
+  model: SPACE.embeddingModel,
+  dimension: SPACE.dimension,
+  spaceId: SPACE.spaceId,
+  maxInputsPerCall: 128,
+  maxInputTokens: 512,
+});
+const MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
+const MAX_ERROR_BYTES = 16 * 1024;
+const TIMEOUT_MS = 25_000;
+const NON_RETRYABLE_QUOTA = new Set([
+  'insufficient_quota', 'organization_usage_limit_exceeded', 'credit_balance_exhausted',
+  'organization_spend_limit_exceeded', 'project_spend_limit_exceeded',
+]);
 
-/**
- * A small, injectable boundary around the @mastra/core@1.83.0 model router.
- * Native doEmbed is used directly: the ai / embedMany package is NOT added.
- * The type boundary intentionally accepts unknown response data for validation.
- */
-export type RouterEmbeddingModel = Readonly<{
-  doEmbed(args: {
-    values: string[];
-    abortSignal?: AbortSignal;
-    providerOptions?: Record<string, Record<string, unknown>>;
-  }): Promise<{ embeddings: unknown; usage?: unknown }>;
-}>;
-
-export type OpenAIRouterOptions = Readonly<{
-  /** H11 MUST be ratified separately before this can be set true in production. */
-  allowPaidCalls?: boolean;
-  /** Offline-only dependency injection for regression tests; never uses keys. */
-  modelFactory?: () => Promise<RouterEmbeddingModel> | RouterEmbeddingModel;
-}>;
-
-function safeStatus(error: unknown): number | null {
-  try {
-    if (!error || typeof error !== 'object') return null;
-    const e = error as Record<string, unknown>;
-    const status = e.status ?? e.statusCode;
-    return typeof status === 'number' && Number.isSafeInteger(status) ? status : null;
-  } catch { return null; }
+function credential(): string | undefined {
+  const value = process.env.OPENAI_API_KEY;
+  return value && /^[!-~]+$/.test(value) ? value : undefined;
 }
 
-/** Response headers are untrusted and MUST NOT enter any error/log message. */
-function safeRetryAfter(error: unknown): string | null {
-  try {
-    if (!error || typeof error !== 'object') return null;
-    const e = error as Record<string, unknown>;
-    // AI SDK APICallError exposes responseHeaders (not response.headers).
-    // Keep fallback support for HTTP client and mock error shapes.
-    const h = e.responseHeaders ?? (e.response && typeof e.response === 'object'
-      ? (e.response as Record<string, unknown>).headers : e.headers);
-    if (!h || typeof h !== 'object') return null;
-    const get = (h as { get?: unknown }).get;
-    const value = typeof get === 'function'
-      ? (get as (name: string) => unknown).call(h, 'retry-after')
-      : (h as Record<string, unknown>)['retry-after'];
-    return typeof value === 'string' && value.length <= 100 ? value : null;
-  } catch { return null; }
+export function assertDirectOpenAITransport(): void {
+  // Node may install an ambient fetch proxy before any application code runs.
+  if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0' ||
+      process.env.NODE_USE_ENV_PROXY === '1' ||
+      [...process.execArgv, process.env.NODE_OPTIONS ?? ''].some(value => value.includes('--use-env-proxy'))) {
+    throw new RagEmbeddingError('EMBED_TRANSPORT_CONFIG_INVALID');
+  }
+}
+
+export function hasOpenAIEmbeddingCredential(): boolean {
+  return credential() !== undefined;
 }
 
 export function parseRetryAfter(raw: string | null, nowMs = Date.now()): number | null {
@@ -74,17 +58,55 @@ export function parseRetryAfter(raw: string | null, nowMs = Date.now()): number 
   return Math.max(0, Math.ceil(target - nowMs));
 }
 
-/**
- * Upstream error may contain raw text or credentials. Never propagate it,
- * attach a cause, or echo its message.
- */
-export function sanitizeProviderFailure(error: unknown, signal: AbortSignal): RagEmbeddingError {
+function object(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown> : undefined;
+}
+
+async function readJSON(response: Response, limit: number, signal: AbortSignal): Promise<unknown> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  let complete = false;
+  try {
+    if (Number(response.headers.get('content-length')) > limit) {
+      throw new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
+    }
+    for (;;) {
+      signal.throwIfAborted();
+      const { done, value } = await reader.read();
+      if (done) {
+        complete = true;
+        break;
+      }
+      bytes += value.byteLength;
+      if (bytes > limit) throw new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
+      chunks.push(value);
+    }
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, bytes)));
+  } finally {
+    if (!complete) void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
+async function httpFailure(response: Response, signal: AbortSignal): Promise<RagEmbeddingError> {
+  const { status } = response;
+  if (status === 429) {
+    // Inspect only the bounded error code. Never propagate the upstream body.
+    const body = object(await readJSON(response, MAX_ERROR_BYTES, signal).catch(() => null));
+    const error = object(body?.error);
+    if ([error?.code, error?.type].some(value => typeof value === 'string' && NON_RETRYABLE_QUOTA.has(value))) {
+      return new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
+    }
+  } else if (response.body) {
+    void response.body.cancel().catch(() => {});
+  }
   if (signal.aborted) return new RagEmbeddingError('EMBED_ABORTED');
-  const status = safeStatus(error);
-  if (status === 408 || status === 429 || (status !== null && status >= 500 && status <= 599)) {
+  if (status === 408 || status === 429 || (status >= 500 && status < 600)) {
     const retryAfterMs = status === 429 || status === 503
-      ? parseRetryAfter(safeRetryAfter(error))
-      : null;
+      ? parseRetryAfter(response.headers.get('retry-after')) : null;
     return new RagEmbeddingError('EMBED_PROVIDER_TRANSIENT', {
       retryable: true,
       ...(retryAfterMs !== null ? { retryAfterMs } : {}),
@@ -93,71 +115,93 @@ export function sanitizeProviderFailure(error: unknown, signal: AbortSignal): Ra
   return new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
 }
 
-/**
- * An inert adapter: no import-time provider construction, no key access and
- * no production registration. The real model is created at the FIRST embed
- * call only if explicit paid-call authorization is supplied in a future PR.
- */
-export function createOpenAIEmbeddingProvider(
-  options: OpenAIRouterOptions = {},
-): EmbeddingProvider {
-  let modelPromise: Promise<RouterEmbeddingModel> | undefined;
-
-  async function getModel(): Promise<RouterEmbeddingModel> {
-    if (!options.modelFactory && options.allowPaidCalls !== true) {
-      throw new RagEmbeddingError('EMBED_PAID_NOT_AUTHORIZED');
+function validateResponse(raw: unknown, count: number, signal: AbortSignal) {
+  const envelope = object(raw);
+  const usage = object(envelope?.usage);
+  const tokens = requireEmbeddingUsage({ tokens: usage?.prompt_tokens });
+  if (tokens < 1 || usage?.total_tokens !== tokens) throw new RagEmbeddingError('EMBED_USAGE_INVALID');
+  try {
+    if (signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
+    if (envelope?.object !== 'list' || envelope.model !== SPACE.embeddingModel ||
+        !Array.isArray(envelope.data) || envelope.data.length !== count) {
+      throw new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
     }
-    if (!modelPromise) {
-      modelPromise = Promise.resolve().then(async () => {
-        if (options.modelFactory) return options.modelFactory();
-        // Mastra 1.83.0: constructor validates the API key; lazy by design.
-        const { ModelRouterEmbeddingModel } = await import('@mastra/core/llm');
-        return new ModelRouterEmbeddingModel(OPENAI_ROUTER_MODEL_ID) as unknown as RouterEmbeddingModel;
-      });
+    const byIndex = new Map<number, unknown>();
+    for (const value of envelope.data) {
+      const item = object(value);
+      const index = item?.index;
+      if (item?.object !== 'embedding' || typeof index !== 'number' || !Number.isInteger(index) ||
+          index < 0 || index >= count || byIndex.has(index)) {
+        throw new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
+      }
+      byIndex.set(index, item.embedding);
     }
-    return modelPromise;
+    const vectors = validateEmbeddingVectors(
+      Array.from({ length: count }, (_, index) => byIndex.get(index)), count, SPACE.dimension,
+    );
+    if (vectors.some(vector => vector.some(value => !Number.isFinite(Math.fround(value))))) {
+      throw new RagEmbeddingError('EMBED_NONFINITE_VECTOR');
+    }
+    return { vectors, usage: { tokens } };
+  } catch (error) {
+    const code = error instanceof RagEmbeddingError ? error.code : 'EMBED_PROVIDER_FAILURE';
+    throw new RagEmbeddingError(code, { reportedTokens: tokens });
   }
+}
 
+export function createOpenAIEmbeddingProvider(
+  { allowPaidCalls = false }: Readonly<{ allowPaidCalls?: boolean }> = {},
+): EmbeddingProvider {
+  const { endpoint, model, dimension, spaceId, maxInputsPerCall, maxInputTokens } = OPENAI_EMBEDDING_CONFIG;
   return Object.freeze({
-    spaceId: SPACE.spaceId,
-    dimension: SPACE.dimension,
-    maxInputsPerCall: MAX_INPUTS_PER_CALL,
-    maxInputTokens: MAX_INPUT_TOKENS,
-    async embed(
-      inputs: readonly string[],
-      embedOptions: { signal: AbortSignal; purpose: 'document' | 'query' },
-    ): Promise<{ vectors: number[][]; usage: { tokens: number } }> {
-      if (!embedOptions || !(embedOptions.signal instanceof AbortSignal) ||
-          (embedOptions.purpose !== 'document' && embedOptions.purpose !== 'query') ||
-          !Array.isArray(inputs) || inputs.length === 0 ||
-          inputs.length > MAX_INPUTS_PER_CALL ||
-          inputs.some(value => typeof value !== 'string' || !value.trim())) {
+    spaceId, dimension, maxInputsPerCall, maxInputTokens,
+    async embed(inputs, options) {
+      if (allowPaidCalls !== true) throw new RagEmbeddingError('EMBED_PAID_NOT_AUTHORIZED');
+      if (!options || !(options.signal instanceof AbortSignal) ||
+          (options.purpose !== 'document' && options.purpose !== 'query') ||
+          !Array.isArray(inputs) || inputs.length < 1 || inputs.length > maxInputsPerCall ||
+          Array.from(inputs).some(value => typeof value !== 'string' || !value.trim() ||
+            value.includes('\0'))) {
         throw new RagEmbeddingError('EMBED_INVALID_INPUT');
       }
-      if (embedOptions.signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
-      // The paid-call gate is checked BEFORE touching any secret/provider.
-      // Provider initialization can throw secret-bearing errors too.
-      let model: RouterEmbeddingModel;
-      try { model = await getModel(); }
-      catch (error) {
-        if (error instanceof RagEmbeddingError) throw error;
-        throw sanitizeProviderFailure(error, embedOptions.signal);
-      }
-      if (embedOptions.signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
-      let raw: { embeddings: unknown; usage?: unknown };
+      if (options.signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
+      assertDirectOpenAITransport();
+      const key = credential();
+      if (!key) throw new RagEmbeddingError('EMBED_CREDENTIAL_UNAVAILABLE');
+      const exactInputs = [...inputs];
       try {
-        raw = await model.doEmbed({
-          values: [...inputs],
-          abortSignal: embedOptions.signal,
-        });
-      } catch (error) {
-        throw sanitizeProviderFailure(error, embedOptions.signal);
+        if (exactInputs.some(value => countH9Cl100kTokens(value) > maxInputTokens)) {
+          throw new RagEmbeddingError('EMBED_INVALID_INPUT');
+        }
+      } catch {
+        throw new RagEmbeddingError('EMBED_INVALID_INPUT');
       }
-      if (embedOptions.signal.aborted) throw new RagEmbeddingError('EMBED_ABORTED');
-      if (!raw || typeof raw !== 'object') throw new RagEmbeddingError('EMBED_PROVIDER_FAILURE');
-      const vectors = validateEmbeddingVectors(raw.embeddings, inputs.length, SPACE.dimension);
-      const tokens = requireEmbeddingUsage(raw.usage);
-      return { vectors, usage: { tokens } };
+      const signal = AbortSignal.any([options.signal, AbortSignal.timeout(TIMEOUT_MS)]);
+      const bytes = new TextEncoder().encode(JSON.stringify({
+        model, input: exactInputs, dimensions: dimension, encoding_format: 'float',
+      }));
+      // Node's fetch can replay a buffered request on HTTP 421. A one-shot
+      // stream has no replayable body source in the bundled Undici.
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) { controller.enqueue(bytes); controller.close(); },
+      });
+      const request: RequestInit & { duplex: 'half' } = {
+        method: 'POST', redirect: 'error', signal, body, duplex: 'half',
+        headers: {
+          Authorization: `Bearer ${key}`, 'Content-Type': 'application/json',
+          'Content-Length': String(bytes.byteLength),
+        },
+      };
+      let raw: unknown;
+      try {
+        const response = await fetch(endpoint, request);
+        if (!response.ok) throw await httpFailure(response, signal);
+        raw = await readJSON(response, MAX_RESPONSE_BYTES, signal);
+      } catch (error) {
+        if (error instanceof RagEmbeddingError) throw error;
+        throw new RagEmbeddingError(signal.aborted ? 'EMBED_ABORTED' : 'EMBED_PROVIDER_FAILURE');
+      }
+      return validateResponse(raw, exactInputs.length, signal);
     },
-  });
+  } satisfies EmbeddingProvider);
 }

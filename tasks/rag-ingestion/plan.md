@@ -1,5 +1,9 @@
 # RAG ingestion — incremental implementation plan
 
+## H11-OPS checkpoint — 2026-11-27
+
+H9C/S512 and H12 are ratified. E2 is merged and its hosted schema is verified. H11-OPS prepares the direct OpenAI transport, guarded operator commands, and one-call first ingestion of Resolução 18. Follow the [runbook](../../docs/rag/h11-ops-runbook.md) for the separate approvals and billing postflight. The hosted space remains in `building`. The stage notes below record their original scope.
+
 > **CURRENT OWNER OVERRIDE (2026-11-18):** H10 capacity telemetry/measurements and internally imposed H10 thresholds **canceled for this Free-tier MVP**. Supabase plan verified Free; no paid upgrade authorized. H6-S1 hosted REVOKE executed and verified; `NO_BACKUP_MVP` unchanged. Historical H10/H6 requirements below are not current execution gates. [Latest owner decision](../../docs/decisions/RAG-E1-H10-free-mvp-cancellation-and-h6-execution.md).
 
 > **Latest owner authority (2026-11-17):** [H5/H6/H10 hosted operational ratification](../../docs/decisions/RAG-E1-H5-H6-H10-owner-ratification.md) supersedes the pending decision status in earlier historical sections. **Single Supabase migration ledger, minimal server-only `rag_app`, independent security review, and numeric H10 capacity caps are RATIFIED DIRECTIONS**, not hosted execution approval. Pinned CLI version, role/SQL operator package, security disposition, organization/disk measurements and capacity enforcement remain open. H10 [NO_BACKUP_MVP](../../docs/decisions/RAG-H10-mvp-no-backup.md) remains in force.

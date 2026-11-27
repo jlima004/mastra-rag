@@ -41,7 +41,14 @@ type AttemptRow = {
   wait_ms: number | null;
 };
 
-type StartedAttempt = { state: 'started'; attemptId: string; retriesUsed: number; utcDay: string };
+type StartedAttempt = {
+  state: 'started';
+  attemptId: string;
+  retriesUsed: number;
+  utcDay: string;
+  reservedTokens: number;
+  callLimitReached: boolean;
+};
 type BatchAttempt = StartedAttempt | { state: 'wait'; delayMs: number } | { state: 'complete' };
 type MeasuredOutcome = { state: 'succeeded'; reportedTokens: number };
 type OverageOutcome = { state: 'overage'; reportedTokens: number };
@@ -84,6 +91,24 @@ async function requireNoUnreconciledOverage(tx: Transaction): Promise<void> {
   if (rowCount) throw new RagEmbeddingError('EMBED_RECONCILIATION_REQUIRED');
 }
 
+/** Snapshot for diagnostics. Only reserveEmbeddingPlan may admit under the budget lock. */
+export async function readEmbeddingBudget(tx: Transaction) {
+  const { rows: [snapshot] } = await tx.query<{
+    utc_day: string; daily_tokens: string; monthly_tokens: string; evaluation_tokens: string;
+  }>(`WITH period AS (
+        SELECT timezone('UTC', clock_timestamp())::date AS today
+      )
+      SELECT today::text AS utc_day,
+        coalesce(sum(held_tokens) FILTER (WHERE utc_day = today), 0)::text AS daily_tokens,
+        coalesce(sum(held_tokens), 0)::text AS monthly_tokens,
+        coalesce(sum(held_tokens) FILTER (WHERE purpose = 'evaluation'), 0)::text AS evaluation_tokens
+      FROM period
+      LEFT JOIN rag.embedding_reservation
+        ON budget_scope = $1 AND utc_month = date_trunc('month', today::timestamp)::date
+      GROUP BY today`, [BUDGET_SCOPE]);
+  return snapshot;
+}
+
 /** Idempotent admission. Caller commits this transaction before any call. */
 export async function reserveEmbeddingPlan(
   tx: Transaction,
@@ -104,19 +129,7 @@ export async function reserveEmbeddingPlan(
   }
   if (!batchPlan.length) return;
   await requireNoUnreconciledOverage(tx);
-  const { rows: [snapshot] } = await tx.query<{
-    utc_day: string; daily_tokens: string; monthly_tokens: string; evaluation_tokens: string;
-  }>(`WITH period AS (
-        SELECT timezone('UTC', clock_timestamp())::date AS today
-      )
-      SELECT today::text AS utc_day,
-        coalesce(sum(held_tokens) FILTER (WHERE utc_day = today), 0)::text AS daily_tokens,
-        coalesce(sum(held_tokens), 0)::text AS monthly_tokens,
-        coalesce(sum(held_tokens) FILTER (WHERE purpose = 'evaluation'), 0)::text AS evaluation_tokens
-      FROM period
-      LEFT JOIN rag.embedding_reservation
-        ON budget_scope = $1 AND utc_month = date_trunc('month', today::timestamp)::date
-      GROUP BY today`, [BUDGET_SCOPE]);
+  const snapshot = await readEmbeddingBudget(tx);
   if (BigInt(snapshot.monthly_tokens) > BigInt(H11_MVP_POLICY.maxMonthlyReservedTokens)) {
     throw new RagEmbeddingError('EMBED_BUDGET_EXCEEDED');
   }
@@ -163,6 +176,7 @@ function assertUnambiguous(attempts: AttemptRow[]): void {
  */
 export async function beginEmbeddingAttempt(
   tx: Transaction, jobId: string, batchIndex: number, batch: MeasuredEmbeddingBatch,
+  maxProviderCalls?: number,
 ): Promise<BatchAttempt> {
   await lockBudget(tx);
   const reservation = await readEmbeddingReservation(tx, jobId);
@@ -180,6 +194,10 @@ export async function beginEmbeddingAttempt(
   if (reservation.closed_at) throw new RagEmbeddingError('EMBED_RESERVATION_CLOSED');
   const completed = attempts.filter(attempt => attempt.state === 'succeeded').length;
   if (completed !== batchIndex) throw new RagEmbeddingError('EMBED_RESERVATION_MISMATCH');
+
+  if (maxProviderCalls !== undefined && attempts.length >= maxProviderCalls) {
+    throw new RagEmbeddingError('EMBED_CALL_LIMIT_REACHED');
+  }
 
   const retriesUsed = attempts.filter(attempt => attempt.attempt_number > 1).length;
   if (last && retriesUsed >= MAX_RETRIES) throw new RagEmbeddingError('EMBED_RETRY_EXHAUSTED');
@@ -204,6 +222,7 @@ export async function beginEmbeddingAttempt(
   return {
     state: 'started', attemptId: newAttempt.attempt_id,
     retriesUsed: retriesUsed + (last ? 1 : 0), utcDay: reservation.utc_day,
+    reservedTokens: batch.tokens, callLimitReached: attempts.length + 1 === maxProviderCalls,
   };
 }
 
@@ -256,11 +275,17 @@ export function inspectEmbeddingFailure(
   error: unknown,
   attempt: StartedAttempt,
   random: () => number = Math.random,
-): RetryableOutcome | UnknownOutcome {
+): RetryableOutcome | UnknownOutcome | InvalidOutcome | OverageOutcome {
   const errorCode = sanitizedCode(error);
+  if (error instanceof RagEmbeddingError && error.reportedTokens !== null) {
+    const reportedTokens = error.reportedTokens;
+    if (reportedTokens > attempt.reservedTokens) return { state: 'overage', reportedTokens };
+    return { state: 'invalid', reportedTokens, errorCode };
+  }
   if (!(error instanceof RagEmbeddingError) || errorCode !== 'EMBED_PROVIDER_TRANSIENT' || !error.retryable) {
     return { state: 'unknown', errorCode };
   }
+  if (attempt.callLimitReached) return { state: 'unknown', errorCode: 'EMBED_CALL_LIMIT_REACHED' };
   if (attempt.retriesUsed >= MAX_RETRIES) return { state: 'unknown', errorCode: 'EMBED_RETRY_EXHAUSTED' };
   try {
     const delayMs = embeddingBackoffMs(attempt.retriesUsed, random, error.retryAfterMs);
