@@ -10,7 +10,9 @@ trap 'rm -rf "${tmp}"' EXIT
 mkdir -p "${tmp}/repo/scripts" "${tmp}/repo/supabase/migrations" "${tmp}/repo/db/migrations" "${tmp}/bin"
 cp scripts/e1-h5-remote-history-readonly.sh "${tmp}/repo/scripts/"
 cp scripts/e1-h5-operator-from-env.mjs "${tmp}/repo/scripts/"
-cp supabase/migrations/*.sql "${tmp}/repo/supabase/migrations/"
+# This command authorizes the historical two-file E1 checkout only.
+cp supabase/migrations/20261113233720_enable_pgvector_create_private_rag_schema.sql \
+  supabase/migrations/20261117213614_rag_catalog.sql "${tmp}/repo/supabase/migrations/"
 cp db/migrations/0001_rag_catalog.up.sql "${tmp}/repo/db/migrations/"
 git -C "${tmp}/repo" init -q
 
@@ -64,6 +66,17 @@ if [[ "$(grep -c '^--profile supabase --workdir .*/repo migration list --remote=
       "$(wc -l < "${tmp}/calls")" != 3 ]]; then
   echo 'E1_H5_WRONG_CLI_COMMAND_OR_COUNT' >&2; exit 1
 fi
+
+# A checkout containing the E2 candidate must still stop before remote list.
+e2_migration='supabase/migrations/20261127135647_rag_durable_ingestion.sql'
+cp "${root}/${e2_migration}" "${e2_migration}"
+: > "${tmp}/calls"
+if bash scripts/e1-h5-remote-history-readonly.sh --read-only > "${tmp}/out" 2> "${tmp}/err"; then
+  echo 'E1_H5_E2_CANDIDATE_ADMITTED' >&2; exit 1
+fi
+grep -q 'E1_H5_UNEXPECTED_LOCAL_MIGRATION_VERSION' "${tmp}/err"
+test "$(wc -l < "${tmp}/calls")" -eq 2
+rm -- "${e2_migration}"
 
 : > "${tmp}/calls"
 if E1_FAKE_MODE='wrong-version' bash scripts/e1-h5-remote-history-readonly.sh --read-only > "${tmp}/out" 2> "${tmp}/err"; then
